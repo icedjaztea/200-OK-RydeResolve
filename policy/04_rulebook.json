@@ -1,0 +1,1651 @@
+{
+  "rulebook_id": "RYDERESOLVE_RULE_ROUTING_INDEX",
+  "version": "1.0.0-draft",
+  "policy_id": "RYDE_DISPUTE_RESOLUTION",
+  "policy_version": "2.1",
+  "policy_effective_date": "2026-01-01",
+  "source_policy_sha256": "827c4d2cab2d4db9e176521000b079632bbe80c20f69c3ffd0addecc8cbc8699",
+  "status": "DRAFT_TEAM_CONTRACT_REVIEW",
+  "purpose": "candidate rule identification and lookup; not a ruling engine",
+  "retrieval_protocol": {
+    "steps": [
+      "Extract dispute category and factual allegations without accepting them as proven",
+      "Always screen all input text for safety indicators; include SF-5.1 and SF-5.2 when suspected",
+      "Select candidate category rules using descriptions, keywords and required evidence",
+      "Always retrieve TH-6.1 value band, relevant TH-6.2 category override, TH-6.3 when flag data exist, and PR-7 when precedent search is available",
+      "Fetch full matching rule objects from the authoritative policy JSON by exact rule_id",
+      "Evaluate applicability against observable evidence; mark unknown instead of assuming false",
+      "Apply mandatory human-review restrictions and policy ambiguities before any autonomous finalization"
+    ],
+    "output_contract": {
+      "candidate_rule_ids": "array of exact IDs from policy JSON",
+      "evidence_to_fetch": "array of evidence names",
+      "uncertain_conditions": "array of unresolved criteria",
+      "safety_screen": "flag or not_observed; never inferred clean from missing scan",
+      "policy_version": "exact version"
+    }
+  },
+  "cross_cutting_rules": {
+    "safety_screen": [
+      "SF-5.1",
+      "SF-5.2"
+    ],
+    "value_bands": [
+      "TH-6.1-LOW",
+      "TH-6.1-MID",
+      "TH-6.1-HIGH"
+    ],
+    "historical_flag_check": [
+      "TH-6.3"
+    ],
+    "precedent_lookup": [
+      "PR-7"
+    ]
+  },
+  "rule_entries": [
+    {
+      "rule_id": "RD-1.1",
+      "source_section": "1.1",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "A driver used a different route from the recommended route, possibly due to congestion, traffic or a road closure.",
+      "search_phrases": [
+        "route deviation",
+        "alternate route",
+        "detour",
+        "road closure",
+        "traffic jam"
+      ],
+      "candidate_when": {
+        "trigger": "route_differs_from_recommended"
+      },
+      "result_if_confirmed": {
+        "permitted_reasons": [
+          "traffic",
+          "road_closure",
+          "congestion"
+        ],
+        "notification_required": true
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.2",
+        "RD-1.4"
+      ]
+    },
+    {
+      "rule_id": "RD-1.2",
+      "source_section": "1.2",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Determine whether the driver gave a reason and informed the rider before or at the deviation by an accepted channel.",
+      "search_phrases": [
+        "driver did not tell me",
+        "route warning",
+        "verbal notice",
+        "call recording",
+        "chat"
+      ],
+      "candidate_when": {
+        "notification_timing": "before_or_at_deviation"
+      },
+      "result_if_confirmed": {
+        "valid_notification_methods": [
+          "in_app_chat",
+          "verbal_with_trip_call_recording"
+        ],
+        "reason_required": true
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [
+        "chat_record_or_trip_call_recording"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.1"
+      ]
+    },
+    {
+      "rule_id": "RD-1.3-A",
+      "source_section": "1.3",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Traffic-justified reroute over 1 km where rider was informed and agreed.",
+      "search_phrases": [
+        "agreed to reroute",
+        "notified of traffic",
+        "accepted route"
+      ],
+      "candidate_when": {
+        "traffic_justification": true,
+        "rider_informed_and_agreed": true,
+        "deviation_gt_1km": true
+      },
+      "result_if_confirmed": {
+        "refund": "none"
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.2",
+        "RD-1.4"
+      ]
+    },
+    {
+      "rule_id": "RD-1.3-B",
+      "source_section": "1.3",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Traffic-justified reroute over 1 km where rider was not informed.",
+      "search_phrases": [
+        "unannounced detour",
+        "traffic justified",
+        "excess distance"
+      ],
+      "candidate_when": {
+        "traffic_justification": true,
+        "rider_informed": false,
+        "deviation_gt_1km": true
+      },
+      "result_if_confirmed": {
+        "refund": "partial_excess_distance_fare"
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.2",
+        "RD-1.4"
+      ]
+    },
+    {
+      "rule_id": "RD-1.3-C",
+      "source_section": "1.3",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Traffic-justified, unannounced reroute of 1 km or less.",
+      "search_phrases": [
+        "small detour",
+        "within tolerance",
+        "under 1 km"
+      ],
+      "candidate_when": {
+        "traffic_justification": true,
+        "rider_informed": false,
+        "deviation_gt_1km": false
+      },
+      "result_if_confirmed": {
+        "refund": "none"
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.2",
+        "RD-1.4"
+      ]
+    },
+    {
+      "rule_id": "RD-1.3-D",
+      "source_section": "1.3",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Reroute over 1 km without verified traffic justification.",
+      "search_phrases": [
+        "unjustified detour",
+        "no congestion proof",
+        "longer route"
+      ],
+      "candidate_when": {
+        "traffic_justification": false,
+        "rider_informed": null,
+        "deviation_gt_1km": true
+      },
+      "result_if_confirmed": {
+        "refund": "full_excess_distance_fare"
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.2",
+        "RD-1.4"
+      ]
+    },
+    {
+      "rule_id": "RD-1.3-E",
+      "source_section": "1.3",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Reroute of 1 km or less without verified traffic justification.",
+      "search_phrases": [
+        "small unjustified deviation",
+        "tolerance"
+      ],
+      "candidate_when": {
+        "traffic_justification": false,
+        "rider_informed": null,
+        "deviation_gt_1km": false
+      },
+      "result_if_confirmed": {
+        "refund": "none"
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.2",
+        "RD-1.4"
+      ]
+    },
+    {
+      "rule_id": "RD-1.4",
+      "source_section": "1.4",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Measure actual minus recommended distance and check contemporaneous historical traffic evidence and rider acknowledgment.",
+      "search_phrases": [
+        "GPS waypoints",
+        "route comparison",
+        "traffic API",
+        "historical traffic"
+      ],
+      "candidate_when": {
+        "computation": "actual_route_distance_km - recommended_route_distance_km"
+      },
+      "result_if_confirmed": {
+        "traffic_justification_source": "historical_traffic_api_at_trip_time",
+        "rider_acknowledgment_sources": [
+          "in_app_chat",
+          "trip_call_recording"
+        ]
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "RD-1.1"
+      ]
+    },
+    {
+      "rule_id": "NS-2.1",
+      "source_section": "2.1",
+      "dispute_categories": [
+        "no_show_charge",
+        "cancellation_fee"
+      ],
+      "description": "Driver cancels for alleged rider no-show; check scheduled pickup time, actual presence and five-minute free-wait rule.",
+      "search_phrases": [
+        "rider absent",
+        "driver waited",
+        "no show",
+        "pickup time"
+      ],
+      "candidate_when": {
+        "cancelled_by": "driver",
+        "rider_absent": true,
+        "elapsed_from_scheduled_pickup_minutes": ">=5"
+      },
+      "result_if_confirmed": {
+        "driver_may_cancel_for_rider_no_show": true
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "arrival_event",
+        "cancel_time",
+        "in_app_message_log",
+        "in_app_call_log"
+      ],
+      "evidence_requirements_from_policy": [
+        "scheduled_pickup_time",
+        "arrival_at_pickup",
+        "cancellation_time"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.2"
+      ]
+    },
+    {
+      "rule_id": "NS-2.2",
+      "source_section": "2.2",
+      "dispute_categories": [
+        "no_show_charge",
+        "cancellation_fee"
+      ],
+      "description": "Determine whether the fixed $5 no-show charge applies and its driver-compensation treatment.",
+      "search_phrases": [
+        "cancellation charge",
+        "five dollar fee",
+        "waiting compensation"
+      ],
+      "candidate_when": {
+        "valid_no_show_cancellation": true
+      },
+      "result_if_confirmed": {
+        "charge_amount": 5.0,
+        "currency": "SGD",
+        "recipient": "driver_compensation"
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "arrival_event",
+        "cancel_time",
+        "in_app_message_log",
+        "in_app_call_log"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.1",
+        "NS-2.3",
+        "NS-2.3-VOID"
+      ]
+    },
+    {
+      "rule_id": "NS-2.3",
+      "source_section": "2.3",
+      "dispute_categories": [
+        "no_show_charge",
+        "cancellation_fee"
+      ],
+      "description": "Check at least one in-app chat message AND one in-app call attempted before driver no-show cancellation.",
+      "search_phrases": [
+        "driver tried contacting",
+        "call log",
+        "chat sent",
+        "contact attempt"
+      ],
+      "candidate_when": {
+        "in_app_messages_before_cancel": ">=1",
+        "in_app_calls_before_cancel": ">=1"
+      },
+      "result_if_confirmed": {
+        "contact_requirement_met": true
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "arrival_event",
+        "cancel_time",
+        "in_app_message_log",
+        "in_app_call_log"
+      ],
+      "evidence_requirements_from_policy": [
+        "timestamped_chat_log",
+        "in_app_call_log"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.2"
+      ]
+    },
+    {
+      "rule_id": "NS-2.3-VOID",
+      "source_section": "2.3",
+      "dispute_categories": [
+        "no_show_charge",
+        "cancellation_fee"
+      ],
+      "description": "Check whether missing required pre-cancellation message or call voids the no-show charge.",
+      "search_phrases": [
+        "no call",
+        "no message",
+        "uncontacted",
+        "refund cancellation fee"
+      ],
+      "candidate_when": {
+        "in_app_messages_before_cancel": "<1 OR in_app_calls_before_cancel <1"
+      },
+      "result_if_confirmed": {
+        "cancellation_fee": "void"
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "arrival_event",
+        "cancel_time",
+        "in_app_message_log",
+        "in_app_call_log"
+      ],
+      "evidence_requirements_from_policy": [
+        "timestamped_chat_log",
+        "in_app_call_log"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.2"
+      ]
+    },
+    {
+      "rule_id": "NS-2.4",
+      "source_section": "2.4",
+      "dispute_categories": [
+        "driver_no_show",
+        "no_show_charge"
+      ],
+      "description": "Rider cancels because the driver has not arrived by scheduled pickup plus five minutes.",
+      "search_phrases": [
+        "driver never came",
+        "driver late",
+        "missed pickup"
+      ],
+      "candidate_when": {
+        "driver_arrived_by_scheduled_plus_5min": false
+      },
+      "result_if_confirmed": {
+        "rider_may_cancel_without_charge": true
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "driver_arrival_events",
+        "driver_contact_log"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.1",
+        "NS-2.3",
+        "NS-2.3-VOID"
+      ]
+    },
+    {
+      "rule_id": "NS-2.4-CREDIT",
+      "source_section": "2.4",
+      "dispute_categories": [
+        "driver_no_show",
+        "no_show_charge"
+      ],
+      "description": "Driver failed to arrive and failed to attempt contact; evaluate prescribed goodwill credit separately from fee reversal.",
+      "search_phrases": [
+        "driver absent and silent",
+        "goodwill credit"
+      ],
+      "candidate_when": {
+        "driver_failed_to_arrive": true,
+        "driver_failed_to_attempt_contact": true
+      },
+      "result_if_confirmed": {
+        "goodwill_credit": 5.0,
+        "currency": "SGD"
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "driver_arrival_events",
+        "driver_contact_log"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.1",
+        "NS-2.3",
+        "NS-2.3-VOID"
+      ]
+    },
+    {
+      "rule_id": "NS-2.5",
+      "source_section": "2.5",
+      "dispute_categories": [
+        "no_show_charge",
+        "cancellation_fee"
+      ],
+      "description": "Repeated rider no-show cancellations within rolling 30 days; flag for Trust & Safety review, not case-level proof of bad faith.",
+      "search_phrases": [
+        "repeat no show",
+        "three cancellations",
+        "account flag"
+      ],
+      "candidate_when": {
+        "rider_no_show_cancellations_last_30_days": ">=3"
+      },
+      "result_if_confirmed": {
+        "flag_for_review": true,
+        "future_upfront_payment": "required_per_source",
+        "temporary_suspension": "pending_trust_and_safety_review"
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "arrival_event",
+        "cancel_time",
+        "in_app_message_log",
+        "in_app_call_log"
+      ],
+      "evidence_requirements_from_policy": [
+        "dated_no_show_history"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "NS-2.1",
+        "NS-2.3",
+        "NS-2.3-VOID"
+      ]
+    },
+    {
+      "rule_id": "FA-3.1",
+      "source_section": "3.1",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Compare upfront binding fare quote and the surge multiplier at quote time.",
+      "search_phrases": [
+        "upfront quote",
+        "quoted price",
+        "booking fare"
+      ],
+      "candidate_when": {
+        "at_quote_time": true
+      },
+      "result_if_confirmed": {
+        "upfront_surge_multiplier_binding": true,
+        "included_components": [
+          "base",
+          "distance",
+          "time",
+          "booking_fee",
+          "applicable_surge"
+        ]
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.2",
+        "FA-3.4",
+        "FA-3.5"
+      ]
+    },
+    {
+      "rule_id": "FA-3.2",
+      "source_section": "3.2",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Surge increased between quote and pickup; verify timely in-app notice with revised fare and penalty-free cancel option.",
+      "search_phrases": [
+        "surge changed",
+        "price increased",
+        "notification",
+        "cancel option"
+      ],
+      "candidate_when": {
+        "trip_start_surge_multiplier_gt_quote": true
+      },
+      "result_if_confirmed": {
+        "notify_by": "pickup",
+        "notification_channel": "in_app",
+        "must_include": [
+          "new_surge_multiplier",
+          "revised_estimated_fare",
+          "penalty_free_cancel_option"
+        ]
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.1"
+      ]
+    },
+    {
+      "rule_id": "FA-3.3-A",
+      "source_section": "3.3",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Surge increased and rider received valid notice then proceeded.",
+      "search_phrases": [
+        "notified higher surge",
+        "accepted revised fare"
+      ],
+      "candidate_when": {
+        "surge_increased": true,
+        "rider_notified": true,
+        "rider_proceeded": true
+      },
+      "result_if_confirmed": {
+        "refund": "none",
+        "higher_fare_applies": true
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.2",
+        "FA-3.4",
+        "FA-3.5"
+      ]
+    },
+    {
+      "rule_id": "FA-3.3-B",
+      "source_section": "3.3",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Surge increased and no valid rider notification was recorded.",
+      "search_phrases": [
+        "surge without notice",
+        "extra charge",
+        "unnotified fare increase"
+      ],
+      "candidate_when": {
+        "surge_increased": true,
+        "rider_notified": false
+      },
+      "result_if_confirmed": {
+        "refund": "full_surge_differential_if_solely_attributable"
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.2",
+        "FA-3.4",
+        "FA-3.5"
+      ]
+    },
+    {
+      "rule_id": "FA-3.3-C",
+      "source_section": "3.3",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Surge fell after quote; lower multiplier should benefit the rider.",
+      "search_phrases": [
+        "surge decrease",
+        "lower fare"
+      ],
+      "candidate_when": {
+        "surge_decreased": true
+      },
+      "result_if_confirmed": {
+        "fare": "lower_applies_automatically"
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.2",
+        "FA-3.4",
+        "FA-3.5"
+      ]
+    },
+    {
+      "rule_id": "FA-3.3-D",
+      "source_section": "3.3",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Surge multiplier remained unchanged; compare final charge to quoted fare.",
+      "search_phrases": [
+        "surge unchanged",
+        "same multiplier"
+      ],
+      "candidate_when": {
+        "surge_unchanged": true
+      },
+      "result_if_confirmed": {
+        "fare": "quoted_fare_applies"
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.2",
+        "FA-3.4",
+        "FA-3.5"
+      ]
+    },
+    {
+      "rule_id": "FA-3.4",
+      "source_section": "3.4",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Compute refundable differential only when the quote-to-final difference is attributable solely to surge change.",
+      "search_phrases": [
+        "surge differential",
+        "fare difference",
+        "refund calculation"
+      ],
+      "candidate_when": {
+        "other_fare_components_unchanged": true
+      },
+      "result_if_confirmed": {
+        "surge_differential_formula": "actual_fare - upfront_quote",
+        "refund_if_unnotified": "full_differential"
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.1"
+      ]
+    },
+    {
+      "rule_id": "FA-3.5",
+      "source_section": "3.5",
+      "dispute_categories": [
+        "fare_dispute",
+        "surge_pricing"
+      ],
+      "description": "Separate surgeable base, distance and time components from surge-exempt booking fee.",
+      "search_phrases": [
+        "booking fee",
+        "fare breakdown",
+        "surge calculation"
+      ],
+      "candidate_when": {
+        "component_classification": true
+      },
+      "result_if_confirmed": {
+        "surge_exempt": [
+          "booking_fee"
+        ],
+        "surgeable": [
+          "base_fare",
+          "distance_fare",
+          "time_fare"
+        ]
+      },
+      "evidence_to_fetch": [
+        "upfront_quote",
+        "final_fare",
+        "quote_surge",
+        "trip_start_surge",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "FA-3.1"
+      ]
+    },
+    {
+      "rule_id": "DM-4.1",
+      "source_section": "4.1",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Driver alleges rider-caused spills, soiling or physical vehicle damage and seeks cleaning or repair reimbursement.",
+      "search_phrases": [
+        "spill",
+        "vomit",
+        "stain",
+        "broken seat",
+        "vehicle damage"
+      ],
+      "candidate_when": {
+        "alleged_damage_caused_by_rider": true
+      },
+      "result_if_confirmed": {
+        "claim_types": [
+          "cleaning",
+          "repair"
+        ],
+        "damage_examples": [
+          "spills",
+          "vomiting",
+          "stains",
+          "interior_physical_damage",
+          "boarding_or_alighting_exterior_damage"
+        ]
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "DM-4.2",
+        "DM-4.4-REVIEW"
+      ]
+    },
+    {
+      "rule_id": "DM-4.2",
+      "source_section": "4.2",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Check photo submission within 24 hours, in-app camera timestamp, verifiability and trip association.",
+      "search_phrases": [
+        "damage photo",
+        "timestamp",
+        "external image",
+        "camera",
+        "trip linkage"
+      ],
+      "candidate_when": {
+        "photo_submission_hours_after_completion": "<=24"
+      },
+      "result_if_confirmed": {
+        "required_origin": "ryde_app_in_app_camera",
+        "auto_timestamp_required": true,
+        "specific_trip_link_required": true
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [
+        "photo_pixels",
+        "in_app_camera_metadata",
+        "trip_gps",
+        "trip_timestamp"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "DM-4.1"
+      ]
+    },
+    {
+      "rule_id": "DM-4.3-CLEAN",
+      "source_section": "4.3",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Determine cleaning claim fee cap of $50 when supported by valid soiling evidence.",
+      "search_phrases": [
+        "cleaning fee",
+        "stained car",
+        "soiling"
+      ],
+      "candidate_when": {
+        "damage_kind": "cleaning",
+        "valid_photo_of_soiling": true
+      },
+      "result_if_confirmed": {
+        "max_fee": 50.0,
+        "external_quote_required": false
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "DM-4.2",
+        "DM-4.4-REVIEW"
+      ]
+    },
+    {
+      "rule_id": "DM-4.3-REPAIR",
+      "source_section": "4.3",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Determine repair reimbursement support using certified workshop written quote within seven days.",
+      "search_phrases": [
+        "repair quote",
+        "workshop estimate",
+        "broken vehicle"
+      ],
+      "candidate_when": {
+        "damage_kind": "repair"
+      },
+      "result_if_confirmed": {
+        "fee": "documented_repair_cost",
+        "quote_type": "certified_workshop_written",
+        "quote_due_days": 7
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "DM-4.2",
+        "DM-4.4-REVIEW"
+      ]
+    },
+    {
+      "rule_id": "DM-4.4-REVIEW",
+      "source_section": "4.4",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Rider disputes a damage allegation; route the dispute to human review.",
+      "search_phrases": [
+        "deny damage",
+        "contest cleaning fee",
+        "rider disputes"
+      ],
+      "candidate_when": {
+        "rider_disputes_claim": true
+      },
+      "result_if_confirmed": {
+        "route": "HUMAN_REVIEW"
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "DM-4.1"
+      ]
+    },
+    {
+      "rule_id": "DM-4.4-REJECT",
+      "source_section": "4.4",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Damage claim has insufficient evidence such as external photo, missing timestamp or absent trip association.",
+      "search_phrases": [
+        "unverifiable photo",
+        "missing timestamp",
+        "not this trip"
+      ],
+      "candidate_when": {
+        "photo_missing_timestamp_or_external_or_not_linked_to_trip": true
+      },
+      "result_if_confirmed": {
+        "claim": "REJECTED"
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [
+        "photo_provenance",
+        "trip_link"
+      ],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "DM-4.2",
+        "DM-4.4-REVIEW"
+      ]
+    },
+    {
+      "rule_id": "SF-5.1",
+      "source_section": "5.1",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Any statement or record contains safety indicators even if filed under another dispute category.",
+      "search_phrases": [
+        "unsafe",
+        "threat",
+        "assault",
+        "harassment",
+        "dangerous driving",
+        "accident"
+      ],
+      "candidate_when": {
+        "any_safety_indicators": true
+      },
+      "result_if_confirmed": {
+        "route": "IMMEDIATE_HUMAN_REVIEW",
+        "detect_even_if_other_category_selected": true
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "SF-5.3"
+      ]
+    },
+    {
+      "rule_id": "SF-5.2",
+      "source_section": "5.2",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Safety-related case: prohibit AI fault ruling or proposed resolution; prepare reviewer case file only.",
+      "search_phrases": [
+        "safety escalation",
+        "no AI ruling"
+      ],
+      "candidate_when": {
+        "safety_related": true
+      },
+      "result_if_confirmed": {
+        "agents_may": [
+          "collect_evidence",
+          "summarize_accounts",
+          "prepare_case_file"
+        ],
+        "agents_must_not": [
+          "rule",
+          "determine_fault",
+          "recommend_resolution"
+        ]
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "SF-5.3"
+      ]
+    },
+    {
+      "rule_id": "SF-5.3",
+      "source_section": "5.3",
+      "dispute_categories": [
+        "safety_incident"
+      ],
+      "description": "After human safety escalation, interim restrictions may be considered by authorized human operations, never applied by the agent.",
+      "search_phrases": [
+        "interim suspension",
+        "restrict bookings",
+        "safety hold"
+      ],
+      "candidate_when": {
+        "human_escalation_active": true
+      },
+      "result_if_confirmed": {
+        "interim_measures_possible": [
+          "temporary_account_suspension",
+          "prevent_booking_or_trip_acceptance"
+        ],
+        "authorization": "requires_human_or_authorized_control_not_model"
+      },
+      "evidence_to_fetch": [
+        "filed_claim",
+        "chat_or_call_or_trip_incident_records"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": [
+        "SF-5.1",
+        "SF-5.2"
+      ]
+    },
+    {
+      "rule_id": "TH-6.1-LOW",
+      "source_section": "6.1",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Select under-$10 dispute-value band; apply category, safety and fraud-flag rules too.",
+      "search_phrases": [
+        "low value",
+        "under ten dollars"
+      ],
+      "candidate_when": {
+        "value_min_inclusive": null,
+        "value_max_inclusive": 10,
+        "under_10_strict": true,
+        "above_50_strict": false
+      },
+      "result_if_confirmed": {
+        "path": "AI_FINAL",
+        "minimum_confidence_percent": null
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.1-MID",
+      "source_section": "6.1",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Select $10 through $50 dispute-value band; 80% model confidence requirement stated in source, subject to stricter gates.",
+      "search_phrases": [
+        "medium value",
+        "between 10 and 50"
+      ],
+      "candidate_when": {
+        "value_min_inclusive": 10,
+        "value_max_inclusive": 50,
+        "under_10_strict": false,
+        "above_50_strict": false
+      },
+      "result_if_confirmed": {
+        "path": "AI_IF_CONFIDENCE_ELSE_HUMAN",
+        "minimum_confidence_percent": 80
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.1-HIGH",
+      "source_section": "6.1",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Select above-$50 dispute-value band requiring human review.",
+      "search_phrases": [
+        "high value",
+        "more than 50 dollars"
+      ],
+      "candidate_when": {
+        "value_min_inclusive": 50,
+        "value_max_inclusive": null,
+        "under_10_strict": false,
+        "above_50_strict": true
+      },
+      "result_if_confirmed": {
+        "path": "HUMAN_REVIEW",
+        "minimum_confidence_percent": null
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.2-ROUTE",
+      "source_section": "6.2",
+      "dispute_categories": [
+        "route_deviation"
+      ],
+      "description": "Route-specific AI eligibility check: deviation at most 2 km and confidence at least 80%; still evaluate refund rules.",
+      "search_phrases": [
+        "route eligibility",
+        "2 km",
+        "route review"
+      ],
+      "candidate_when": {
+        "deviation_km": "<=2",
+        "confidence_percent": ">=80"
+      },
+      "result_if_confirmed": {
+        "path": "AI_FINAL_IF_OTHER_GATES_PASS"
+      },
+      "evidence_to_fetch": [
+        "route_data",
+        "recommended_route",
+        "actual_route",
+        "historical_traffic",
+        "chat_logs",
+        "trip_call_recording"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.2-CLEAN",
+      "source_section": "6.2",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Cleaning-case AI eligibility check with verifiable photo and claim at most $50; disputed cases have separate review rule.",
+      "search_phrases": [
+        "cleaning eligibility",
+        "photo verified"
+      ],
+      "candidate_when": {
+        "damage_kind": "cleaning",
+        "claim_amount": "<=50",
+        "photo_verifiable": true
+      },
+      "result_if_confirmed": {
+        "path": "AI_FINAL_IF_OTHER_GATES_PASS"
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.2-REPAIR",
+      "source_section": "6.2",
+      "dispute_categories": [
+        "property_damage",
+        "cleaning_claim",
+        "repair_claim"
+      ],
+      "description": "Repair claim above $50 must undergo human review.",
+      "search_phrases": [
+        "repair above 50",
+        "large repair"
+      ],
+      "candidate_when": {
+        "damage_kind": "repair",
+        "claim_amount": ">50"
+      },
+      "result_if_confirmed": {
+        "path": "HUMAN_REVIEW"
+      },
+      "evidence_to_fetch": [
+        "trip_end",
+        "claim_time",
+        "photo_pixels_and_capture_metadata",
+        "trip_link",
+        "workshop_quote_if_repair"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.2-NOSHOW",
+      "source_section": "6.2",
+      "dispute_categories": [
+        "no_show_charge",
+        "cancellation_fee"
+      ],
+      "description": "No-show-specific final-ruling eligibility stated for fixed $5 charge; check contact and safety exceptions.",
+      "search_phrases": [
+        "no show final decision",
+        "five dollar cancellation"
+      ],
+      "candidate_when": {
+        "fee": 5.0
+      },
+      "result_if_confirmed": {
+        "path": "AI_FINAL_IF_OTHER_GATES_PASS"
+      },
+      "evidence_to_fetch": [
+        "scheduled_pickup_time",
+        "arrival_event",
+        "cancel_time",
+        "in_app_message_log",
+        "in_app_call_log"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "TH-6.3",
+      "source_section": "6.3",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Either party has at least one historical fraud flag; source increases confidence threshold to 95% but flag alone proves no misconduct.",
+      "search_phrases": [
+        "fraud flag",
+        "risk history",
+        "95 percent"
+      ],
+      "candidate_when": {
+        "any_party_fraud_flags": ">=1"
+      },
+      "result_if_confirmed": {
+        "minimum_confidence_percent": 95
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    },
+    {
+      "rule_id": "PR-7",
+      "source_section": "7",
+      "dispute_categories": [
+        "all"
+      ],
+      "description": "Retrieve approved relevant prior rulings by category and material facts, not by case-ID equality; cited precedents do not override policy.",
+      "search_phrases": [
+        "precedent",
+        "similar decision",
+        "previous case"
+      ],
+      "candidate_when": {
+        "similar_case_exists": true
+      },
+      "result_if_confirmed": {
+        "retrieve_by": [
+          "dispute_type",
+          "material_facts"
+        ],
+        "cite_applicable_precedent": true,
+        "precedent_not_higher_authority_than_policy": true
+      },
+      "evidence_to_fetch": [
+        "dispute_amount",
+        "dispute_type",
+        "policy_version",
+        "case_snapshot_id"
+      ],
+      "evidence_requirements_from_policy": [],
+      "status_semantics": "candidate_until_evidence_confirms_conditions",
+      "read_full_rule_from": "02_policy_rules.json",
+      "related_rule_ids": []
+    }
+  ],
+  "source_ambiguities": [
+    {
+      "id": "AMB-01",
+      "sections": [
+        "2.1",
+        "2.2",
+        "DISP-002 sample"
+      ],
+      "issue": "Policy v2.1 measures five-minute free wait from scheduled pickup. DISP-002 sample discusses GPS-confirmed arrival 08:43, 08:51 cancellation and an eight-minute no-show event threshold. Do not silently add 5+8 or generalize sample eight-minute rule.",
+      "handling": "Use v2.1 scheduled-time five-minute anchor for future rules; keep sample eight-minute event as source fact; escalate if result turns on conflict."
+    },
+    {
+      "id": "AMB-02",
+      "sections": [
+        "4.4",
+        "6.2"
+      ],
+      "issue": "Disputed damage claims require human review under 4.4 even though 6.2 describes AI ruling for verified cleaning claims at or below $50.",
+      "handling": "Apply human review for disputed damage; AI cleaning path only if other gates allow."
+    },
+    {
+      "id": "AMB-03",
+      "sections": [
+        "6.1",
+        "6.2",
+        "6.3"
+      ],
+      "issue": "Low-value AI-final and category AI-final provisions coexist with fraud-flag 95% threshold and route-specific >=80%; policy does not fully define precedence or calibrated confidence calculation.",
+      "handling": "Apply non-bypassable human/safety/category gates and higher applicable confidence requirement; mark cases unresolved where confidence cannot be justified."
+    },
+    {
+      "id": "AMB-04",
+      "sections": [
+        "1.3",
+        "1.4"
+      ],
+      "issue": "Route matrix calls for full/partial refund of excess distance fare; the policy does not specify a per-kilometre tariff or allocation of other fare components.",
+      "handling": "Use stored, auditable trip fare breakdown; do not invent rate."
+    },
+    {
+      "id": "AMB-05",
+      "sections": [
+        "2.3"
+      ],
+      "issue": "No-show contact rule says at least one chat AND one call; if either missing the voiding condition is expressed as fails to meet both.",
+      "handling": "Require both types before cancellation to satisfy obligation."
+    },
+    {
+      "id": "AMB-06",
+      "sections": [
+        "5.3"
+      ],
+      "issue": "Interim account restrictions are described as permissible, but actor/approval flow is not specified.",
+      "handling": "Only authorized human-controlled implementation; agents cannot perform account mutations."
+    },
+    {
+      "id": "AMB-07",
+      "sections": [
+        "6.1"
+      ],
+      "issue": "Definition of dispute value for multiple remedies, amount-in-dispute versus trip total is not specified.",
+      "handling": "Do not infer financial basis where it changes routing; human review."
+    },
+    {
+      "id": "AMB-08",
+      "sections": [
+        "6.3"
+      ],
+      "issue": "No formula, training data or validation is supplied for calibrated confidence percent.",
+      "handling": "Do not present model self-reported percent as empirically calibrated."
+    }
+  ]
+}
