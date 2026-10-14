@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.0.0",
+  "case_id": "UC-010",
+  "provenance": {
+    "synthetic": true,
+    "origin": "policy_v2.1_test_fixture",
+    "created_on": "2026-10-14"
+  },
+  "policy_context": {
+    "policy_id": "RYDE_DISPUTE_RESOLUTION",
+    "version": "2.1"
+  },
+  "dispute": {
+    "filed_at": "2026-09-10T10:00:00+08:00",
+    "filed_by": "rider",
+    "reported_category": "no_show_charge",
+    "statement": "I dispute the cancellation charge and the pickup circumstances.",
+    "requested_amount_cents": 500,
+    "amount_basis": "disputed_charge",
+    "source_id": "SRC-010-PARTY"
+  },
+  "parties": {
+    "rider": {
+      "id": "R-SYN-010",
+      "fraud_flag_count": 1,
+      "no_show_cancellations_last_30_days": 0,
+      "source_id": "SRC-010-SYSTEM"
+    },
+    "driver": {
+      "id": "D-SYN-010",
+      "fraud_flag_count": 0,
+      "source_id": "SRC-010-SYSTEM"
+    }
+  },
+  "trip": {
+    "id": "T-SYN-010",
+    "timezone": "Asia/Singapore",
+    "currency": "SGD",
+    "scheduled_pickup_at": "2026-09-10T09:00:00+08:00",
+    "started_at": null,
+    "ended_at": null,
+    "pickup": {
+      "label": "Synthetic pickup A",
+      "lat": 1.3,
+      "lng": 103.85
+    },
+    "dropoff": {
+      "label": "Synthetic dropoff B",
+      "lat": 1.32,
+      "lng": 103.87
+    },
+    "source_id": "SRC-010-SYSTEM"
+  },
+  "sources": [
+    {
+      "id": "SRC-010-SYSTEM",
+      "kind": "synthetic_system_export",
+      "observed_at": "2026-09-10T10:00:00+08:00",
+      "description": "Fabricated platform records for this policy test; no external service was queried.",
+      "uri": null
+    },
+    {
+      "id": "SRC-010-PARTY",
+      "kind": "synthetic_party_statement",
+      "observed_at": "2026-09-10T10:00:00+08:00",
+      "description": "Fabricated party allegation or acknowledgement; not independent proof.",
+      "uri": null
+    }
+  ],
+  "evidence": {
+    "communications": {
+      "status": "complete",
+      "source_ids": [
+        "SRC-010-SYSTEM"
+      ],
+      "data": {
+        "window_start": "2026-09-10T08:00:00+08:00",
+        "window_end": "2026-09-10T10:00:00+08:00",
+        "channels": {
+          "in_app_chat": "complete",
+          "in_app_call": "complete",
+          "trip_audio": "complete"
+        },
+        "records": [
+          {
+            "id": "COM-010-1",
+            "at": "2026-09-10T08:58:00+08:00",
+            "sender": "driver",
+            "channel": "in_app_chat",
+            "kind": "message",
+            "text": "I am at the pickup point, car SYN-100.",
+            "delivery_status": "delivered",
+            "duration_seconds": null,
+            "source_id": "SRC-010-SYSTEM"
+          },
+          {
+            "id": "COM-010-2",
+            "at": "2026-09-10T09:02:00+08:00",
+            "sender": "driver",
+            "channel": "in_app_call",
+            "kind": "call_attempt",
+            "text": "Outgoing in-app call; no answer.",
+            "delivery_status": "unanswered",
+            "duration_seconds": 22,
+            "source_id": "SRC-010-SYSTEM"
+          }
+        ]
+      }
+    },
+    "notifications": {
+      "status": "complete",
+      "source_ids": [
+        "SRC-010-SYSTEM"
+      ],
+      "data": {
+        "window_start": "2026-09-10T08:00:00+08:00",
+        "window_end": "2026-09-10T10:00:00+08:00",
+        "records": []
+      }
+    },
+    "route": {
+      "status": "not_applicable",
+      "source_ids": [],
+      "data": null
+    },
+    "no_show": {
+      "status": "complete",
+      "source_ids": [
+        "SRC-010-SYSTEM"
+      ],
+      "data": {
+        "driver_arrived_at": "2026-09-10T08:58:00+08:00",
+        "driver_presence_records": [
+          {
+            "at": "2026-09-10T08:58:00+08:00",
+            "distance_to_pickup_m": 4,
+            "source_id": "SRC-010-SYSTEM"
+          },
+          {
+            "at": "2026-09-10T09:06:00+08:00",
+            "distance_to_pickup_m": 4,
+            "source_id": "SRC-010-SYSTEM"
+          }
+        ],
+        "driver_arrival_log_status": "complete",
+        "rider_boarded_at": null,
+        "boarding_log_status": "complete",
+        "cancelled_at": "2026-09-10T09:06:00+08:00",
+        "cancelled_by": "driver",
+        "cancellation_reason": "rider_no_show",
+        "charged_fee_cents": 500,
+        "rider_location_records": []
+      }
+    },
+    "fare": {
+      "status": "not_applicable",
+      "source_ids": [],
+      "data": null
+    },
+    "damage": {
+      "status": "not_applicable",
+      "source_ids": [],
+      "data": null
+    },
+    "safety": {
+      "status": "complete",
+      "source_ids": [
+        "SRC-010-PARTY"
+      ],
+      "data": {
+        "reports": []
+      }
+    }
+  }
+}
