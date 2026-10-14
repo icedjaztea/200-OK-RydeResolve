@@ -1,0 +1,9 @@
+{
+  "team_review_acknowledged": true,
+  "reviewer": "TEAM_REVIEWED",
+  "reviewed_at": "2026-10-14T08:57:32.321466+00:00",
+  "source_sha256": "827c4d2cab2d4db9e176521000b079632bbe80c20f69c3ffd0addecc8cbc8699",
+  "policy_version": "2.1",
+  "rulebook_version": "1.0.0-draft",
+  "scope": "synthetic_hackathon_demo_only_not_ryde_approval"
+}
