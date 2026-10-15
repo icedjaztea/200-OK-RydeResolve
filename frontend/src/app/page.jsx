@@ -3,9 +3,9 @@ import {useState} from 'react';
 import Link from 'next/link';
 
 const ROLES=[
-  {id:'rider',label:'Rider',href:'/rider',icon:'R',tagline:'Track your case, answer clarifications, see outcomes in plain language.',
+  {id:'rider',label:'Rider',href:'/rider',icon:'R',tagline:'File a dispute, track your case, answer clarifications, and see outcomes in plain language.',
    accent:'rider-accent'},
-  {id:'driver',label:'Driver',href:'/driver',icon:'D',tagline:'View evidence history, respond to pending requests, check compensation.',
+  {id:'driver',label:'Driver',href:'/driver',icon:'D',tagline:'View case history, respond to requests, and check outcomes.',
    accent:'driver-accent'},
   {id:'reviewer',label:'Reviewer',href:'/reviewer',icon:'Rv',tagline:'Operational queue, advocate perspectives, policy gates, escalation, decision packet.',
    accent:'reviewer-accent'},
