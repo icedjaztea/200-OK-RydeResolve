@@ -1,0 +1,25 @@
+{
+  "case_id": "DEMO-NOSHOW-VALID",
+  "trip_id": "DEMO-DEMO-NOSHOW-VALID",
+  "category": "no_show_charge",
+  "filed_by": "rider",
+  "description": "I dispute the charged cancellation fee; driver says I did not show up.",
+  "dispute_amount": 5,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "scheduled_pickup_at": "2026-09-13T08:45:00+08:00",
+    "cancellation_at": "2026-09-13T08:51:00+08:00",
+    "driver_arrived": true,
+    "rider_absent": true,
+    "driver_message_count": 4,
+    "driver_call_count": 1
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "NEW",
+  "events": [],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE"
+}

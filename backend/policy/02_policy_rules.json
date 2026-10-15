@@ -1,0 +1,907 @@
+{
+  "policy_id": "RYDE_DISPUTE_RESOLUTION",
+  "document_title": "Ryde Dispute Resolution Policy v2.1",
+  "version": "2.1",
+  "effective_date": "2026-01-01",
+  "document_owner": "Ryde Operations — Dispute Resolution Team",
+  "classification": "Internal — Agent Training Reference",
+  "applies_to": [
+    "Rider Advocate",
+    "Driver Advocate",
+    "Judge",
+    "human reviewers"
+  ],
+  "source_file": "Document 2 — Ryde Dispute Resolution Policy v2.1 (Markdown).md",
+  "source_sha256": "827c4d2cab2d4db9e176521000b079632bbe80c20f69c3ffd0addecc8cbc8699",
+  "conversion_generated_at": "2026-10-13",
+  "source_authority": "supplied_RydeResolve_policy_document",
+  "conversion_status": "faithful_structured_transcription_with_implementation_notes",
+  "runtime_approval_status": "PROPOSED_UNTIL_TEAM_CONTRACT_SIGNOFF",
+  "currency_context": "SGD (Singapore policy/sample context; dollar sign in source)",
+  "sections_markdown": {
+    "Section 1: Route Deviation Policy": "### 1.1 General Principle\n\nDrivers are permitted to reroute from the GPS-recommended path in response to real-time traffic conditions, road closures, or congestion. However, the rider must be informed of any deviation.\n\n### 1.2 Notification Requirement\n\n- The driver **MUST** inform the rider of a route deviation via **in-app chat** or **verbally** (with the trip call recording as evidence) **before or at the point of deviation**.\n- A brief reason (e.g., \"traffic jam ahead onNicoll Highway, taking alternate route\") is sufficient.\n\n### 1.3 Refund Eligibility Matrix\n\n| Scenario | Rider Informed? | Deviation > 1km? | Refund |\n|---|---|---|---|\n| Driver reroutes for traffic, rider informed and agrees | Yes | Yes | No refund |\n| Driver reroutes for traffic, rider **not** informed | No | Yes | Partial refund of excess distance fare |\n| Driver reroutes for traffic, rider not informed | No | No (≤ 1km) | No refund (within tolerance) |\n| Driver reroutes **without** traffic justification (no evidence of congestion) | N/A | Yes | **Full refund** of excess distance fare |\n| Driver reroutes without justification, deviation ≤ 1km | N/A | No | No refund (within tolerance) |\n\n### 1.4 Evidence Requirements\n\n- Traffic justification is verified via **historical traffic API data** for the route segment at the trip time.\n- Route deviation distance is calculated as: `actual_route_distance − recommended_route_distance`.\n- If the driver's in-app chat or call recording confirms rider acknowledgment, the deviation is considered agreed.\n\n---",
+    "Section 2: No-Show & Cancellation Policy": "### 2.1 Free Wait Time\n\n- The driver must wait at the pickup location for a **free wait time of 5 minutes** from the scheduled pickup time.\n- After 5 minutes, the driver may cancel the trip as a \"rider no-show.\"\n\n### 2.2 Cancellation Fee\n\n- A **no-show cancellation fee of $5.00** is charged to the rider when the driver cancels after the free wait period.\n- The cancellation fee is transferred to the driver as compensation for time and fuel.\n\n### 2.3 Driver Contact Obligation\n\nBefore cancelling for no-show, the driver **MUST** attempt to contact the rider with:\n\n1. **At least 1 in-app chat message**, AND\n2. **At least 1 phone call** (via the in-app calling system).\n\nIf the driver fails to meet both contact obligations, the cancellation fee is **voided** and the rider is not charged.\n\n### 2.4 Driver No-Show\n\n- If the driver **fails to arrive at the pickup location** within a reasonable time (defined as scheduled pickup time + 5 minutes), the rider may cancel at no charge.\n- If the driver fails to arrive **and** fails to attempt contact, the rider is eligible for a **$5.00 goodwill credit**.\n\n### 2.5 Repeat No-Show Flagging\n\n- If a rider accumulates **3 or more no-show cancellations within a 30-day rolling window**, the rider's account is **flagged** for review.\n- Flagged accounts are subject to:\n  - Mandatory upfront payment for future bookings.\n  - Temporary suspension pending review by the Trust & Safety team.\n\n---",
+    "Section 3: Fare & Surge Pricing Policy": "### 3.1 Upfront Quote Binding\n\n- The upfront quote presented to the rider at booking is **binding at the surge multiplier in effect at quote time** (typically 1.0x in normal conditions).\n- The quoted fare includes: base fare, distance fare, time fare, booking fee, and any applicable surge.\n\n### 3.2 Surge Change Notification\n\n- If the surge multiplier **increases** between the time of quote and the time of trip start, the rider **MUST be notified** via an **in-app notification** before or at the point of pickup.\n- The notification must clearly state:\n  - The new surge multiplier.\n  - The revised estimated fare.\n  - An option to cancel without penalty.\n\n### 3.3 Refund Eligibility\n\n| Scenario | Rider Notified? | Refund |\n|---|---|---|\n| Surge increases, rider notified, rider proceeds | Yes | No refund — higher fare applies |\n| Surge increases, rider **not** notified | No | **Full refund of the surge differential** (actual fare − quoted fare) |\n| Surge decreases between quote and trip start | N/A | Lower fare applies automatically (rider benefits) |\n| Surge unchanged | N/A | Quoted fare applies |\n\n### 3.4 Surge Differential Calculation\n\n```\nsurge_differential = actual_fare − upfront_quote\n```\n\nWhere the difference is attributable solely to a surge multiplier change (all other fare components unchanged), the full differential is refundable if the rider was not notified.\n\n### 3.5 Surge-Exempt Components\n\nThe following fare components are **exempt** from surge pricing and remain fixed regardless of multiplier:\n\n- Booking fee\n\nAll other components (base fare, distance fare, time fare) are subject to the surge multiplier.\n\n---",
+    "Section 4: Property Damage Policy": "### 4.1 Driver Claim Rights\n\nDrivers may file claims for cleaning or repair fees resulting from **rider-caused damage** to the vehicle, including but not limited to:\n\n- Spills, vomiting, or food/beverage stains.\n- Physical damage to interior (seats, doors, windows).\n- Damage to exterior caused by rider behavior during boarding/alighting.\n\n### 4.2 Evidence Requirements\n\n| Requirement | Details |\n|---|---|\n| Photo evidence | Must be submitted **within 24 hours** of trip completion |\n| Timestamps | Photos must be automatically timestamped by the in-app camera |\n| Verifiability | Photos must be verifiable — taken through the Ryde driver app's built-in camera, not external uploads |\n| Trip association | Damage must be linked to the specific trip via GPS telemetry and trip timestamp |\n\n### 4.3 Fee Structure\n\n| Damage Type | Maximum Fee | Conditions |\n|---|---|---|\n| Cleaning fee | Up to **$50.00** | Photo evidence of soiling/stain; no external quote required |\n| Repair fee | Cost of repair | Requires a **written quote from a certified workshop**; quote must be submitted within 7 days |\n\n### 4.4 Dispute Handling\n\n- If the rider disputes the damage claim, the dispute is routed to human review.\n- The driver's photo evidence and the rider's account are both reviewed.\n- If evidence is insufficient (no timestamp, external photo, or damage not linked to trip), the claim is **rejected**.\n\n---",
+    "Section 5: Safety Incident Policy": "### 5.1 Automatic Escalation\n\nAny dispute flagged as **safety-related** is **automatically escalated to human review**. Safety-related disputes include but are not limited to:\n\n- Reckless or dangerous driving.\n- Physical or verbal harassment.\n- Assault or threat of assault.\n- Inappropriate behavior or conduct.\n- Traffic accidents during the trip.\n- Rider or driver feeling unsafe during the trip.\n\n### 5.2 AI Agent Limitations\n\n- AI agents (Rider Advocate, Driver Advocate, Judge) **MAY** gather evidence, summarize accounts, and prepare case files for human reviewers.\n- AI agents **CANNOT** issue rulings, determine fault, or recommend resolutions on safety incidents.\n- AI agents **MUST** flag any dispute that contains safety-related keywords or indicators for immediate human escalation, regardless of the dispute type selected by the filer.\n\n### 5.3 Interim Measures\n\nUpon escalation, the system may apply interim measures pending human review:\n\n- Temporary suspension of the accused party's account.\n- Prevention of new trip acceptance (for drivers) or booking (for riders).\n- These measures are lifted if the human reviewer determines no safety violation occurred.\n\n---",
+    "Section 6: Ruling Thresholds": "### 6.1 Monetary Thresholds\n\n| Dispute Value | Ruling Path | Agent Confidence Requirement |\n|---|---|---|\n| Under $10 | AI agent ruling is **final** | Any confidence level |\n| $10 – $50 | AI agent ruling with **80%+ confidence** | If confidence < 80%, escalate to human review |\n| Above $50 | **Always human review** | N/A — AI agent prepares case file only |\n\n### 6.2 Category Thresholds\n\n| Dispute Category | Ruling Path |\n|---|---|\n| Safety incident | **Always human review** (see Section 5) |\n| Fare dispute < $10 | AI agent ruling is final |\n| Fare dispute $10 – $50 | AI agent ruling if confidence ≥ 80%, else escalate |\n| Fare dispute > $50 | Always human review |\n| Route deviation | AI agent ruling if confidence ≥ 80% and deviation ≤ 2km, else escalate |\n| Property damage (cleaning ≤ $50) | AI agent ruling if photo evidence is verifiable |\n| Property damage (repair > $50) | Always human review |\n| No-show / cancellation | AI agent ruling is final (fee is fixed at $5.00) |\n\n### 6.3 Confidence Calibration\n\n- Agent confidence is calculated based on: evidence completeness, policy clarity, precedent alignment, and party credibility scores.\n- If any party has a fraud flag ≥ 1, the confidence threshold is raised to 95% regardless of dispute value.\n\n---",
+    "Section 7: Precedent Rulings": "Past rulings on similar cases should be referenced for consistency. Agents should search precedent rulings by dispute type and key facts, and cite the relevant precedent in their ruling rationale.\n\n### Precedent 7.1: Route Deviation Without Notification\n\n| Field | Value |\n|---|---|\n| **Case ID** | DISP-2026-0089 |\n| **Date** | 2026-02-12 |\n| **Dispute Type** | route_deviation |\n| **Facts** | Driver rerouted from Geylang to Orchard via Nicoll Highway due to traffic. Deviation was 1.8km beyond recommended route. Rider was not informed. GPS telemetry confirmed traffic congestion on original route. |\n| **Ruling** | Partial refund of excess distance fare. Rationale: Driver had valid traffic justification (confirmed via traffic API), but failed to notify rider per Section 1.2. Refund applies only to the excess distance fare, not the entire trip. |\n| **Refund Amount** | $3.20 |\n| **Confidence** | 91% |\n\n### Precedent 7.2: Surge Pricing Without Rider Notification\n\n| Field | Value |\n|---|---|\n| **Case ID** | DISP-2026-0142 |\n| **Date** | 2026-04-03 |\n| **Dispute Type** | fare_dispute |\n| **Facts** | Rider received upfront quote of $9.50 at 1.0x surge. Surge increased to 1.4x between quote and pickup. Rider was not notified. Actual fare was $12.70 — a difference of $3.20 entirely attributable to surge differential. |\n| **Ruling** | Full refund of surge differential. Rationale: Per Section 3.3, if surge increases between quote and trip start and rider is not notified, rider is eligible for full refund of the surge differential. The $3.20 difference was solely attributable to surge multiplier change. |\n| **Refund Amount** | $3.20 |\n| **Confidence** | 96% |\n\n### Precedent 7.3: No-Show Cancellation Without Contact Attempt\n\n| Field | Value |\n|---|---|\n| **Case ID** | DISP-2026-0211 |\n| **Date** | 2026-05-18 |\n| **Dispute Type** | cancellation_fee |\n| **Facts** | Driver arrived at pickup, waited 6 minutes, and cancelled as no-show. $5.00 fee charged to rider. Review of chat logs and call records showed the driver sent zero messages and made zero calls before cancelling. Rider arrived at the pickup point 1 minute after cancellation. |\n| **Ruling** | Cancellation fee voided. Rationale: Per Section 2.3, the driver must attempt at least 1 in-app message and 1 call before cancelling for no-show. The driver failed to meet both contact obligations. The $5.00 fee is reversed and refunded to the rider. |\n| **Refund Amount** | $5.00 |\n| **Confidence** | 98% |\n\n---",
+    "Appendix A: Glossary": "| Term | Definition |\n|---|---|\n| **Upfront Quote** | The fare estimate shown to the rider at the time of booking, binding at the surge multiplier in effect at that moment |\n| **Actual Fare** | The final fare charged after trip completion, calculated using actual distance, actual time, and the surge multiplier in effect at trip start |\n| **Surge Differential** | The difference between the actual fare and the upfront quote, attributable solely to a change in surge multiplier |\n| **Surge-Exempt** | Fare components that are not multiplied by the surge multiplier (e.g., booking fee) |\n| **No-Show** | A cancellation initiated by the driver after the free wait period because the rider did not appear at the pickup location |\n| **AI Agent Ruling** | A dispute resolution decision issued by the RydeResolve AI system without human intervention |\n| **Human Review** | A dispute resolution decision requiring human reviewer involvement |\n\n---",
+    "Appendix B: Revision History": "| Version | Date | Changes |\n|---|---|---|\n| 1.0 | 2025-06-01 | Initial policy |\n| 2.0 | 2025-11-15 | Added surge pricing notification requirements; introduced AI agent ruling thresholds |\n| 2.1 | 2026-01-01 | Added precedent rulings framework; expanded property damage evidence requirements; added interim safety measures |\n\n---\n\n*This document is a reference for the RydeResolve multi-agent dispute resolution system. All AI agents must cite the applicable policy section in their ruling rationale.*"
+  },
+  "structured_rules": [
+    {
+      "rule_id": "RD-1.1",
+      "source_section": "1.1",
+      "category": "route_deviation",
+      "condition": {
+        "trigger": "route_differs_from_recommended"
+      },
+      "effect": {
+        "permitted_reasons": [
+          "traffic",
+          "road_closure",
+          "congestion"
+        ],
+        "notification_required": true
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.2",
+      "source_section": "1.2",
+      "category": "route_deviation",
+      "condition": {
+        "notification_timing": "before_or_at_deviation"
+      },
+      "effect": {
+        "valid_notification_methods": [
+          "in_app_chat",
+          "verbal_with_trip_call_recording"
+        ],
+        "reason_required": true
+      },
+      "evidence_requirements": [
+        "chat_record_or_trip_call_recording"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.3-A",
+      "source_section": "1.3",
+      "category": "route_deviation",
+      "condition": {
+        "traffic_justification": true,
+        "rider_informed_and_agreed": true,
+        "deviation_gt_1km": true
+      },
+      "effect": {
+        "refund": "none"
+      },
+      "evidence_requirements": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.3-B",
+      "source_section": "1.3",
+      "category": "route_deviation",
+      "condition": {
+        "traffic_justification": true,
+        "rider_informed": false,
+        "deviation_gt_1km": true
+      },
+      "effect": {
+        "refund": "partial_excess_distance_fare"
+      },
+      "evidence_requirements": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.3-C",
+      "source_section": "1.3",
+      "category": "route_deviation",
+      "condition": {
+        "traffic_justification": true,
+        "rider_informed": false,
+        "deviation_gt_1km": false
+      },
+      "effect": {
+        "refund": "none"
+      },
+      "evidence_requirements": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.3-D",
+      "source_section": "1.3",
+      "category": "route_deviation",
+      "condition": {
+        "traffic_justification": false,
+        "rider_informed": null,
+        "deviation_gt_1km": true
+      },
+      "effect": {
+        "refund": "full_excess_distance_fare"
+      },
+      "evidence_requirements": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.3-E",
+      "source_section": "1.3",
+      "category": "route_deviation",
+      "condition": {
+        "traffic_justification": false,
+        "rider_informed": null,
+        "deviation_gt_1km": false
+      },
+      "effect": {
+        "refund": "none"
+      },
+      "evidence_requirements": [
+        "historical_traffic_api",
+        "route_distance_comparison",
+        "notification_evidence"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "RD-1.4",
+      "source_section": "1.4",
+      "category": "route_deviation",
+      "condition": {
+        "computation": "actual_route_distance_km - recommended_route_distance_km"
+      },
+      "effect": {
+        "traffic_justification_source": "historical_traffic_api_at_trip_time",
+        "rider_acknowledgment_sources": [
+          "in_app_chat",
+          "trip_call_recording"
+        ]
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.1",
+      "source_section": "2.1",
+      "category": "no_show_charge",
+      "condition": {
+        "cancelled_by": "driver",
+        "rider_absent": true,
+        "elapsed_from_scheduled_pickup_minutes": ">=5"
+      },
+      "effect": {
+        "driver_may_cancel_for_rider_no_show": true
+      },
+      "evidence_requirements": [
+        "scheduled_pickup_time",
+        "arrival_at_pickup",
+        "cancellation_time"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.2",
+      "source_section": "2.2",
+      "category": "no_show_charge",
+      "condition": {
+        "valid_no_show_cancellation": true
+      },
+      "effect": {
+        "charge_amount": 5.0,
+        "currency": "SGD",
+        "recipient": "driver_compensation"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.3",
+      "source_section": "2.3",
+      "category": "no_show_charge",
+      "condition": {
+        "in_app_messages_before_cancel": ">=1",
+        "in_app_calls_before_cancel": ">=1"
+      },
+      "effect": {
+        "contact_requirement_met": true
+      },
+      "evidence_requirements": [
+        "timestamped_chat_log",
+        "in_app_call_log"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.3-VOID",
+      "source_section": "2.3",
+      "category": "no_show_charge",
+      "condition": {
+        "in_app_messages_before_cancel": "<1 OR in_app_calls_before_cancel <1"
+      },
+      "effect": {
+        "cancellation_fee": "void"
+      },
+      "evidence_requirements": [
+        "timestamped_chat_log",
+        "in_app_call_log"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.4",
+      "source_section": "2.4",
+      "category": "driver_no_show",
+      "condition": {
+        "driver_arrived_by_scheduled_plus_5min": false
+      },
+      "effect": {
+        "rider_may_cancel_without_charge": true
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.4-CREDIT",
+      "source_section": "2.4",
+      "category": "driver_no_show",
+      "condition": {
+        "driver_failed_to_arrive": true,
+        "driver_failed_to_attempt_contact": true
+      },
+      "effect": {
+        "goodwill_credit": 5.0,
+        "currency": "SGD"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "NS-2.5",
+      "source_section": "2.5",
+      "category": "no_show_charge",
+      "condition": {
+        "rider_no_show_cancellations_last_30_days": ">=3"
+      },
+      "effect": {
+        "flag_for_review": true,
+        "future_upfront_payment": "required_per_source",
+        "temporary_suspension": "pending_trust_and_safety_review"
+      },
+      "evidence_requirements": [
+        "dated_no_show_history"
+      ],
+      "notes": "Account changes require authorized human review, not agent self-execution.",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.1",
+      "source_section": "3.1",
+      "category": "fare_dispute",
+      "condition": {
+        "at_quote_time": true
+      },
+      "effect": {
+        "upfront_surge_multiplier_binding": true,
+        "included_components": [
+          "base",
+          "distance",
+          "time",
+          "booking_fee",
+          "applicable_surge"
+        ]
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.2",
+      "source_section": "3.2",
+      "category": "fare_dispute",
+      "condition": {
+        "trip_start_surge_multiplier_gt_quote": true
+      },
+      "effect": {
+        "notify_by": "pickup",
+        "notification_channel": "in_app",
+        "must_include": [
+          "new_surge_multiplier",
+          "revised_estimated_fare",
+          "penalty_free_cancel_option"
+        ]
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.3-A",
+      "source_section": "3.3",
+      "category": "fare_dispute",
+      "condition": {
+        "surge_increased": true,
+        "rider_notified": true,
+        "rider_proceeded": true
+      },
+      "effect": {
+        "refund": "none",
+        "higher_fare_applies": true
+      },
+      "evidence_requirements": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.3-B",
+      "source_section": "3.3",
+      "category": "fare_dispute",
+      "condition": {
+        "surge_increased": true,
+        "rider_notified": false
+      },
+      "effect": {
+        "refund": "full_surge_differential_if_solely_attributable"
+      },
+      "evidence_requirements": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.3-C",
+      "source_section": "3.3",
+      "category": "fare_dispute",
+      "condition": {
+        "surge_decreased": true
+      },
+      "effect": {
+        "fare": "lower_applies_automatically"
+      },
+      "evidence_requirements": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.3-D",
+      "source_section": "3.3",
+      "category": "fare_dispute",
+      "condition": {
+        "surge_unchanged": true
+      },
+      "effect": {
+        "fare": "quoted_fare_applies"
+      },
+      "evidence_requirements": [
+        "quote_log",
+        "surge_log",
+        "notification_log",
+        "fare_breakdown"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.4",
+      "source_section": "3.4",
+      "category": "fare_dispute",
+      "condition": {
+        "other_fare_components_unchanged": true
+      },
+      "effect": {
+        "surge_differential_formula": "actual_fare - upfront_quote",
+        "refund_if_unnotified": "full_differential"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "FA-3.5",
+      "source_section": "3.5",
+      "category": "fare_dispute",
+      "condition": {
+        "component_classification": true
+      },
+      "effect": {
+        "surge_exempt": [
+          "booking_fee"
+        ],
+        "surgeable": [
+          "base_fare",
+          "distance_fare",
+          "time_fare"
+        ]
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "DM-4.1",
+      "source_section": "4.1",
+      "category": "property_damage",
+      "condition": {
+        "alleged_damage_caused_by_rider": true
+      },
+      "effect": {
+        "claim_types": [
+          "cleaning",
+          "repair"
+        ],
+        "damage_examples": [
+          "spills",
+          "vomiting",
+          "stains",
+          "interior_physical_damage",
+          "boarding_or_alighting_exterior_damage"
+        ]
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "DM-4.2",
+      "source_section": "4.2",
+      "category": "property_damage",
+      "condition": {
+        "photo_submission_hours_after_completion": "<=24"
+      },
+      "effect": {
+        "required_origin": "ryde_app_in_app_camera",
+        "auto_timestamp_required": true,
+        "specific_trip_link_required": true
+      },
+      "evidence_requirements": [
+        "photo_pixels",
+        "in_app_camera_metadata",
+        "trip_gps",
+        "trip_timestamp"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "DM-4.3-CLEAN",
+      "source_section": "4.3",
+      "category": "property_damage",
+      "condition": {
+        "damage_kind": "cleaning",
+        "valid_photo_of_soiling": true
+      },
+      "effect": {
+        "max_fee": 50.0,
+        "external_quote_required": false
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "DM-4.3-REPAIR",
+      "source_section": "4.3",
+      "category": "property_damage",
+      "condition": {
+        "damage_kind": "repair"
+      },
+      "effect": {
+        "fee": "documented_repair_cost",
+        "quote_type": "certified_workshop_written",
+        "quote_due_days": 7
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "DM-4.4-REVIEW",
+      "source_section": "4.4",
+      "category": "property_damage",
+      "condition": {
+        "rider_disputes_claim": true
+      },
+      "effect": {
+        "route": "HUMAN_REVIEW"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "DM-4.4-REJECT",
+      "source_section": "4.4",
+      "category": "property_damage",
+      "condition": {
+        "photo_missing_timestamp_or_external_or_not_linked_to_trip": true
+      },
+      "effect": {
+        "claim": "REJECTED"
+      },
+      "evidence_requirements": [
+        "photo_provenance",
+        "trip_link"
+      ],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "SF-5.1",
+      "source_section": "5.1",
+      "category": "all",
+      "condition": {
+        "any_safety_indicators": true
+      },
+      "effect": {
+        "route": "IMMEDIATE_HUMAN_REVIEW",
+        "detect_even_if_other_category_selected": true
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "SF-5.2",
+      "source_section": "5.2",
+      "category": "all",
+      "condition": {
+        "safety_related": true
+      },
+      "effect": {
+        "agents_may": [
+          "collect_evidence",
+          "summarize_accounts",
+          "prepare_case_file"
+        ],
+        "agents_must_not": [
+          "rule",
+          "determine_fault",
+          "recommend_resolution"
+        ]
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "SF-5.3",
+      "source_section": "5.3",
+      "category": "safety_incident",
+      "condition": {
+        "human_escalation_active": true
+      },
+      "effect": {
+        "interim_measures_possible": [
+          "temporary_account_suspension",
+          "prevent_booking_or_trip_acceptance"
+        ],
+        "authorization": "requires_human_or_authorized_control_not_model"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.1-LOW",
+      "source_section": "6.1",
+      "category": "all",
+      "condition": {
+        "value_min_inclusive": null,
+        "value_max_inclusive": 10,
+        "under_10_strict": true,
+        "above_50_strict": false
+      },
+      "effect": {
+        "path": "AI_FINAL",
+        "minimum_confidence_percent": null
+      },
+      "evidence_requirements": [],
+      "notes": "Applies subject to category/safety-specific gates; boundaries: $10 and $50 in middle band.",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.1-MID",
+      "source_section": "6.1",
+      "category": "all",
+      "condition": {
+        "value_min_inclusive": 10,
+        "value_max_inclusive": 50,
+        "under_10_strict": false,
+        "above_50_strict": false
+      },
+      "effect": {
+        "path": "AI_IF_CONFIDENCE_ELSE_HUMAN",
+        "minimum_confidence_percent": 80
+      },
+      "evidence_requirements": [],
+      "notes": "Applies subject to category/safety-specific gates; boundaries: $10 and $50 in middle band.",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.1-HIGH",
+      "source_section": "6.1",
+      "category": "all",
+      "condition": {
+        "value_min_inclusive": 50,
+        "value_max_inclusive": null,
+        "under_10_strict": false,
+        "above_50_strict": true
+      },
+      "effect": {
+        "path": "HUMAN_REVIEW",
+        "minimum_confidence_percent": null
+      },
+      "evidence_requirements": [],
+      "notes": "Applies subject to category/safety-specific gates; boundaries: $10 and $50 in middle band.",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.2-ROUTE",
+      "source_section": "6.2",
+      "category": "route_deviation",
+      "condition": {
+        "deviation_km": "<=2",
+        "confidence_percent": ">=80"
+      },
+      "effect": {
+        "path": "AI_FINAL_IF_OTHER_GATES_PASS"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.2-CLEAN",
+      "source_section": "6.2",
+      "category": "property_damage",
+      "condition": {
+        "damage_kind": "cleaning",
+        "claim_amount": "<=50",
+        "photo_verifiable": true
+      },
+      "effect": {
+        "path": "AI_FINAL_IF_OTHER_GATES_PASS"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.2-REPAIR",
+      "source_section": "6.2",
+      "category": "property_damage",
+      "condition": {
+        "damage_kind": "repair",
+        "claim_amount": ">50"
+      },
+      "effect": {
+        "path": "HUMAN_REVIEW"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.2-NOSHOW",
+      "source_section": "6.2",
+      "category": "no_show_charge",
+      "condition": {
+        "fee": 5.0
+      },
+      "effect": {
+        "path": "AI_FINAL_IF_OTHER_GATES_PASS"
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "TH-6.3",
+      "source_section": "6.3",
+      "category": "all",
+      "condition": {
+        "any_party_fraud_flags": ">=1"
+      },
+      "effect": {
+        "minimum_confidence_percent": 95
+      },
+      "evidence_requirements": [],
+      "notes": "Source defines factors but no calibrated formula. Historical flags are review signals, not fault proof.",
+      "precedence": "category_and_safety_gate"
+    },
+    {
+      "rule_id": "PR-7",
+      "source_section": "7",
+      "category": "all",
+      "condition": {
+        "similar_case_exists": true
+      },
+      "effect": {
+        "retrieve_by": [
+          "dispute_type",
+          "material_facts"
+        ],
+        "cite_applicable_precedent": true,
+        "precedent_not_higher_authority_than_policy": true
+      },
+      "evidence_requirements": [],
+      "notes": "",
+      "precedence": "category_and_safety_gate"
+    }
+  ],
+  "precedents": [
+    {
+      "source_section": "7.1",
+      "case_id": "DISP-2026-0089",
+      "date": "2026-02-12",
+      "category": "route_deviation",
+      "material_facts": {
+        "deviation_km": 1.8,
+        "traffic_justified": true,
+        "rider_notified": false
+      },
+      "ruling": "partial_refund_excess_distance_fare",
+      "refund_amount": 3.2,
+      "currency": "SGD",
+      "source_reported_confidence_percent": 91
+    },
+    {
+      "source_section": "7.2",
+      "case_id": "DISP-2026-0142",
+      "date": "2026-04-03",
+      "category": "fare_dispute",
+      "material_facts": {
+        "quote": 9.5,
+        "actual": 12.7,
+        "surge_before": 1.0,
+        "surge_after": 1.4,
+        "rider_notified": false,
+        "difference_solely_surge": true
+      },
+      "ruling": "full_surge_differential_refund",
+      "refund_amount": 3.2,
+      "currency": "SGD",
+      "source_reported_confidence_percent": 96
+    },
+    {
+      "source_section": "7.3",
+      "case_id": "DISP-2026-0211",
+      "date": "2026-05-18",
+      "category": "no_show_charge",
+      "material_facts": {
+        "driver_wait_minutes": 6,
+        "in_app_message_count": 0,
+        "in_app_call_count": 0
+      },
+      "ruling": "cancellation_fee_voided",
+      "refund_amount": 5.0,
+      "currency": "SGD",
+      "source_reported_confidence_percent": 98
+    }
+  ],
+  "implementation_ambiguities": [
+    {
+      "id": "AMB-01",
+      "sections": [
+        "2.1",
+        "2.2",
+        "DISP-002 sample"
+      ],
+      "issue": "Policy v2.1 measures five-minute free wait from scheduled pickup. DISP-002 sample discusses GPS-confirmed arrival 08:43, 08:51 cancellation and an eight-minute no-show event threshold. Do not silently add 5+8 or generalize sample eight-minute rule.",
+      "handling": "Use v2.1 scheduled-time five-minute anchor for future rules; keep sample eight-minute event as source fact; escalate if result turns on conflict."
+    },
+    {
+      "id": "AMB-02",
+      "sections": [
+        "4.4",
+        "6.2"
+      ],
+      "issue": "Disputed damage claims require human review under 4.4 even though 6.2 describes AI ruling for verified cleaning claims at or below $50.",
+      "handling": "Apply human review for disputed damage; AI cleaning path only if other gates allow."
+    },
+    {
+      "id": "AMB-03",
+      "sections": [
+        "6.1",
+        "6.2",
+        "6.3"
+      ],
+      "issue": "Low-value AI-final and category AI-final provisions coexist with fraud-flag 95% threshold and route-specific >=80%; policy does not fully define precedence or calibrated confidence calculation.",
+      "handling": "Apply non-bypassable human/safety/category gates and higher applicable confidence requirement; mark cases unresolved where confidence cannot be justified."
+    },
+    {
+      "id": "AMB-04",
+      "sections": [
+        "1.3",
+        "1.4"
+      ],
+      "issue": "Route matrix calls for full/partial refund of excess distance fare; the policy does not specify a per-kilometre tariff or allocation of other fare components.",
+      "handling": "Use stored, auditable trip fare breakdown; do not invent rate."
+    },
+    {
+      "id": "AMB-05",
+      "sections": [
+        "2.3"
+      ],
+      "issue": "No-show contact rule says at least one chat AND one call; if either missing the voiding condition is expressed as fails to meet both.",
+      "handling": "Require both types before cancellation to satisfy obligation."
+    },
+    {
+      "id": "AMB-06",
+      "sections": [
+        "5.3"
+      ],
+      "issue": "Interim account restrictions are described as permissible, but actor/approval flow is not specified.",
+      "handling": "Only authorized human-controlled implementation; agents cannot perform account mutations."
+    },
+    {
+      "id": "AMB-07",
+      "sections": [
+        "6.1"
+      ],
+      "issue": "Definition of dispute value for multiple remedies, amount-in-dispute versus trip total is not specified.",
+      "handling": "Do not infer financial basis where it changes routing; human review."
+    },
+    {
+      "id": "AMB-08",
+      "sections": [
+        "6.3"
+      ],
+      "issue": "No formula, training data or validation is supplied for calibrated confidence percent.",
+      "handling": "Do not present model self-reported percent as empirically calibrated."
+    }
+  ],
+  "policy_selection": {
+    "scope": "Use v2.1 effective 2026-01-01; select applicable category and universal gates.",
+    "safety_override": "Always human, no model ruling or resolution recommendations.",
+    "human_gate": "Do not allow model confidence to override human review required by category, amount, disputed damage, account action or insufficient evidence.",
+    "policy_vs_sample": "DISP-002 eight-minute event is a dataset-specific source observation, not universal 2.1 rule.",
+    "source_of_truth": "Full original source sections are preserved in sections_markdown."
+  }
+}

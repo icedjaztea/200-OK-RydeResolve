@@ -1,0 +1,24 @@
+{
+  "case_id": "DEMO-DAMAGE-DISPUTED",
+  "trip_id": "DEMO-DEMO-DAMAGE-DISPUTED",
+  "category": "property_damage",
+  "filed_by": "driver",
+  "description": "Driver claims rider spilled coffee but rider denies damage.",
+  "dispute_amount": 30,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "rider_disputes_claim": true,
+    "damage_kind": "cleaning",
+    "photo_verifiable": true,
+    "trip_link_verified": true,
+    "photo_submitted_within_24h": true
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "NEW",
+  "events": [],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE"
+}

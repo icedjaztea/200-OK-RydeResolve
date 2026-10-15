@@ -1,0 +1,23 @@
+
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Python
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+*.py[cod]
+
+# Next.js / Node
+**/node_modules/
+**/.next/
+**/out/
+
+# Local generated files
+.DS_Store
+*.log
+
+/frontend/backend/

@@ -1,0 +1,29 @@
+{
+  "case_id": "DEMO-FARE-CONFLICT",
+  "trip_id": "DEMO-DEMO-FARE-CONFLICT",
+  "category": "fare_dispute",
+  "filed_by": "rider",
+  "description": "Driver and rider disagree whether notification was displayed.",
+  "dispute_amount": 4.5,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "upfront_quote": 12,
+    "actual_fare": 16.5,
+    "surge_before": 1.0,
+    "surge_after": 1.5,
+    "rider_notified": false,
+    "notification_log_complete": true,
+    "difference_solely_surge": true,
+    "rider_proceeded": true,
+    "driver_claims_notified": true,
+    "rider_claims_unnotified": true
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "NEW",
+  "events": [],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE"
+}

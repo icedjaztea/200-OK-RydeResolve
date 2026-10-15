@@ -1,0 +1,25 @@
+{
+  "case_id": "DISP-001",
+  "trip_id": "DEMO-DISP-001",
+  "category": "route_deviation",
+  "filed_by": "rider",
+  "description": "Driver went 4.3 km longer without notification. Request excess-fare refund.",
+  "dispute_amount": 3.44,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "actual_distance_km": 24.8,
+    "recommended_distance_km": 20.5,
+    "traffic_justified": true,
+    "rider_notified": false,
+    "excess_distance_fare": 3.44,
+    "rider_agreed": false
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "NEW",
+  "events": [],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE"
+}

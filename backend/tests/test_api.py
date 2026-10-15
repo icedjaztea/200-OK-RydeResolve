@@ -1,14 +1,15 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.config import setting
 from app.services import seed_cases,verify_event_chain
 from app.repository import repo
 from app.storage import store_blob
 from app.services import evaluate_suite
 
 client=TestClient(app)
-REVIEW={'X-Demo-Key':'change-reviewer-key'}
-RIDER={'X-Demo-Key':'change-rider-key'}
-DRIVER={'X-Demo-Key':'change-driver-key'}
+REVIEW={'X-Demo-Key':setting('DEMO_REVIEWER_KEY','change-reviewer-key')}
+RIDER={'X-Demo-Key':setting('DEMO_RIDER_KEY','change-rider-key')}
+DRIVER={'X-Demo-Key':setting('DEMO_DRIVER_KEY','change-driver-key')}
 
 
 def api(method,path,headers=REVIEW,**kwargs):
@@ -121,7 +122,9 @@ def test_damage_image_upload_branch_marks_origin_unknown():
 
 def test_sla_safety_priority():
     seed_cases()
-    p=api('POST','/cases/DEMO-SAFETY-IN-FARE/process').json()
+    r=api('POST','/cases/DEMO-SAFETY-IN-FARE/process')
+    assert r.status_code==200,r.text
+    p=r.json()
     assert p['sla_routing']['priority']=='P0_SAFETY'
     assert p['sla_routing']['target_minutes'] is None
 

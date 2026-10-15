@@ -1,0 +1,27 @@
+{
+  "case_id": "DEMO-FARE-OVER50",
+  "trip_id": "DEMO-DEMO-FARE-OVER50",
+  "category": "fare_dispute",
+  "filed_by": "rider",
+  "description": "Dispute value more than fifty dollars.",
+  "dispute_amount": 52,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "upfront_quote": 12,
+    "actual_fare": 64,
+    "surge_before": 1.0,
+    "surge_after": 1.5,
+    "rider_notified": false,
+    "notification_log_complete": true,
+    "difference_solely_surge": true,
+    "rider_proceeded": true
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "NEW",
+  "events": [],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE"
+}

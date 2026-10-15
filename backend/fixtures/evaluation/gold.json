@@ -1,0 +1,44 @@
+{
+  "DISP-003": {
+    "path": "AUTO_ELIGIBLE",
+    "disposition": "refund",
+    "amount": 4.5
+  },
+  "DISP-002": {
+    "path": "HUMAN_REVIEW"
+  },
+  "DISP-001": {
+    "path": "HUMAN_REVIEW"
+  },
+  "DEMO-NOSHOW-VALID": {
+    "path": "AUTO_ELIGIBLE",
+    "disposition": "no_action",
+    "amount": 0
+  },
+  "DEMO-NOSHOW-VOID": {
+    "path": "AUTO_ELIGIBLE",
+    "disposition": "refund",
+    "amount": 5.0
+  },
+  "DEMO-FARE-CLARIFY": {
+    "path": "CLARIFICATION"
+  },
+  "DEMO-SAFETY-IN-FARE": {
+    "path": "IMMEDIATE_HUMAN_REVIEW"
+  },
+  "DEMO-DAMAGE-DISPUTED": {
+    "path": "HUMAN_REVIEW"
+  },
+  "DEMO-ROUTE-SHORT": {
+    "path": "HUMAN_REVIEW"
+  },
+  "DEMO-FARE-50": {
+    "path": "HUMAN_REVIEW"
+  },
+  "DEMO-FARE-OVER50": {
+    "path": "HUMAN_REVIEW"
+  },
+  "DEMO-FARE-CONFLICT": {
+    "path": "HUMAN_REVIEW"
+  }
+}
