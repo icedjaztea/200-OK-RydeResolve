@@ -17,7 +17,7 @@ async function forward(request,{params}) {
       cache:'no-store',redirect:'manual'});
     const body=await resp.arrayBuffer();
     return new Response(body,{status:resp.status,headers:{'content-type':resp.headers.get('content-type')||'application/json','cache-control':'no-store'}});
-  }catch(e){return Response.json({error:'Backend unreachable. Confirm FastAPI is running and BACKEND_URL is correct.',details:String(e)},{status:502});}
+  }catch(e){return Response.json({error:'Backend unreachable. Confirm FastAPI is running and BACKEND_URL is correct.'},{status:502});}
 }
 export async function GET(req,ctx){return forward(req,ctx)}
 export async function POST(req,ctx){return forward(req,ctx)}
