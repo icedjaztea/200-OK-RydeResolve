@@ -22,6 +22,11 @@ class CaseCreate(BaseModel):
 class ClarificationReply(BaseModel):
     answer: str = Field(min_length=1, max_length=2500)
 
+class ClarificationRequest(BaseModel):
+    """Reviewer-created ad-hoc clarification request."""
+    recipient: Literal['rider', 'driver']
+    question: str = Field(min_length=5, max_length=1000)
+
 class EvidenceUpload(BaseModel):
     field: str = Field(min_length=2, max_length=80)
     value: Any

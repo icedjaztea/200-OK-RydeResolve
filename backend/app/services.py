@@ -178,6 +178,48 @@ def reply_to_clarification(cid,request_id,answer,role,identity_id=None):
     return case
 
 
+def request_more_info(cid, recipient, question):
+    """Reviewer creates an ad-hoc clarification request.
+
+    Works on any non-resolved case (NEW, REVIEW_REQUIRED, AWAITING_CLARIFICATION).
+    Does NOT auto-adjudicate, does NOT trigger agents, does NOT execute financial actions.
+    The party's reply is always UNVERIFIED — never promoted to system evidence.
+
+    Guards:
+    - Case must not be resolved (RESOLVED / REVIEWED_AND_RESOLVED).
+    - Recipient must be 'rider' or 'driver'.
+    - Question length 5-1000.
+    - No duplicate PENDING request to the same recipient.
+    - Does not change the case path for safety escalations.
+    """
+    case=get_case(cid)
+    if case.get('status') in ('RESOLVED','REVIEWED_AND_RESOLVED'):
+        raise ValueError('Case is already resolved; use the appeal process instead')
+    if recipient not in ('rider','driver'):
+        raise ValueError('Recipient must be rider or driver')
+    if not question or len(question.strip())<5:
+        raise ValueError('Question must be at least 5 characters')
+    if len(question)>1000:
+        raise ValueError('Question must be 1000 characters or fewer')
+    # Prevent duplicate pending request to the same recipient
+    existing=case.get('clarifications',[])
+    pending=next((x for x in existing if x.get('status')=='PENDING' and x.get('recipient')==recipient),None)
+    if pending:
+        raise ValueError(f'A pending request to {recipient} already exists. Wait for the response before creating another.')
+    request_id=str(uuid.uuid4())
+    req={'request_id':request_id,'recipient':recipient,'question':question.strip(),
+         'required_verified_fields':[],'created_at':now(),'status':'PENDING','source':'reviewer_adhoc'}
+    case.setdefault('clarifications',[]).append(req)
+    # Move to AWAITING_CLARIFICATION unless safety escalation
+    if case.get('path')!='IMMEDIATE_HUMAN_REVIEW':
+        case['status']='AWAITING_CLARIFICATION'
+        case['path']='CLARIFICATION'
+    event(case,'clarification_requested',{'request_id':request_id,'recipient':recipient,'source':'reviewer_adhoc'})
+    _add_notification(case,'CLARIFICATION_REQUEST',recipient,question.strip(),request_id=request_id)
+    repo().save_case(case)
+    return case
+
+
 async def process_case(cid):
     start=time.perf_counter()
     case=get_case(cid)

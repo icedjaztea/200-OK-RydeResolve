@@ -171,6 +171,9 @@ export default function ReviewerWorkbench(){
   const [processStep,setProcessStep]=useState(-1);
   const [ruleSnippets,setRuleSnippets]=useState({});
   const [expandedRules,setExpandedRules]=useState({});
+  const [showClarPanel,setShowClarPanel]=useState(false);
+  const [clarRecipient,setClarRecipient]=useState('rider');
+  const [clarQuestion,setClarQuestion]=useState('');
   const processTimerRef=useRef(null);
 
   async function connect(){
@@ -183,6 +186,8 @@ export default function ReviewerWorkbench(){
     if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
     setProcessing(false);
     setProcessStep(-1);
+    setShowClarPanel(false);
+    setClarQuestion('');
     setDetail(await api.call('cases/'+id));
     setRuleSnippets({});
     setExpandedRules({});
@@ -299,10 +304,9 @@ export default function ReviewerWorkbench(){
     {/* Connect */}
     {!policy&&<div className="card" style={{maxWidth:'500px',margin:'40px auto'}}>
       <h3 style={{marginTop:0}}>Reviewer access</h3>
-      <p className="muted">Enter your reviewer demo passcode.</p>
+      <p className="muted">Click Connect to enter the reviewer workbench.</p>
       <div className="fieldgrid" style={{marginBottom:'12px'}}>
-        <input aria-label="Demo passcode" type="password" placeholder="reviewer passcode" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}/>
-        <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
+        <button disabled={api.busy} onClick={()=>{api.setKey('change-reviewer-key');api.run(connect)}}>{api.busy?'Connecting…':'Connect'}</button>
       </div>
       {api.error&&<div className="alert error">{api.error}</div>}
     </div>}
@@ -431,27 +435,59 @@ export default function ReviewerWorkbench(){
                 <CaseTimeline detail={detail}/>
               </div>}
 
-              {isClarifying&&detail.clarifications?.some(c=>c.status==='PENDING')&&<div className="card highlight">
-                <p className="eyebrow">ACTIVE INVESTIGATION</p>
-                <h3>Clarification in progress</h3>
-                {detail.clarifications.filter(c=>c.status==='PENDING').map(c=>(
-                  <div key={c.request_id} className="pkt-clar">
-                    <span className="pkt-label">Asked: {c.recipient}</span>
-                    <p>{c.question}</p>
-                    <em className="status warn">Pending response</em>
+              {/* Request More Information — prominent button + panel */}
+              {!isResolved&&<>
+                <div className="card" style={{borderTop:'3px solid var(--pink)'}}>
+                  <div className="section-head">
+                    <h3>Request More Information</h3>
+                    <button className="small" onClick={()=>setShowClarPanel(!showClarPanel)}>{showClarPanel?'Cancel':'Ask a question'}</button>
                   </div>
-                ))}
-                {detail.clarifications.filter(c=>c.status==='ANSWERED').length>0&&<>
-                  <h4 style={{marginTop:'12px'}}>Unverified replies</h4>
+                  <p className="muted">Send a question to the rider or driver. Their reply is unverified — never treated as system evidence or used for automatic refund.</p>
+
+                  {showClarPanel&&<div className="clar-panel" style={{marginTop:'12px'}}>
+                    <label style={{fontSize:'13px',fontWeight:600,color:'var(--ink-secondary)'}}>Ask:</label>
+                    <select value={clarRecipient} onChange={e=>setClarRecipient(e.target.value)} style={{marginBottom:'8px'}}>
+                      <option value="rider">Rider</option>
+                      <option value="driver">Driver</option>
+                    </select>
+                    <label style={{fontSize:'13px',fontWeight:600,color:'var(--ink-secondary)'}}>Question:</label>
+                    <textarea value={clarQuestion} onChange={e=>setClarQuestion(e.target.value)} placeholder="Type your question here…" style={{minHeight:'80px',marginBottom:'8px'}}/>
+                    <button disabled={api.busy||clarQuestion.trim().length<5} onClick={()=>api.run(async()=>{
+                      const r=await api.call('cases/'+detail.case_id+'/clarifications',{method:'POST',body:{recipient:clarRecipient,question:clarQuestion.trim()}});
+                      setDetail(r);setShowClarPanel(false);setClarQuestion('');
+                      api.setNotice('Question sent to '+clarRecipient+'.');
+                    })}>{api.busy?'Sending…':'Send Request'}</button>
+                  </div>}
+                </div>
+
+                {/* Pending requests — waiting status */}
+                {detail.clarifications?.filter(c=>c.status==='PENDING').length>0&&<div className="card highlight">
+                  <p className="eyebrow">WAITING FOR RESPONSE</p>
+                  {detail.clarifications.filter(c=>c.status==='PENDING').map(c=>(
+                    <div key={c.request_id} className="pkt-clar">
+                      <span className="pkt-label">Waiting for {c.recipient==='rider'?'Rider':'Driver'}</span>
+                      <p>{c.question}</p>
+                      <em className="status warn">Pending response</em>
+                    </div>
+                  ))}
+                </div>}
+
+                {/* Answered requests — show reply + continue */}
+                {detail.clarifications?.filter(c=>c.status==='ANSWERED').length>0&&<div className="card highlight">
+                  <p className="eyebrow">REPLIES RECEIVED</p>
                   {detail.clarifications.filter(c=>c.status==='ANSWERED').map(c=>(
                     <div key={c.request_id} className="pkt-clar">
-                      <span className="pkt-label">From: {c.recipient}</span>
-                      <p>{c.answer}</p>
+                      <span className="pkt-label">From: {c.recipient==='rider'?'Rider':'Driver'}</span>
+                      <p style={{fontStyle:'italic'}}>"{c.answer}"</p>
                       <em className="status bad">Unverified party account</em>
                     </div>
                   ))}
-                </>}
-              </div>}
+                  <button className="small" style={{marginTop:'8px'}} disabled={api.busy} onClick={()=>api.run(async()=>{
+                    const r=await api.call('cases/'+detail.case_id+'/process',{method:'POST'});
+                    setDetail(r);api.setNotice('Investigation continued. Case re-processed with latest information.');
+                  })}>Continue Investigation</button>
+                </div>}
+              </>}
 
               {detail.notifications&&detail.notifications.length>0&&<div className="card outbox">
                 <p className="eyebrow">NOTIFICATION OUTBOX</p>
