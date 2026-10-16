@@ -114,7 +114,7 @@ export default function RiderPortal(){
     <section className="card connection">
       <div>
         <h2>Rider access</h2>
-        <p>Enter your rider demo passcode from backend/.env. This is a demo environment using synthetic data only — not production identity. The demo API is not case-isolated; role filtering does not ensure real privacy.</p>
+        <p>Enter your rider demo passcode from backend/.env. This is a demo environment using synthetic data only — not production identity. The backend enforces case isolation per authenticated demo identity.</p>
       </div>
       <input aria-label="Demo passcode" type="password" placeholder="rider passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
       <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
@@ -181,7 +181,7 @@ export default function RiderPortal(){
               <span>Trip: {detail.trip_id||'—'}</span>
               <span>Policy: {detail.policy_version||'2.1'}</span>
             </div>
-            <button disabled={api.busy||!api.key||detail.status==='RESOLVED'||detail.status==='REVIEWED_AND_RESOLVED'} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/process',{method:'POST'});setDetail(r);api.setNotice('Case status updated.')})}>Check status</button>
+            <button disabled={api.busy||!api.key} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id);setDetail(r);api.setNotice('Case status refreshed.')})}>Refresh status</button>
           </div>
 
           {detail.path&&<div className="card result">
@@ -221,7 +221,7 @@ export default function RiderPortal(){
             <div className="card outbox">
               <p className="eyebrow">CASE UPDATES</p>
               <h3>Simulated notifications — not delivered</h3>
-              <p className="muted">These are simulated messages for demo purposes. No email, SMS, push notification, or payment was sent. The demo API is not case-isolated.</p>
+              <p className="muted">These are simulated messages for demo purposes. No email, SMS, push notification, or payment was sent.</p>
               <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='rider'||n.recipient==='all').map((n,i)=>(
                 <div key={i} className="notif-item">
                   <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>

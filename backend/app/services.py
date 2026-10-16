@@ -10,6 +10,7 @@ from .agents import evaluate_agents, judge_consistency, has_agent_failures
 from .actions import execute_mock
 from .sla import route_priority
 from .repository import repo
+from .identity import seed_case_owners
 
 
 def event(case,kind,details=None):
@@ -95,12 +96,23 @@ def _add_notification(case,kind,recipient,message,receipt=None,request_id=None):
     case.setdefault('notifications',[]).append(n)
 
 
-def create_case(source:dict):
+def create_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
     item=copy.deepcopy(source)
     if repo().get_case(item['case_id']):raise ValueError('Case ID already exists')
     item.setdefault('status','NEW');item.setdefault('facts',{});item.setdefault('evidence',[])
     item.setdefault('events',[]);item.setdefault('clarifications',[]);item.setdefault('revision',0)
     item.setdefault('source_trust','UNVERIFIED_USER_REPORT')
+    # Server-assigned ownership. Never trusted from caller.
+    # Use setdefault so callers who pass rider_id/driver_id (via the
+    # new_case endpoint) take precedence; explicit parameters override None.
+    if rider_id is not None:
+        item['rider_id']=rider_id
+    else:
+        item.setdefault('rider_id',None)
+    if driver_id is not None:
+        item['driver_id']=driver_id
+    else:
+        item.setdefault('driver_id',None)
     item['policy_version']='2.1';item['rulebook_version']='1.0.0-draft'
     item['evidence_snapshot_hash']=hash_snapshot(item)
     event(item,'case_created',{'synthetic':True,'category':item['category']})
@@ -112,7 +124,11 @@ def seed_cases(reset:bool=False):
     count=0
     for path in sorted((ROOT/'fixtures/cases').glob('*.json')):
         record=json.loads(path.read_text())
-        if not repo().get_case(record['case_id']):create_case(record);count+=1
+        if not repo().get_case(record['case_id']):
+            # Assign deterministic demo identities to seeded cases.
+            rider_id,driver_id=seed_case_owners(record['case_id'],record.get('filed_by','rider'))
+            create_case(record,rider_id=rider_id,driver_id=driver_id)
+            count+=1
     return count
 
 
@@ -134,14 +150,26 @@ def add_verified_demo_evidence(cid,field,value,provenance,timestamp=None):
     return case
 
 
-def reply_to_clarification(cid,request_id,answer,role):
+def reply_to_clarification(cid,request_id,answer,role,identity_id=None):
     case=get_case(cid);requests=case.get('clarifications',[])
     if case.get('status') in ('RESOLVED','REVIEWED_AND_RESOLVED'):
         raise ValueError('Case is already resolved; cannot reply to a clarification on a completed case')
     request=next((x for x in requests if x['request_id']==request_id),None)
     if not request:raise KeyError(request_id)
     if request['status']!='PENDING':raise ValueError('This clarification has already been answered')
-    if role not in (request['recipient'],'reviewer'):
+    # Identity-based authorization: the caller's role must match the
+    # clarification recipient.  The reviewer may reply on behalf of any
+    # party, but parties may only reply to their own clarifications.
+    if role=='reviewer':
+        pass  # reviewer may reply as any party
+    elif role==request['recipient']:
+        # Party role matches.  Additionally verify identity_id matches
+        # the case's owner for that role.
+        if identity_id is not None:
+            owner_field = f'{role}_id'
+            if case.get(owner_field) and case[owner_field]!=identity_id:
+                raise PermissionError('Only the intended party can reply')
+    else:
         raise PermissionError('Only the intended party or reviewer can reply')
     request.update(status='ANSWERED',answer=answer,answered_at=now(),answer_verification='UNVERIFIED_PARTY_ACCOUNT')
     case['status']='NEW'

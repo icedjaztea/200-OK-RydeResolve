@@ -96,7 +96,7 @@ class TestValidateAgentOutput:
         out = {'role': 'Judge', 'summary': 'ok', 'recommended_disposition': 'refund', 'recommended_amount': 'five dollars'}
         result = validate_agent_output('Judge', out)
         assert result['parse_failed'] is True
-        assert 'not numeric' in result['validation_error']
+        assert 'recommended_amount' in result['validation_error']
 
     def test_judge_refund_numeric_string_amount_passes(self):
         out = {'role': 'Judge', 'summary': 'ok', 'recommended_disposition': 'refund', 'recommended_amount': '4.50'}

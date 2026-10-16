@@ -121,11 +121,19 @@ class TestValidLabelsAccepted:
         result = validate_agent_output('RiderAdvocate', out)
         assert not result.get('parse_failed')
 
-    def test_reject_claim_valid_for_any_role(self):
+    def test_reject_claim_valid_for_judge(self):
+        out = {'role': 'Judge', 'summary': 'fraud confirmed',
+               'recommended_disposition': 'reject_claim'}
+        result = validate_agent_output('Judge', out)
+        assert not result.get('parse_failed')
+
+    def test_fraud_bad_faith_cannot_use_reject_claim(self):
+        """FraudBadFaith must use undetermined — it cannot independently
+        recommend reject_claim or any financial disposition."""
         out = {'role': 'FraudBadFaith', 'summary': 'fraud confirmed',
                'recommended_disposition': 'reject_claim'}
         result = validate_agent_output('FraudBadFaith', out)
-        assert not result.get('parse_failed')
+        assert result.get('parse_failed') is True
 
 
 # ── 4. Invalid outputs prevent automatic financial execution ─────────────

@@ -62,7 +62,7 @@ export default function ReviewerWorkbench(){
     <section className="card connection">
       <div>
         <h2>Reviewer access</h2>
-        <p>Enter your reviewer demo passcode from backend/.env. The backend enforces reviewer authorization independently. The demo API is not case-isolated; role filtering does not ensure real privacy.</p>
+        <p>Enter your reviewer demo passcode from backend/.env. The backend enforces reviewer authorization independently. The backend enforces case isolation per authenticated demo identity.</p>
       </div>
       <input aria-label="Demo passcode" type="password" placeholder="reviewer passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
       <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
@@ -127,7 +127,7 @@ export default function ReviewerWorkbench(){
             <div className="card outbox">
               <p className="eyebrow">NOTIFICATION OUTBOX</p>
               <h3>Simulated notifications — not delivered</h3>
-              <p className="muted">All entries are simulated. No email, SMS, push, or payment was sent. The demo API is not case-isolated.</p>
+              <p className="muted">All entries are simulated. No email, SMS, push, or payment was sent.</p>
               <div className="notif-list">{detail.notifications.map((n,i)=>(
                 <div key={i} className="notif-item">
                   <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><span className="notif-recipient">To: {n.recipient}</span><em className="status bad">Not delivered</em></div>

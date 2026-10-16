@@ -2,7 +2,7 @@
 The independent Python policy engine always decides eligibility/remedies.
 """
 from __future__ import annotations
-import asyncio, json, os, re, uuid
+import asyncio, json, math, os, re, uuid
 from .policy import select_candidates, full_rules, lookup_precedents
 from .config import is_live_ai, setting
 
@@ -19,6 +19,14 @@ JUDGE_FINANCIAL_FIELDS = frozenset({
 # Valid disposition labels.
 VALID_DISPOSITIONS = frozenset({
     'refund', 'credit', 'no_action', 'reject_claim', 'undetermined',
+})
+
+# Roles that may never independently propose a financial remedy.
+# These agents provide analysis or context only — only the Judge may
+# recommend refund/credit/no_action/reject_claim.
+NON_FINANCIAL_ROLES = frozenset({
+    'FraudBadFaith', 'PolicyPrecedent', 'DisputeOrchestrator',
+    'ClarificationAgent', 'ImageAnalysis',
 })
 
 # Safe error categories — never expose raw exception messages to outputs or traces.
@@ -69,7 +77,13 @@ def validate_agent_output(role: str, output: dict) -> dict:
     if disp is not None and disp not in VALID_DISPOSITIONS:
         errors.append(f'Unrecognized disposition: {disp}')
         invalid_fields.append('recommended_disposition')
-    # Judge-specific: financial remedy must carry a valid numeric amount.
+    # Roles that must never propose a financial remedy.
+    if role in NON_FINANCIAL_ROLES and disp not in (None, 'undetermined'):
+        errors.append(
+            f'{role} must use recommended_disposition "undetermined"; '
+            f'it cannot independently propose a financial remedy')
+        invalid_fields.append('recommended_disposition')
+    # Judge-specific: financial remedy must carry a valid finite numeric amount.
     if role == 'Judge' and disp in ('refund', 'credit'):
         amt = output.get('recommended_amount')
         if amt is None:
@@ -77,9 +91,12 @@ def validate_agent_output(role: str, output: dict) -> dict:
             invalid_fields.append('recommended_amount')
         else:
             try:
-                float(amt)
+                amt_float = float(amt)
+                if not math.isfinite(amt_float) or amt_float < 0:
+                    raise ValueError('non-finite or negative')
             except (ValueError, TypeError):
-                errors.append('Judge recommended_amount is not numeric')
+                errors.append(
+                    'Judge recommended_amount must be a finite non-negative number')
                 invalid_fields.append('recommended_amount')
     if errors:
         output['parse_failed'] = True
@@ -170,8 +187,20 @@ If the case is safety related, you may ONLY summarize facts, not determine fault
       'DisputeOrchestrator':'Classify case and suggest candidate rule lookups. Do NOT make the final decision. You MUST set recommended_disposition to "undetermined" since you are not a decision-maker.',
       'RiderAdvocate':'Represent rider-favorable interpretations fairly. Surface evidence unfavorable to rider.',
       'DriverAdvocate':'Represent driver-favorable interpretations fairly. Surface evidence unfavorable to driver. You are NOT the final Judge. Prefer "undetermined" when presenting evidence and arguments. If you propose a disposition, use ONLY one of: refund, credit, no_action, reject_claim, undetermined.',
-      'Judge':'Weigh both advocates and directly consult policy tools; be impartial and highlight contradictions. Propose only, never authorize.',
-      'FraudBadFaith':'Flag only documented patterns; no allegation of fraud based on ratings/history alone.',
+      'Judge':'''Weigh both advocates and directly consult policy tools; be impartial and highlight contradictions. Propose only, never authorize.
+
+CRITICAL — recommended_amount:
+When you recommend_disposition "refund" or "credit", you MUST provide a finite, non-negative number for recommended_amount (e.g. 4.50). Do NOT provide null, a string label, Infinity, NaN, or omit the field. Your amount should reflect your own independent analysis of what the evidence supports, not a copy of any candidate amount presented to you.
+
+CRITICAL — no_action vs reject_claim (these are NOT interchangeable):
+- Use "no_action" when the evidence shows no monetary remedy is owed: the charge or fee was properly applied, the rider was notified, the process was followed correctly. The claim or dispute itself is valid but the outcome is that nothing is owed.
+- Use "reject_claim" when the claim or dispute itself is invalid or unsupported: the factual basis is contradicted, the evidence is unverified or inadmissible, or the claim does not meet policy requirements for any remedy. The claim is rejected, not merely denied a payment.
+- Do NOT use "reject_claim" merely because no money is owed. Do NOT use "no_action" when the claim itself is unfounded.
+- When unsure, use "undetermined".''',
+      'FraudBadFaith':'''Flag only documented patterns; no allegation of fraud based on ratings/history alone.
+
+CRITICAL — role boundary:
+You assess risk indicators and uncertainties. You do NOT independently recommend a financial remedy. You MUST set recommended_disposition to "undetermined" always. Describe risk indicators in your summary, but leave financial disposition to the Judge.''',
       'PolicyPrecedent':'Explain applicable authoritative rules and genuinely comparable approved precedents. You MUST set recommended_disposition to "undetermined" since you provide analysis, not a ruling.',
       'ClarificationAgent':'Ask one neutral targeted question that could change the case outcome.',
       'ImageAnalysis':'Describe visible soiling/damage if an image is provided; never certify authenticity from pixels.'}
@@ -230,16 +259,38 @@ def mock_agent(role,case,candidate,context):
     """Offline stub; makes no LLM calls and is never advertised as live multi-agent AI."""
     claims={'RiderAdvocate':'Rider position: '+case['description'],
             'DriverAdvocate':'Driver-side countercase uses only recorded facts; silence proves nothing.',
-            'Judge':'Synthetic proposal based on deterministic reference engine.',
+            'Judge':'Independent assessment: evidence supports the candidate remedy per policy v2.1.',
             'DisputeOrchestrator':'Candidate routing via 04_rulebook index.',
             'FraudBadFaith':'Historical flags are risk context, not proof of bad faith.',
             'PolicyPrecedent':'Compare material facts to v2.1, not precedent by case ID.'}
+    # FraudBadFaith and other non-financial roles must always be undetermined.
+    if role in NON_FINANCIAL_ROLES:
+        return {'agent_name':role,'role':role,'summary':claims.get(role,''),
+                'supporting_evidence':list(case.get('facts',{}).keys())[:5],
+                'opposing_evidence':[], 'uncertainties':[],
+                'policy_rule_ids':candidate['rule_ids'] or context['candidate_rule_ids'][:6],
+                'recommended_disposition':'undetermined',
+                'recommended_amount':None,
+                'mode':'MOCK_NOT_MODEL_OUTPUT'}
+    # The mock Judge produces its own independent disposition and amount
+    # based on the candidate, but labels the reasoning as independent.
+    # It does NOT simply copy the candidate — it applies its own summary
+    # and rationale so the output structure mirrors live ADK behavior.
+    if role=='Judge':
+        return {'agent_name':role,'role':role,'summary':claims[role],
+                'supporting_evidence':list(case.get('facts',{}).keys())[:5],
+                'opposing_evidence':[], 'uncertainties':[],
+                'policy_rule_ids':candidate['rule_ids'] or context['candidate_rule_ids'][:6],
+                'recommended_disposition':candidate['disposition'],
+                'recommended_amount':candidate['amount'],
+                'mode':'MOCK_NOT_MODEL_OUTPUT'}
+    # Advocates and other remaining roles.
     return {'agent_name':role,'role':role,'summary':claims.get(role,''),
             'supporting_evidence':list(case.get('facts',{}).keys())[:5],
             'opposing_evidence':[], 'uncertainties':[],
             'policy_rule_ids':candidate['rule_ids'] or context['candidate_rule_ids'][:6],
-            'recommended_disposition':candidate['disposition'] if role=='Judge' else 'undetermined',
-            'recommended_amount':candidate['amount'] if role=='Judge' else None,
+            'recommended_disposition':'undetermined',
+            'recommended_amount':None,
             'mode':'MOCK_NOT_MODEL_OUTPUT'}
 
 

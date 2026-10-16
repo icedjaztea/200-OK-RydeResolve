@@ -1,0 +1,10 @@
+.git/
+node_modules/
+.next/
+.env
+.env.*
+*.pem
+*.key
+*.log
+coverage/
+.DS_Store

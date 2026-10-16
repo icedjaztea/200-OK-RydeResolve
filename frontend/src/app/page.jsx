@@ -30,8 +30,8 @@ export default function LandingPage(){
       <h2>Choose your role to continue</h2>
       <p className="landing-subtitle">
         Each portal uses role-specific demo passcodes from the backend. The backend independently
-        authorizes every request — UI separation is not production user isolation. All data is
-        synthetic. The demo API is not user-isolated; role filtering does not ensure real privacy.
+        authorizes every request and enforces case isolation per authenticated demo identity.
+        All data is synthetic.
       </p>
     </section>
 

@@ -77,7 +77,7 @@ export default function Dashboard(){
           {detail.notifications&&detail.notifications.length>0&&<div className="card outbox">
             <p className="eyebrow">NOTIFICATION OUTBOX</p>
             <h3>Simulated notifications — not delivered</h3>
-            <p className="muted">All entries are simulated. No email, SMS, push, or payment was sent. The demo API is not user-isolated; role filtering does not ensure real privacy.</p>
+            <p className="muted">All entries are simulated. No email, SMS, push, or payment was sent. The backend enforces case isolation per authenticated demo identity.</p>
             <div className="notif-list">{detail.notifications.map((n,i)=><div key={i} className="notif-item">
               <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><span className="notif-recipient">To: {n.recipient}</span><em className="status bad">Not delivered</em></div>
               <p className="notif-msg">{n.message}</p>

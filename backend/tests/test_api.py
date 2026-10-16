@@ -23,13 +23,19 @@ def test_seed_and_12_case_regression_suite():
 
 def test_auto_fare_action_and_retry_no_duplicate():
     seed_cases()
-    first=api('POST','/cases/DISP-003/process',headers=RIDER)
+    first=api('POST','/cases/DISP-003/process')
     assert first.status_code==200,first.text
     r=first.json(); assert r['path']=='AUTO_ELIGIBLE';assert r['mock_action']['amount']==4.5
-    again=api('POST','/cases/DISP-003/process',headers=RIDER).json()
+    again=api('POST','/cases/DISP-003/process').json()
     assert again['mock_action']['receipt']==r['mock_action']['receipt']
     assert len(repo().actions)==1
     assert api('GET','/cases/DISP-003/verify-audit').json()['valid']
+
+def test_rider_driver_cannot_process():
+    """Rider and Driver are forbidden from the process endpoint (reviewer-only)."""
+    seed_cases()
+    assert api('POST','/cases/DISP-003/process',headers=RIDER).status_code==403
+    assert api('POST','/cases/DISP-003/process',headers=DRIVER).status_code==403
 
 def test_route_and_flagged_noshow_escalation():
     seed_cases()

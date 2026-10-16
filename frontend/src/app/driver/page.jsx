@@ -38,7 +38,7 @@ export default function DriverPortal(){
     <section className="card connection">
       <div>
         <h2>Driver access</h2>
-        <p>Enter your driver demo passcode from backend/.env. This is a demo environment using synthetic data only — not production identity. The demo API is not case-isolated; role filtering does not ensure real privacy.</p>
+        <p>Enter your driver demo passcode from backend/.env. This is a demo environment using synthetic data only — not production identity. The backend enforces case isolation per authenticated demo identity.</p>
       </div>
       <input aria-label="Demo passcode" type="password" placeholder="driver passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
       <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
@@ -77,6 +77,7 @@ export default function DriverPortal(){
               <span>Trip: {detail.trip_id||'—'}</span>
               <span>Filed by: {detail.filed_by||'—'}</span>
             </div>
+            <button disabled={api.busy||!api.key} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id);setDetail(r);api.setNotice('Case status refreshed.')})}>Refresh status</button>
           </div>
 
           {detail.path&&<div className="card result">
@@ -116,7 +117,7 @@ export default function DriverPortal(){
             <div className="card outbox">
               <p className="eyebrow">CASE UPDATES</p>
               <h3>Simulated notifications — not delivered</h3>
-              <p className="muted">These are simulated messages for demo purposes. No email, SMS, push notification, or payment was sent. The demo API is not case-isolated.</p>
+              <p className="muted">These are simulated messages for demo purposes. No email, SMS, push notification, or payment was sent.</p>
               <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='driver'||n.recipient==='all').map((n,i)=>(
                 <div key={i} className="notif-item">
                   <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>
