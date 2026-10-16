@@ -107,8 +107,12 @@ export default function DriverPortal(){
       <div className="app-connect driver">
         <div className="app-logo-big">D</div>
         <h2>RydeResolve Driver</h2>
-        <p>Enter your demo passcode to view disputes involving your trips and your trip history. Case isolation is enforced — you can only see your own cases.</p>
-        <input aria-label="Demo passcode" type="password" placeholder="Enter passcode" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}/>
+        <p>Select your demo identity to view disputes involving your trips and your trip history. Case isolation is enforced — you can only see your own cases.</p>
+        <select aria-label="Demo identity" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}>
+          <option value="">Select your identity…</option>
+          <option value="change-driver-key">Driver A</option>
+          <option value="change-driver-b-key">Driver B</option>
+        </select>
         <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>{api.busy?'Connecting…':'Connect'}</button>
       </div>
       {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}

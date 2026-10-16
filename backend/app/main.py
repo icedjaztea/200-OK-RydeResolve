@@ -4,11 +4,11 @@ import hmac, os
 from fastapi import FastAPI, HTTPException, Header, Depends, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from .config import setting
-from .models import CaseCreate, ClarificationReply, EvidenceUpload, ReviewerDecision, LearningApproval, ReclassifyRequest
+from .models import CaseCreate, ClarificationReply, ClarificationRequest, EvidenceUpload, ReviewerDecision, LearningApproval, ReclassifyRequest
 from .repository import repo
 from .identity import DemoIdentity, authenticate, is_reviewer, is_party, seed_case_owners
 from .safe_response import safe_case_for_rider, safe_case_for_driver, safe_case_list_item
-from .services import (create_case,seed_cases,get_case,process_case,reply_to_clarification,
+from .services import (create_case,seed_cases,get_case,process_case,reply_to_clarification,request_more_info,
                        add_verified_demo_evidence,human_review,evaluate_suite,
                        evaluate_learning,approve_learning,rollback_learning,verify_event_chain,add_file_evidence,
                        build_review_packet,reclassify_case)
@@ -173,6 +173,17 @@ async def process(case_id:str, identity:DemoIdentity=Depends(reviewer_only)):
     try:
         result=await process_case(case_id)
         return result
+    except Exception as e:fail(e)
+
+@app.post('/cases/{case_id}/clarifications')
+def create_clarification(case_id:str,body:ClarificationRequest,_=Depends(reviewer_only)):
+    """REVIEWER ONLY — Create an ad-hoc clarification request.
+
+    Works on any non-resolved case (NEW, REVIEW_REQUIRED, AWAITING_CLARIFICATION).
+    Does NOT auto-adjudicate or execute financial actions.
+    The party's reply is always UNVERIFIED — never promoted to system evidence.
+    """
+    try:return request_more_info(case_id,body.recipient,body.question)
     except Exception as e:fail(e)
 
 @app.post('/cases/{case_id}/clarifications/{request_id}/reply')

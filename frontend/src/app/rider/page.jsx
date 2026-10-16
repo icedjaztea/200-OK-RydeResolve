@@ -173,8 +173,12 @@ export default function RiderPortal(){
       <div className="app-connect">
         <div className="app-logo-big">R</div>
         <h2>RydeResolve Rider</h2>
-        <p>Enter your demo passcode to view your disputes and trip history. The backend enforces case isolation — you can only see your own cases.</p>
-        <input aria-label="Demo passcode" type="password" placeholder="Enter passcode" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}/>
+        <p>Select your demo identity to view your disputes and trip history. The backend enforces case isolation — you can only see your own cases.</p>
+        <select aria-label="Demo identity" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}>
+          <option value="">Select your identity…</option>
+          <option value="change-rider-key">Rider A</option>
+          <option value="change-rider-b-key">Rider B</option>
+        </select>
         <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>{api.busy?'Connecting…':'Connect'}</button>
       </div>
       {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}

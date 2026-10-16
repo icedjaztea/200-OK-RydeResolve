@@ -45,6 +45,7 @@ def _filter_clarifications(clarifications: list[dict], role: str) -> list[dict]:
                 'recipient': c.get('recipient'),
                 'question': c.get('question'),
                 'status': c.get('status'),
+                'created_at': c.get('created_at'),
             }
             if c.get('status') == 'ANSWERED':
                 safe['answer'] = c.get('answer')
