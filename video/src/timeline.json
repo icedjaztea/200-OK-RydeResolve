@@ -1,0 +1,573 @@
+[
+  {
+    "id": "opening",
+    "title": "RydeResolve",
+    "sub": "From trip context to a reasoned outcome",
+    "kind": "brand",
+    "image": null,
+    "narration": "RydeResolve gives riders, drivers, and reviewers a shared dispute process: explain the trip, inspect the evidence, and apply policy. Here is the updated synthetic demonstration.",
+    "fromFrame": 0,
+    "duration": 340,
+    "captions": [
+      {
+        "start": 15,
+        "end": 238,
+        "text": "RydeResolve gives riders, drivers, and reviewers a shared dispute process: explain the trip, inspect the evidence, and apply policy."
+      },
+      {
+        "start": 243,
+        "end": 312,
+        "text": "Here is the updated synthetic demonstration."
+      }
+    ]
+  },
+  {
+    "id": "problem",
+    "title": "One trip. Three perspectives.",
+    "sub": "Fair hearing \u00b7 Clear status \u00b7 Traceable decisions",
+    "kind": "priorities",
+    "image": null,
+    "narration": "A rider needs an explanation for a charge. A driver needs a fair chance to respond. A reviewer needs reliable evidence and a clear policy basis. The first account should not become the final answer.",
+    "fromFrame": 340,
+    "duration": 359,
+    "captions": [
+      {
+        "start": 15,
+        "end": 82,
+        "text": "A rider needs an explanation for a charge."
+      },
+      {
+        "start": 87,
+        "end": 149,
+        "text": "A driver needs a fair chance to respond."
+      },
+      {
+        "start": 154,
+        "end": 255,
+        "text": "A reviewer needs reliable evidence and a clear policy basis."
+      },
+      {
+        "start": 260,
+        "end": 331,
+        "text": "The first account should not become the final answer."
+      }
+    ]
+  },
+  {
+    "id": "rider-trip",
+    "title": "Start with the trip",
+    "sub": "New: trip history + illustrative route cards",
+    "kind": "phone",
+    "image": "rider-trip-phone",
+    "narration": "The rider portal now adds trip history. A trip card combines the route, fare, distance, duration, and driver context. The map and trip data are synthetic, with no live telemetry connected.",
+    "fromFrame": 699,
+    "duration": 345,
+    "captions": [
+      {
+        "start": 15,
+        "end": 72,
+        "text": "The rider portal now adds trip history."
+      },
+      {
+        "start": 77,
+        "end": 204,
+        "text": "A trip card combines the route, fare, distance, duration, and driver context."
+      },
+      {
+        "start": 209,
+        "end": 317,
+        "text": "The map and trip data are synthetic, with no live telemetry connected."
+      }
+    ],
+    "pageH": 1080.0,
+    "phoneFrom": 110,
+    "phoneTo": 240
+  },
+  {
+    "id": "intake",
+    "title": "Report it in your own words",
+    "sub": "New: \u201cOther / I\u2019m not sure\u201d intake",
+    "kind": "phone",
+    "image": "rider-report-phone",
+    "narration": "From a trip, the rider opens a report with its reference already selected. They describe the issue, choose a category, and enter the disputed amount. Other, I\u2019m not sure gives unclear reports an explicit route to human classification.",
+    "fromFrame": 1044,
+    "duration": 398,
+    "captions": [
+      {
+        "start": 15,
+        "end": 126,
+        "text": "From a trip, the rider opens a report with its reference already selected."
+      },
+      {
+        "start": 131,
+        "end": 233,
+        "text": "They describe the issue, choose a category, and enter the disputed amount."
+      },
+      {
+        "start": 238,
+        "end": 370,
+        "text": "Other, I\u2019m not sure gives unclear reports an explicit route to human classification."
+      }
+    ],
+    "pageH": 1080.0,
+    "phoneFrom": 100,
+    "phoneTo": 350
+  },
+  {
+    "id": "architecture",
+    "title": "Advocacy is not authority",
+    "sub": "Six agents + an independent policy gate",
+    "kind": "architecture",
+    "image": null,
+    "narration": "The safety screen and orchestrator route the case. Rider and Driver Advocates work alongside policy and risk analysis. The Judge proposes an outcome. A separate deterministic gate checks eligibility for a simulated remedy or human review.",
+    "fromFrame": 1442,
+    "duration": 439,
+    "captions": [
+      {
+        "start": 15,
+        "end": 85,
+        "text": "The safety screen and orchestrator route the case."
+      },
+      {
+        "start": 90,
+        "end": 206,
+        "text": "Rider and Driver Advocates work alongside policy and risk analysis."
+      },
+      {
+        "start": 211,
+        "end": 256,
+        "text": "The Judge proposes an outcome."
+      },
+      {
+        "start": 261,
+        "end": 411,
+        "text": "A separate deterministic gate checks eligibility for a simulated remedy or human review."
+      }
+    ]
+  },
+  {
+    "id": "evidence",
+    "title": "Check facts before conclusions",
+    "sub": "New: readable case facts and values",
+    "kind": "screen",
+    "image": "fare-evidence",
+    "narration": "The Evidence tab now shows named facts and readable values. Here, twelve dollars was quoted and sixteen fifty charged. Claims are not automatically verified; the reviewer must check provenance before relying on a fact.",
+    "fromFrame": 1881,
+    "duration": 387,
+    "captions": [
+      {
+        "start": 15,
+        "end": 111,
+        "text": "The Evidence tab now shows named facts and readable values."
+      },
+      {
+        "start": 116,
+        "end": 205,
+        "text": "Here, twelve dollars was quoted and sixteen fifty charged."
+      },
+      {
+        "start": 210,
+        "end": 359,
+        "text": "Claims are not automatically verified; the reviewer must check provenance before relying on a fact."
+      }
+    ],
+    "pageH": 1527.0,
+    "cx": 1110,
+    "cy": 700,
+    "zoom": 1.28,
+    "pan": 50
+  },
+  {
+    "id": "policy",
+    "title": "Read the rule behind the reference",
+    "sub": "New: expandable conditions, effects and evidence",
+    "kind": "policy",
+    "image": "fare-policy",
+    "narration": "Rule references expand into conditions, effects, evidence requirements, and source sections. A rule identifier becomes inspectable. Routing candidates are possible matches, not rulings: the reviewer still checks whether the conditions are satisfied.",
+    "fromFrame": 2268,
+    "duration": 434,
+    "captions": [
+      {
+        "start": 15,
+        "end": 156,
+        "text": "Rule references expand into conditions, effects, evidence requirements, and source sections."
+      },
+      {
+        "start": 161,
+        "end": 227,
+        "text": "A rule identifier becomes inspectable."
+      },
+      {
+        "start": 232,
+        "end": 406,
+        "text": "Routing candidates are possible matches, not rulings: the reviewer still checks whether the conditions are satisfied."
+      }
+    ],
+    "pageH": 1768.0,
+    "cx": 1110,
+    "cy": 1030,
+    "zoom": 1.32,
+    "pan": 40
+  },
+  {
+    "id": "agents",
+    "title": "Inspect both sides of the case",
+    "sub": "Updated: perspective cards + rule links",
+    "kind": "screen",
+    "image": "fare-agents",
+    "narration": "Agent Findings separates rider and driver perspectives, policy analysis, the risk check, and consistency assessment. Rule links connect those findings back to policy. This film uses offline mock mode, not verified live Gemini execution.",
+    "fromFrame": 2702,
+    "duration": 441,
+    "captions": [
+      {
+        "start": 15,
+        "end": 205,
+        "text": "Agent Findings separates rider and driver perspectives, policy analysis, the risk check, and consistency assessment."
+      },
+      {
+        "start": 210,
+        "end": 284,
+        "text": "Rule links connect those findings back to policy."
+      },
+      {
+        "start": 289,
+        "end": 413,
+        "text": "This film uses offline mock mode, not verified live Gemini execution."
+      }
+    ],
+    "pageH": 1804.0,
+    "cx": 1110,
+    "cy": 800,
+    "zoom": 1.28,
+    "pan": 380
+  },
+  {
+    "id": "refund",
+    "title": "Return the disputed difference",
+    "sub": "SGD 16.50 \u2212 SGD 12.00 = SGD 4.50",
+    "kind": "screen",
+    "image": "fare-overview",
+    "narration": "The synthetic facts support an unnotified surge difference of four dollars fifty. The independent gate permits that narrow remedy. A simulated refund and mock receipt close the case. No funds move or notification is delivered.",
+    "fromFrame": 3143,
+    "duration": 407,
+    "captions": [
+      {
+        "start": 15,
+        "end": 140,
+        "text": "The synthetic facts support an unnotified surge difference of four dollars fifty."
+      },
+      {
+        "start": 145,
+        "end": 217,
+        "text": "The independent gate permits that narrow remedy."
+      },
+      {
+        "start": 222,
+        "end": 302,
+        "text": "A simulated refund and mock receipt close the case."
+      },
+      {
+        "start": 307,
+        "end": 379,
+        "text": "No funds move or notification is delivered."
+      }
+    ],
+    "pageH": 1265.0,
+    "cx": 1110,
+    "cy": 550,
+    "zoom": 1.18,
+    "pan": 35
+  },
+  {
+    "id": "trace",
+    "title": "Inspect the stored workflow",
+    "sub": "Recorded replay \u00b7 reviewer access",
+    "kind": "screen",
+    "image": "monitor",
+    "narration": "The monitor replays stored outputs and gate results. It is explicitly a recorded replay, not live execution. Reviewers can inspect the stored process without treating a replay animation as evidence of real-time model performance.",
+    "fromFrame": 3550,
+    "duration": 422,
+    "captions": [
+      {
+        "start": 15,
+        "end": 93,
+        "text": "The monitor replays stored outputs and gate results."
+      },
+      {
+        "start": 98,
+        "end": 195,
+        "text": "It is explicitly a recorded replay, not live execution."
+      },
+      {
+        "start": 200,
+        "end": 394,
+        "text": "Reviewers can inspect the stored process without treating a replay animation as evidence of real-time model performance."
+      }
+    ],
+    "pageH": 1080.0,
+    "cx": 960,
+    "cy": 540,
+    "zoom": 1.0,
+    "pan": 10
+  },
+  {
+    "id": "route",
+    "title": "A small claim can require review",
+    "sub": "4.3 km route deviation \u2192 human review",
+    "kind": "screen",
+    "image": "route",
+    "narration": "The route case records a four point three kilometre deviation. That triggers mandatory human review despite the small claim. Policy conditions, not just amount, determine whether automation is allowed.",
+    "fromFrame": 3972,
+    "duration": 361,
+    "captions": [
+      {
+        "start": 15,
+        "end": 108,
+        "text": "The route case records a four point three kilometre deviation."
+      },
+      {
+        "start": 113,
+        "end": 206,
+        "text": "That triggers mandatory human review despite the small claim."
+      },
+      {
+        "start": 211,
+        "end": 333,
+        "text": "Policy conditions, not just amount, determine whether automation is allowed."
+      }
+    ],
+    "pageH": 1152.0,
+    "cx": 1110,
+    "cy": 550,
+    "zoom": 1.18,
+    "pan": 35
+  },
+  {
+    "id": "safety",
+    "title": "Safety goes straight to a person",
+    "sub": "No AI fault finding. No AI remedy ruling.",
+    "kind": "screen",
+    "image": "safety",
+    "narration": "A safety concern inside a fare dispute goes immediately to human review. The Judge is skipped for safety adjudication. A human independently assesses fault and remedy; the AI does not make that ruling.",
+    "fromFrame": 4333,
+    "duration": 364,
+    "captions": [
+      {
+        "start": 15,
+        "end": 133,
+        "text": "A safety concern inside a fare dispute goes immediately to human review."
+      },
+      {
+        "start": 138,
+        "end": 201,
+        "text": "The Judge is skipped for safety adjudication."
+      },
+      {
+        "start": 206,
+        "end": 336,
+        "text": "A human independently assesses fault and remedy; the AI does not make that ruling."
+      }
+    ],
+    "pageH": 1635.0,
+    "cx": 1110,
+    "cy": 650,
+    "zoom": 1.2,
+    "pan": 20
+  },
+  {
+    "id": "other",
+    "title": "Unclear category? Classify first.",
+    "sub": "New: manual triage before adjudication",
+    "kind": "screen",
+    "image": "other-review",
+    "narration": "Other reports stop automatic adjudication. A reviewer must classify the dispute before refund or credit is allowed. After reclassification, the case can be processed under the appropriate policy, while its original category remains in the audit trail.",
+    "fromFrame": 4697,
+    "duration": 436,
+    "captions": [
+      {
+        "start": 15,
+        "end": 86,
+        "text": "Other reports stop automatic adjudication."
+      },
+      {
+        "start": 91,
+        "end": 197,
+        "text": "A reviewer must classify the dispute before refund or credit is allowed."
+      },
+      {
+        "start": 202,
+        "end": 408,
+        "text": "After reclassification, the case can be processed under the appropriate policy, while its original category remains in the audit trail."
+      }
+    ],
+    "pageH": 1483.0,
+    "cx": 1110,
+    "cy": 710,
+    "zoom": 1.2,
+    "pan": 40,
+    "afterPageH": 1213.0
+  },
+  {
+    "id": "driver",
+    "title": "Request evidence. Hear the response.",
+    "sub": "New: reviewer question \u2192 driver clarification",
+    "kind": "phone",
+    "image": "driver-requested-card",
+    "narration": "A reviewer can now ask either party for more information. The driver is asked for a timestamped message or call reference. Replies remain unverified until supported by evidence.",
+    "fromFrame": 5133,
+    "duration": 338,
+    "captions": [
+      {
+        "start": 16,
+        "end": 102,
+        "text": "A reviewer can now ask either party for more information."
+      },
+      {
+        "start": 107,
+        "end": 207,
+        "text": "The driver is asked for a timestamped message or call reference."
+      },
+      {
+        "start": 212,
+        "end": 310,
+        "text": "Replies remain unverified until supported by evidence."
+      }
+    ],
+    "pageH": 1936.0,
+    "phoneFrom": 0,
+    "phoneTo": 0
+  },
+  {
+    "id": "outcome",
+    "title": "Make the next step clear",
+    "sub": "Status \u00b7 Explanation \u00b7 Outcome",
+    "kind": "phone",
+    "image": "rider-outcome-phone",
+    "narration": "The rider sees a clear explanation, case progress, and the simulated refund. Unresolved cases show clarification or review as the next step. Internal investigation traces stay in the reviewer view.",
+    "fromFrame": 5471,
+    "duration": 367,
+    "captions": [
+      {
+        "start": 15,
+        "end": 136,
+        "text": "The rider sees a clear explanation, case progress, and the simulated refund."
+      },
+      {
+        "start": 141,
+        "end": 250,
+        "text": "Unresolved cases show clarification or review as the next step."
+      },
+      {
+        "start": 255,
+        "end": 339,
+        "text": "Internal investigation traces stay in the reviewer view."
+      }
+    ],
+    "pageH": 1796.0,
+    "phoneFrom": 900,
+    "phoneTo": 1100
+  },
+  {
+    "id": "comparison",
+    "title": "Compare on evidence, not a winner",
+    "sub": "Google ADK implementation path / Tencent ADP plan",
+    "kind": "comparison",
+    "image": null,
+    "narration": "The repository provides a Python Google ADK integration path, an independent gate, and trace inspection. Tencent ADP is an alternative architecture without comparable runnable evidence here. Compare both on identical cases, safety rules, trace access, latency, and review effort.",
+    "fromFrame": 5838,
+    "duration": 536,
+    "captions": [
+      {
+        "start": 15,
+        "end": 196,
+        "text": "The repository provides a Python Google ADK integration path, an independent gate, and trace inspection."
+      },
+      {
+        "start": 201,
+        "end": 352,
+        "text": "Tencent ADP is an alternative architecture without comparable runnable evidence here."
+      },
+      {
+        "start": 357,
+        "end": 508,
+        "text": "Compare both on identical cases, safety rules, trace access, latency, and review effort."
+      }
+    ]
+  },
+  {
+    "id": "measurements",
+    "title": "Measure what was actually checked",
+    "sub": "Local reference behavior \u00b7 no cloud benchmark",
+    "kind": "metrics",
+    "image": null,
+    "narration": "Locally, three hundred and forty six backend tests and eighteen frontend proxy tests passed. Fare, route, safety, and manual-classification checks exercised their expected paths. These reference checks do not measure production accuracy or cloud latency.",
+    "fromFrame": 6374,
+    "duration": 453,
+    "captions": [
+      {
+        "start": 15,
+        "end": 160,
+        "text": "Locally, three hundred and forty six backend tests and eighteen frontend proxy tests passed."
+      },
+      {
+        "start": 165,
+        "end": 306,
+        "text": "Fare, route, safety, and manual-classification checks exercised their expected paths."
+      },
+      {
+        "start": 311,
+        "end": 425,
+        "text": "These reference checks do not measure production accuracy or cloud latency."
+      }
+    ]
+  },
+  {
+    "id": "deployment",
+    "title": "Validate the hosted path next",
+    "sub": "Next.js \u2192 FastAPI \u2192 Cloud Run / Firestore / GCS",
+    "kind": "deployment",
+    "image": null,
+    "narration": "The intended hosted path uses Next.js, FastAPI, Cloud Run, Firestore, and Cloud Storage. Verify runtime identities, persistence, live traces, and latency. Interview findings and CodeBuddy development proof still require actual supporting records.",
+    "fromFrame": 6827,
+    "duration": 489,
+    "captions": [
+      {
+        "start": 15,
+        "end": 196,
+        "text": "The intended hosted path uses Next.js, FastAPI, Cloud Run, Firestore, and Cloud Storage."
+      },
+      {
+        "start": 201,
+        "end": 312,
+        "text": "Verify runtime identities, persistence, live traces, and latency."
+      },
+      {
+        "start": 317,
+        "end": 461,
+        "text": "Interview findings and CodeBuddy development proof still require actual supporting records."
+      }
+    ]
+  },
+  {
+    "id": "closing",
+    "title": "Evidence first. People in control.",
+    "sub": "Fair hearing \u2192 Policy checks \u2192 Human oversight",
+    "kind": "closing",
+    "image": null,
+    "narration": "RydeResolve\u2019s boundary is practical: use evidence and policy where automation is justified, and keep people in charge where it is not. Compare both implementations on equal terms.",
+    "fromFrame": 7316,
+    "duration": 345,
+    "captions": [
+      {
+        "start": 15,
+        "end": 238,
+        "text": "RydeResolve\u2019s boundary is practical: use evidence and policy where automation is justified, and keep people in charge where it is not."
+      },
+      {
+        "start": 243,
+        "end": 317,
+        "text": "Compare both implementations on equal terms."
+      }
+    ]
+  }
+]

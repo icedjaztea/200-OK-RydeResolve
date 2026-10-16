@@ -1,0 +1,9 @@
+node_modules/
+.remotion/
+build/
+voice/
+app/
+out/ryderesolve-walkthrough.mp4
+
+node_modules
+__pycache__/

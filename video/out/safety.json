@@ -1,0 +1,294 @@
+{
+  "case_id": "DEMO-SAFETY-IN-FARE",
+  "trip_id": "DEMO-DEMO-SAFETY-IN-FARE",
+  "category": "fare_dispute",
+  "filed_by": "rider",
+  "description": "The driver threatened me and charged surge without notification.",
+  "dispute_amount": 4.5,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "upfront_quote": 12,
+    "actual_fare": 16.5,
+    "surge_before": 1.0,
+    "surge_after": 1.5,
+    "rider_notified": false,
+    "notification_log_complete": true,
+    "difference_solely_surge": true,
+    "rider_proceeded": true
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "REVIEW_REQUIRED",
+  "events": [
+    {
+      "kind": "case_created",
+      "timestamp": "2026-10-16T14:51:29.125575+00:00",
+      "details": {
+        "synthetic": true,
+        "category": "fare_dispute"
+      },
+      "previous_hash": "",
+      "hash": "f8d30dee1a62a0f258889eeb05221a84559b60fdba7fe93456ddfae698d15855"
+    },
+    {
+      "kind": "routing_index_read",
+      "timestamp": "2026-10-16T14:51:29.172296+00:00",
+      "details": {
+        "count": 14,
+        "matched_rule_ids": [
+          "FA-3.2",
+          "SF-5.1"
+        ]
+      },
+      "previous_hash": "f8d30dee1a62a0f258889eeb05221a84559b60fdba7fe93456ddfae698d15855",
+      "hash": "1c500935f06bf71734823302a5d293c45f603a96d7a0426b533e35910388034c"
+    },
+    {
+      "kind": "mandatory_safety_escalation",
+      "timestamp": "2026-10-16T14:51:29.172319+00:00",
+      "details": {
+        "rules": [
+          "SF-5.1",
+          "SF-5.2"
+        ]
+      },
+      "previous_hash": "1c500935f06bf71734823302a5d293c45f603a96d7a0426b533e35910388034c",
+      "hash": "0cfaaa36b9415730c5ba1db6aa08e5b1b51d67f7caf3b2b6b834424868ef610e"
+    }
+  ],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE",
+  "rider_id": "rider_a",
+  "driver_id": "driver_a",
+  "policy_version": "2.1",
+  "rulebook_version": "1.0.0-draft",
+  "evidence_snapshot_hash": "5af62d30370be47ac4cec7e9f35e2b708e3be600a88a412007f3d617edee6e02",
+  "routing": {
+    "candidate_rule_ids": [
+      "FA-3.1",
+      "FA-3.2",
+      "FA-3.3-A",
+      "FA-3.3-B",
+      "FA-3.3-C",
+      "FA-3.3-D",
+      "FA-3.4",
+      "FA-3.5",
+      "SF-5.1",
+      "SF-5.2",
+      "TH-6.1-LOW",
+      "TH-6.1-MID",
+      "TH-6.1-HIGH",
+      "PR-7"
+    ],
+    "matched_phrase_rule_ids": [
+      "FA-3.2",
+      "SF-5.1"
+    ],
+    "evidence_to_fetch": [
+      "upfront_quote",
+      "final_fare",
+      "quote_surge",
+      "trip_start_surge",
+      "notification_log",
+      "fare_breakdown",
+      "dispute_amount",
+      "dispute_type",
+      "policy_version",
+      "case_snapshot_id"
+    ],
+    "uncertain_conditions": [],
+    "safety_screen": "flag",
+    "policy_version": "2.1",
+    "rulebook_version": "1.0.0-draft"
+  },
+  "sla_routing": {
+    "priority": "P0_SAFETY",
+    "queue": "SAFETY_REVIEW",
+    "requires_immediate_attention": true,
+    "target_minutes": null,
+    "source": "policy_v2.1_5.1"
+  },
+  "path": "IMMEDIATE_HUMAN_REVIEW",
+  "candidate": {
+    "disposition": "undetermined",
+    "amount": 0,
+    "rule_ids": [
+      "SF-5.1",
+      "SF-5.2"
+    ],
+    "reason": "Safety: reviewer must determine fault and remedy"
+  },
+  "gate": {
+    "can_auto": false,
+    "path": "IMMEDIATE_HUMAN_REVIEW",
+    "blocking_rules": [
+      "SF-5.1",
+      "SF-5.2"
+    ],
+    "reasons": [
+      "Safety incident: mandatory reviewer only; no AI outcome (SF-5.1)",
+      "Safety: reviewer must determine fault and remedy (SF-5.2)"
+    ]
+  },
+  "original_escalation": "IMMEDIATE_HUMAN_REVIEW",
+  "agent_outputs": {
+    "DisputeOrchestrator": {
+      "agent_name": "DisputeOrchestrator",
+      "role": "DisputeOrchestrator",
+      "summary": "Candidate routing via 04_rulebook index.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "SF-5.1",
+        "SF-5.2"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "PolicyPrecedent": {
+      "agent_name": "PolicyPrecedent",
+      "role": "PolicyPrecedent",
+      "summary": "Compare material facts to v2.1, not precedent by case ID.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "SF-5.1",
+        "SF-5.2"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "FraudBadFaith": {
+      "agent_name": "FraudBadFaith",
+      "role": "FraudBadFaith",
+      "summary": "Historical flags are risk context, not proof of bad faith.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "SF-5.1",
+        "SF-5.2"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "RiderAdvocate": {
+      "agent_name": "RiderAdvocate",
+      "role": "RiderAdvocate",
+      "summary": "Rider position: The driver threatened me and charged surge without notification.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "SF-5.1",
+        "SF-5.2"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "DriverAdvocate": {
+      "agent_name": "DriverAdvocate",
+      "role": "DriverAdvocate",
+      "summary": "Driver-side countercase uses only recorded facts; silence proves nothing.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "SF-5.1",
+        "SF-5.2"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    }
+  },
+  "agent_trace": [
+    {
+      "agent": "DisputeOrchestrator",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "PolicyPrecedent",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "FraudBadFaith",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "RiderAdvocate",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "DriverAdvocate",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    }
+  ],
+  "notifications": [
+    {
+      "kind": "SAFETY_REVIEW_ALERT",
+      "recipient": "reviewer",
+      "message": "Case DEMO-SAFETY-IN-FARE: Safety allegation detected. Immediate human review required. No AI fault determination or remedy proposed. This is a synthetic demo; no real alert was sent.",
+      "status": "SIMULATED_OUTBOX_NOT_DELIVERED",
+      "created_at": "2026-10-16T14:51:29.172327+00:00"
+    },
+    {
+      "kind": "SAFETY_REVIEW_ALERT",
+      "recipient": "rider",
+      "message": "Case DEMO-SAFETY-IN-FARE: Your report has been escalated for mandatory human review. A reviewer will assess the situation and contact you through official channels. No automated decision has been made. This is a synthetic demo; no real message was sent.",
+      "status": "SIMULATED_OUTBOX_NOT_DELIVERED",
+      "created_at": "2026-10-16T14:51:29.172331+00:00"
+    },
+    {
+      "kind": "SAFETY_REVIEW_ALERT",
+      "recipient": "driver",
+      "message": "Case DEMO-SAFETY-IN-FARE: This trip has been escalated for mandatory human review. A reviewer will investigate and contact you through official channels if needed. No automated decision has been made. This is a synthetic demo; no real message was sent.",
+      "status": "SIMULATED_OUTBOX_NOT_DELIVERED",
+      "created_at": "2026-10-16T14:51:29.172334+00:00"
+    }
+  ],
+  "processing_ms": 0.52
+}

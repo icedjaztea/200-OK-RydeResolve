@@ -1,0 +1,6 @@
+{
+  "status": 400,
+  "body": {
+    "detail": "Cannot apply refund or credit to an unclassified \"other\" case. Reclassify to a specific category first, then apply the financial decision."
+  }
+}

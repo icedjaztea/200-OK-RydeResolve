@@ -1,0 +1,109 @@
+{
+  "case_id": "DEMO-OTHER-CHECK",
+  "trip_id": "DEMO-DISP-003",
+  "category": "other",
+  "filed_by": "rider",
+  "description": "Synthetic unclear charge report for classification verification.",
+  "dispute_amount": 4.5,
+  "dispute_value_basis": "disputed_remedy_amount",
+  "facts": {},
+  "fraud_flags": 0,
+  "synthetic": true,
+  "source_trust": "UNVERIFIED_USER_REPORT",
+  "status": "REVIEW_REQUIRED",
+  "evidence": [],
+  "events": [
+    {
+      "kind": "case_created",
+      "timestamp": "2026-10-16T14:55:59.471181+00:00",
+      "details": {
+        "synthetic": true,
+        "category": "other"
+      },
+      "previous_hash": "",
+      "hash": "82e041dadef018b047891e6c2fff6d2f1251ba2ef27675667dd912e9a102f2a0"
+    },
+    {
+      "kind": "routing_index_read",
+      "timestamp": "2026-10-16T14:55:59.474130+00:00",
+      "details": {
+        "count": 6,
+        "matched_rule_ids": []
+      },
+      "previous_hash": "82e041dadef018b047891e6c2fff6d2f1251ba2ef27675667dd912e9a102f2a0",
+      "hash": "29bbc19e051fa4a07a26d3a4aa6f28de436adad71ef236461863d2ecb288ba18"
+    },
+    {
+      "kind": "manual_classification_required",
+      "timestamp": "2026-10-16T14:55:59.474149+00:00",
+      "details": {
+        "original_category": "other"
+      },
+      "previous_hash": "29bbc19e051fa4a07a26d3a4aa6f28de436adad71ef236461863d2ecb288ba18",
+      "hash": "a96c1f8ac7602bf7975fb1d3ee4117317cfe5bdd704afe13d50b761023a66f3c"
+    }
+  ],
+  "clarifications": [],
+  "revision": 0,
+  "rider_id": null,
+  "driver_id": null,
+  "policy_version": "2.1",
+  "rulebook_version": "1.0.0-draft",
+  "evidence_snapshot_hash": "568156985054b693270f499db54a957499aa81c939c20d48e900e6c016925c4c",
+  "routing": {
+    "candidate_rule_ids": [
+      "SF-5.1",
+      "SF-5.2",
+      "TH-6.1-LOW",
+      "TH-6.1-MID",
+      "TH-6.1-HIGH",
+      "PR-7"
+    ],
+    "matched_phrase_rule_ids": [],
+    "evidence_to_fetch": [
+      "dispute_amount",
+      "dispute_type",
+      "policy_version",
+      "case_snapshot_id"
+    ],
+    "uncertain_conditions": [],
+    "safety_screen": "not_observed",
+    "policy_version": "2.1",
+    "rulebook_version": "1.0.0-draft"
+  },
+  "sla_routing": {
+    "priority": "P2_STANDARD",
+    "queue": "STANDARD_DISPUTES",
+    "requires_immediate_attention": false,
+    "target_minutes": null,
+    "source": "demo_priority_proposal_not_Ryde_SLA"
+  },
+  "path": "HUMAN_REVIEW",
+  "candidate": {
+    "disposition": "undetermined",
+    "amount": 0,
+    "rule_ids": [],
+    "reason": "Unclassified \"other\" category: manual classification required"
+  },
+  "gate": {
+    "can_auto": false,
+    "path": "HUMAN_REVIEW",
+    "reasons": [
+      "Unclassified dispute category: reviewer must classify before adjudication"
+    ],
+    "blocking_rules": []
+  },
+  "original_escalation": "MANUAL_CLASSIFICATION",
+  "agent_outputs": {},
+  "agent_trace": [],
+  "notifications": [
+    {
+      "kind": "CLARIFICATION_REQUEST",
+      "recipient": "reviewer",
+      "message": "Case DEMO-OTHER-CHECK: \"Other\" category submitted. Manual classification required before policy adjudication can proceed. No automated financial action.",
+      "status": "SIMULATED_OUTBOX_NOT_DELIVERED",
+      "created_at": "2026-10-16T14:55:59.474157+00:00"
+    }
+  ],
+  "processing_ms": 1.46
+}

@@ -1,0 +1,303 @@
+{
+  "case_id": "DISP-001",
+  "trip_id": "DEMO-DISP-001",
+  "category": "route_deviation",
+  "filed_by": "rider",
+  "description": "Driver went 4.3 km longer without notification. Request excess-fare refund.",
+  "dispute_amount": 3.44,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "actual_distance_km": 24.8,
+    "recommended_distance_km": 20.5,
+    "traffic_justified": true,
+    "rider_notified": false,
+    "excess_distance_fare": 3.44,
+    "rider_agreed": false
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "REVIEW_REQUIRED",
+  "events": [
+    {
+      "kind": "case_created",
+      "timestamp": "2026-10-16T14:51:29.125631+00:00",
+      "details": {
+        "synthetic": true,
+        "category": "route_deviation"
+      },
+      "previous_hash": "",
+      "hash": "b02b5bb6f64dd0ae3fa774bfc4b00ecb0df87a0d8a30f8edb7476c9bc71a1020"
+    },
+    {
+      "kind": "routing_index_read",
+      "timestamp": "2026-10-16T14:51:29.169785+00:00",
+      "details": {
+        "count": 15,
+        "matched_rule_ids": []
+      },
+      "previous_hash": "b02b5bb6f64dd0ae3fa774bfc4b00ecb0df87a0d8a30f8edb7476c9bc71a1020",
+      "hash": "a4ef9d32cc4c50625ab1cd30da81b2f0efc953aeff7e18861ecc690458ca9e62"
+    },
+    {
+      "kind": "policy_gate_applied",
+      "timestamp": "2026-10-16T14:51:29.170266+00:00",
+      "details": {
+        "path": "HUMAN_REVIEW",
+        "blocking_rules": [
+          "TH-6.2-ROUTE"
+        ],
+        "policy_version": "2.1",
+        "candidate_rules": [
+          "RD-1.2",
+          "RD-1.3-B",
+          "RD-1.4"
+        ]
+      },
+      "previous_hash": "a4ef9d32cc4c50625ab1cd30da81b2f0efc953aeff7e18861ecc690458ca9e62",
+      "hash": "572a79c55cf24b5b3a9cfcb259ab546df11f553bbcbb4a9f17ab54df205396fa"
+    }
+  ],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE",
+  "rider_id": "rider_a",
+  "driver_id": "driver_a",
+  "policy_version": "2.1",
+  "rulebook_version": "1.0.0-draft",
+  "evidence_snapshot_hash": "8e91779963499446f19966fa1c6d98366393687000b9f34ee9040ecd609bb7ec",
+  "routing": {
+    "candidate_rule_ids": [
+      "RD-1.1",
+      "RD-1.2",
+      "RD-1.3-A",
+      "RD-1.3-B",
+      "RD-1.3-C",
+      "RD-1.3-D",
+      "RD-1.3-E",
+      "RD-1.4",
+      "SF-5.1",
+      "SF-5.2",
+      "TH-6.1-LOW",
+      "TH-6.1-MID",
+      "TH-6.1-HIGH",
+      "TH-6.2-ROUTE",
+      "PR-7"
+    ],
+    "matched_phrase_rule_ids": [],
+    "evidence_to_fetch": [
+      "route_data",
+      "recommended_route",
+      "actual_route",
+      "historical_traffic",
+      "chat_logs",
+      "trip_call_recording",
+      "dispute_amount",
+      "dispute_type",
+      "policy_version",
+      "case_snapshot_id"
+    ],
+    "uncertain_conditions": [],
+    "safety_screen": "not_observed",
+    "policy_version": "2.1",
+    "rulebook_version": "1.0.0-draft"
+  },
+  "sla_routing": {
+    "priority": "P2_STANDARD",
+    "queue": "STANDARD_DISPUTES",
+    "requires_immediate_attention": false,
+    "target_minutes": null,
+    "source": "demo_priority_proposal_not_Ryde_SLA"
+  },
+  "agent_outputs": {
+    "DisputeOrchestrator": {
+      "agent_name": "DisputeOrchestrator",
+      "role": "DisputeOrchestrator",
+      "summary": "Candidate routing via 04_rulebook index.",
+      "supporting_evidence": [
+        "actual_distance_km",
+        "recommended_distance_km",
+        "traffic_justified",
+        "rider_notified",
+        "excess_distance_fare"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "RD-1.2",
+        "RD-1.3-B",
+        "RD-1.4"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "PolicyPrecedent": {
+      "agent_name": "PolicyPrecedent",
+      "role": "PolicyPrecedent",
+      "summary": "Compare material facts to v2.1, not precedent by case ID.",
+      "supporting_evidence": [
+        "actual_distance_km",
+        "recommended_distance_km",
+        "traffic_justified",
+        "rider_notified",
+        "excess_distance_fare"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "RD-1.2",
+        "RD-1.3-B",
+        "RD-1.4"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "FraudBadFaith": {
+      "agent_name": "FraudBadFaith",
+      "role": "FraudBadFaith",
+      "summary": "Historical flags are risk context, not proof of bad faith.",
+      "supporting_evidence": [
+        "actual_distance_km",
+        "recommended_distance_km",
+        "traffic_justified",
+        "rider_notified",
+        "excess_distance_fare"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "RD-1.2",
+        "RD-1.3-B",
+        "RD-1.4"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "RiderAdvocate": {
+      "agent_name": "RiderAdvocate",
+      "role": "RiderAdvocate",
+      "summary": "Rider position: Driver went 4.3 km longer without notification. Request excess-fare refund.",
+      "supporting_evidence": [
+        "actual_distance_km",
+        "recommended_distance_km",
+        "traffic_justified",
+        "rider_notified",
+        "excess_distance_fare"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "RD-1.2",
+        "RD-1.3-B",
+        "RD-1.4"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "DriverAdvocate": {
+      "agent_name": "DriverAdvocate",
+      "role": "DriverAdvocate",
+      "summary": "Driver-side countercase uses only recorded facts; silence proves nothing.",
+      "supporting_evidence": [
+        "actual_distance_km",
+        "recommended_distance_km",
+        "traffic_justified",
+        "rider_notified",
+        "excess_distance_fare"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "RD-1.2",
+        "RD-1.3-B",
+        "RD-1.4"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "Judge": {
+      "agent_name": "Judge",
+      "role": "Judge",
+      "summary": "Independent assessment: evidence supports the candidate remedy per policy v2.1.",
+      "supporting_evidence": [
+        "actual_distance_km",
+        "recommended_distance_km",
+        "traffic_justified",
+        "rider_notified",
+        "excess_distance_fare"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "RD-1.2",
+        "RD-1.3-B",
+        "RD-1.4"
+      ],
+      "recommended_disposition": "refund",
+      "recommended_amount": 3.44,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    }
+  },
+  "agent_trace": [
+    {
+      "agent": "DisputeOrchestrator",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "PolicyPrecedent",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "FraudBadFaith",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "RiderAdvocate",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "DriverAdvocate",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "Judge",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    }
+  ],
+  "candidate": {
+    "disposition": "refund",
+    "amount": 3.44,
+    "currency": "SGD",
+    "rule_ids": [
+      "RD-1.2",
+      "RD-1.3-B",
+      "RD-1.4"
+    ],
+    "reason": "Traffic detour justified but unannounced: excess distance component only"
+  },
+  "gate": {
+    "can_auto": false,
+    "path": "HUMAN_REVIEW",
+    "reasons": [
+      "Route is over 2 km or distance unknown: mandatory reviewer"
+    ],
+    "blocking_rules": [
+      "TH-6.2-ROUTE"
+    ]
+  },
+  "path": "HUMAN_REVIEW",
+  "gaps": [],
+  "contradictions": [],
+  "processing_ms": 1.02
+}

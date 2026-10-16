@@ -1,0 +1,346 @@
+{
+  "case_id": "DISP-003",
+  "trip_id": "DEMO-DISP-003",
+  "category": "fare_dispute",
+  "filed_by": "rider",
+  "description": "Final fare 16.50 but quote was 12.00; surge increased without notice.",
+  "dispute_amount": 4.5,
+  "dispute_value_basis": "amount_in_dispute",
+  "fraud_flags": 0,
+  "facts": {
+    "upfront_quote": 12,
+    "actual_fare": 16.5,
+    "surge_before": 1.0,
+    "surge_after": 1.5,
+    "rider_notified": false,
+    "notification_log_complete": true,
+    "difference_solely_surge": true,
+    "rider_proceeded": true
+  },
+  "synthetic": true,
+  "evidence": [],
+  "status": "RESOLVED",
+  "events": [
+    {
+      "kind": "case_created",
+      "timestamp": "2026-10-16T14:51:29.125713+00:00",
+      "details": {
+        "synthetic": true,
+        "category": "fare_dispute"
+      },
+      "previous_hash": "",
+      "hash": "02636a27b6850dcde0657b21dec55c9afd0f8ca1a06fd47515ddf5654329a027"
+    },
+    {
+      "kind": "routing_index_read",
+      "timestamp": "2026-10-16T14:51:29.166647+00:00",
+      "details": {
+        "count": 14,
+        "matched_rule_ids": []
+      },
+      "previous_hash": "02636a27b6850dcde0657b21dec55c9afd0f8ca1a06fd47515ddf5654329a027",
+      "hash": "97703c72191f3fbcd62c06c8e41728665f84c37e6f6312c0a68bf3ae1ed90a5e"
+    },
+    {
+      "kind": "policy_gate_applied",
+      "timestamp": "2026-10-16T14:51:29.167228+00:00",
+      "details": {
+        "path": "AUTO_ELIGIBLE",
+        "blocking_rules": [],
+        "policy_version": "2.1",
+        "candidate_rules": [
+          "FA-3.1",
+          "FA-3.2",
+          "FA-3.3-B",
+          "FA-3.4",
+          "FA-3.5"
+        ]
+      },
+      "previous_hash": "97703c72191f3fbcd62c06c8e41728665f84c37e6f6312c0a68bf3ae1ed90a5e",
+      "hash": "41a3b0f90cb7b61700d0c4a899fe5ede9462145e1898ba440ec90815c5fb1a12"
+    },
+    {
+      "kind": "mock_action_completed",
+      "timestamp": "2026-10-16T14:51:29.167262+00:00",
+      "details": {
+        "receipt": "MOCK-6EC0587845A48F6E",
+        "new": true,
+        "simulated": true
+      },
+      "previous_hash": "41a3b0f90cb7b61700d0c4a899fe5ede9462145e1898ba440ec90815c5fb1a12",
+      "hash": "2dffa597c751548280b8eb9c3800404778caf903022d9f477e93a267073910f9"
+    }
+  ],
+  "clarifications": [],
+  "revision": 0,
+  "source_trust": "SIMULATED_VERIFIED_SYSTEM_FIXTURE",
+  "rider_id": "rider_a",
+  "driver_id": "driver_a",
+  "policy_version": "2.1",
+  "rulebook_version": "1.0.0-draft",
+  "evidence_snapshot_hash": "5af62d30370be47ac4cec7e9f35e2b708e3be600a88a412007f3d617edee6e02",
+  "routing": {
+    "candidate_rule_ids": [
+      "FA-3.1",
+      "FA-3.2",
+      "FA-3.3-A",
+      "FA-3.3-B",
+      "FA-3.3-C",
+      "FA-3.3-D",
+      "FA-3.4",
+      "FA-3.5",
+      "SF-5.1",
+      "SF-5.2",
+      "TH-6.1-LOW",
+      "TH-6.1-MID",
+      "TH-6.1-HIGH",
+      "PR-7"
+    ],
+    "matched_phrase_rule_ids": [],
+    "evidence_to_fetch": [
+      "upfront_quote",
+      "final_fare",
+      "quote_surge",
+      "trip_start_surge",
+      "notification_log",
+      "fare_breakdown",
+      "dispute_amount",
+      "dispute_type",
+      "policy_version",
+      "case_snapshot_id"
+    ],
+    "uncertain_conditions": [],
+    "safety_screen": "not_observed",
+    "policy_version": "2.1",
+    "rulebook_version": "1.0.0-draft"
+  },
+  "sla_routing": {
+    "priority": "P2_STANDARD",
+    "queue": "STANDARD_DISPUTES",
+    "requires_immediate_attention": false,
+    "target_minutes": null,
+    "source": "demo_priority_proposal_not_Ryde_SLA"
+  },
+  "agent_outputs": {
+    "DisputeOrchestrator": {
+      "agent_name": "DisputeOrchestrator",
+      "role": "DisputeOrchestrator",
+      "summary": "Candidate routing via 04_rulebook index.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "FA-3.1",
+        "FA-3.2",
+        "FA-3.3-B",
+        "FA-3.4",
+        "FA-3.5"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "PolicyPrecedent": {
+      "agent_name": "PolicyPrecedent",
+      "role": "PolicyPrecedent",
+      "summary": "Compare material facts to v2.1, not precedent by case ID.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "FA-3.1",
+        "FA-3.2",
+        "FA-3.3-B",
+        "FA-3.4",
+        "FA-3.5"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "FraudBadFaith": {
+      "agent_name": "FraudBadFaith",
+      "role": "FraudBadFaith",
+      "summary": "Historical flags are risk context, not proof of bad faith.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "FA-3.1",
+        "FA-3.2",
+        "FA-3.3-B",
+        "FA-3.4",
+        "FA-3.5"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "RiderAdvocate": {
+      "agent_name": "RiderAdvocate",
+      "role": "RiderAdvocate",
+      "summary": "Rider position: Final fare 16.50 but quote was 12.00; surge increased without notice.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "FA-3.1",
+        "FA-3.2",
+        "FA-3.3-B",
+        "FA-3.4",
+        "FA-3.5"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "DriverAdvocate": {
+      "agent_name": "DriverAdvocate",
+      "role": "DriverAdvocate",
+      "summary": "Driver-side countercase uses only recorded facts; silence proves nothing.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "FA-3.1",
+        "FA-3.2",
+        "FA-3.3-B",
+        "FA-3.4",
+        "FA-3.5"
+      ],
+      "recommended_disposition": "undetermined",
+      "recommended_amount": null,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    },
+    "Judge": {
+      "agent_name": "Judge",
+      "role": "Judge",
+      "summary": "Independent assessment: evidence supports the candidate remedy per policy v2.1.",
+      "supporting_evidence": [
+        "upfront_quote",
+        "actual_fare",
+        "surge_before",
+        "surge_after",
+        "rider_notified"
+      ],
+      "opposing_evidence": [],
+      "uncertainties": [],
+      "policy_rule_ids": [
+        "FA-3.1",
+        "FA-3.2",
+        "FA-3.3-B",
+        "FA-3.4",
+        "FA-3.5"
+      ],
+      "recommended_disposition": "refund",
+      "recommended_amount": 4.5,
+      "mode": "MOCK_NOT_MODEL_OUTPUT"
+    }
+  },
+  "agent_trace": [
+    {
+      "agent": "DisputeOrchestrator",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "PolicyPrecedent",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "FraudBadFaith",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "RiderAdvocate",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "DriverAdvocate",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    },
+    {
+      "agent": "Judge",
+      "mode": "MOCK_NOT_MODEL_OUTPUT",
+      "operation": "read_policy_and_evidence"
+    }
+  ],
+  "candidate": {
+    "disposition": "refund",
+    "amount": 4.5,
+    "currency": "SGD",
+    "rule_ids": [
+      "FA-3.1",
+      "FA-3.2",
+      "FA-3.3-B",
+      "FA-3.4",
+      "FA-3.5"
+    ],
+    "reason": "Unnotified surge increase; refund only the verified differential"
+  },
+  "gate": {
+    "can_auto": true,
+    "path": "AUTO_ELIGIBLE",
+    "reasons": [],
+    "blocking_rules": []
+  },
+  "path": "AUTO_ELIGIBLE",
+  "gaps": [],
+  "contradictions": [],
+  "mock_action": {
+    "action_key": "DISP-003:0:refund:4.50",
+    "case_id": "DISP-003",
+    "disposition": "refund",
+    "amount": 4.5,
+    "currency": "SGD",
+    "receipt": "MOCK-6EC0587845A48F6E",
+    "status": "COMPLETED_SIMULATED",
+    "simulated": true,
+    "created_at": "2026-10-16T14:51:29.167247+00:00"
+  },
+  "notifications": [
+    {
+      "kind": "RESOLUTION_RECEIPT",
+      "recipient": "rider",
+      "message": "Simulated refund of SGD 4.50 proposed. Payment destination unknown; no real card or wallet transfer executed. This is a synthetic demo only.",
+      "status": "SIMULATED_OUTBOX_NOT_DELIVERED",
+      "created_at": "2026-10-16T14:51:29.167272+00:00",
+      "receipt": "MOCK-6EC0587845A48F6E"
+    }
+  ],
+  "processing_ms": 2.53
+}

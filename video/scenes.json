@@ -1,0 +1,154 @@
+[
+  {
+    "id": "opening",
+    "title": "RydeResolve",
+    "sub": "From trip context to a reasoned outcome",
+    "kind": "brand",
+    "image": null,
+    "narration": "RydeResolve gives riders, drivers, and reviewers a shared dispute process: explain the trip, inspect the evidence, and apply policy. Here is the updated synthetic demonstration."
+  },
+  {
+    "id": "problem",
+    "title": "One trip. Three perspectives.",
+    "sub": "Fair hearing \u00b7 Clear status \u00b7 Traceable decisions",
+    "kind": "priorities",
+    "image": null,
+    "narration": "A rider needs an explanation for a charge. A driver needs a fair chance to respond. A reviewer needs reliable evidence and a clear policy basis. The first account should not become the final answer."
+  },
+  {
+    "id": "rider-trip",
+    "title": "Start with the trip",
+    "sub": "New: trip history + illustrative route cards",
+    "kind": "phone",
+    "image": "rider-trip-phone",
+    "narration": "The rider portal now adds trip history. A trip card combines the route, fare, distance, duration, and driver context. The map and trip data are synthetic, with no live telemetry connected."
+  },
+  {
+    "id": "intake",
+    "title": "Report it in your own words",
+    "sub": "New: \u201cOther / I\u2019m not sure\u201d intake",
+    "kind": "phone",
+    "image": "rider-report-phone",
+    "narration": "From a trip, the rider opens a report with its reference already selected. They describe the issue, choose a category, and enter the disputed amount. Other, I\u2019m not sure gives unclear reports an explicit route to human classification."
+  },
+  {
+    "id": "architecture",
+    "title": "Advocacy is not authority",
+    "sub": "Six agents + an independent policy gate",
+    "kind": "architecture",
+    "image": null,
+    "narration": "The safety screen and orchestrator route the case. Rider and Driver Advocates work alongside policy and risk analysis. The Judge proposes an outcome. A separate deterministic gate checks eligibility for a simulated remedy or human review."
+  },
+  {
+    "id": "evidence",
+    "title": "Check facts before conclusions",
+    "sub": "New: readable case facts and values",
+    "kind": "screen",
+    "image": "fare-evidence",
+    "narration": "The Evidence tab now shows named facts and readable values. Here, twelve dollars was quoted and sixteen fifty charged. Claims are not automatically verified; the reviewer must check provenance before relying on a fact."
+  },
+  {
+    "id": "policy",
+    "title": "Read the rule behind the reference",
+    "sub": "New: expandable conditions, effects and evidence",
+    "kind": "policy",
+    "image": "fare-policy",
+    "narration": "Rule references expand into conditions, effects, evidence requirements, and source sections. A rule identifier becomes inspectable. Routing candidates are possible matches, not rulings: the reviewer still checks whether the conditions are satisfied."
+  },
+  {
+    "id": "agents",
+    "title": "Inspect both sides of the case",
+    "sub": "Updated: perspective cards + rule links",
+    "kind": "screen",
+    "image": "fare-agents",
+    "narration": "Agent Findings separates rider and driver perspectives, policy analysis, the risk check, and consistency assessment. Rule links connect those findings back to policy. This film uses offline mock mode, not verified live Gemini execution."
+  },
+  {
+    "id": "refund",
+    "title": "Return the disputed difference",
+    "sub": "SGD 16.50 \u2212 SGD 12.00 = SGD 4.50",
+    "kind": "screen",
+    "image": "fare-overview",
+    "narration": "The synthetic facts support an unnotified surge difference of four dollars fifty. The independent gate permits that narrow remedy. A simulated refund and mock receipt close the case. No funds move or notification is delivered."
+  },
+  {
+    "id": "trace",
+    "title": "Inspect the stored workflow",
+    "sub": "Recorded replay \u00b7 reviewer access",
+    "kind": "screen",
+    "image": "monitor",
+    "narration": "The monitor replays stored outputs and gate results. It is explicitly a recorded replay, not live execution. Reviewers can inspect the stored process without treating a replay animation as evidence of real-time model performance."
+  },
+  {
+    "id": "route",
+    "title": "A small claim can require review",
+    "sub": "4.3 km route deviation \u2192 human review",
+    "kind": "screen",
+    "image": "route",
+    "narration": "The route case records a four point three kilometre deviation. That triggers mandatory human review despite the small claim. Policy conditions, not just amount, determine whether automation is allowed."
+  },
+  {
+    "id": "safety",
+    "title": "Safety goes straight to a person",
+    "sub": "No AI fault finding. No AI remedy ruling.",
+    "kind": "screen",
+    "image": "safety",
+    "narration": "A safety concern inside a fare dispute goes immediately to human review. The Judge is skipped for safety adjudication. A human independently assesses fault and remedy; the AI does not make that ruling."
+  },
+  {
+    "id": "other",
+    "title": "Unclear category? Classify first.",
+    "sub": "New: manual triage before adjudication",
+    "kind": "screen",
+    "image": "other-review",
+    "narration": "Other reports stop automatic adjudication. A reviewer must classify the dispute before refund or credit is allowed. After reclassification, the case can be processed under the appropriate policy, while its original category remains in the audit trail."
+  },
+  {
+    "id": "driver",
+    "title": "Request evidence. Hear the response.",
+    "sub": "New: reviewer question \u2192 driver clarification",
+    "kind": "phone",
+    "image": "driver-requested-card",
+    "narration": "A reviewer can now ask either party for more information. The driver is asked for a timestamped message or call reference. Replies remain unverified until supported by evidence."
+  },
+  {
+    "id": "outcome",
+    "title": "Make the next step clear",
+    "sub": "Status \u00b7 Explanation \u00b7 Outcome",
+    "kind": "phone",
+    "image": "rider-outcome-phone",
+    "narration": "The rider sees a clear explanation, case progress, and the simulated refund. Unresolved cases show clarification or review as the next step. Internal investigation traces stay in the reviewer view."
+  },
+  {
+    "id": "comparison",
+    "title": "Compare on evidence, not a winner",
+    "sub": "Google ADK implementation path / Tencent ADP plan",
+    "kind": "comparison",
+    "image": null,
+    "narration": "The repository provides a Python Google ADK integration path, an independent gate, and trace inspection. Tencent ADP is an alternative architecture without comparable runnable evidence here. Compare both on identical cases, safety rules, trace access, latency, and review effort."
+  },
+  {
+    "id": "measurements",
+    "title": "Measure what was actually checked",
+    "sub": "Local reference behavior \u00b7 no cloud benchmark",
+    "kind": "metrics",
+    "image": null,
+    "narration": "Locally, three hundred and forty six backend tests and eighteen frontend proxy tests passed. Fare, route, safety, and manual-classification checks exercised their expected paths. These reference checks do not measure production accuracy or cloud latency."
+  },
+  {
+    "id": "deployment",
+    "title": "Validate the hosted path next",
+    "sub": "Next.js \u2192 FastAPI \u2192 Cloud Run / Firestore / GCS",
+    "kind": "deployment",
+    "image": null,
+    "narration": "The intended hosted path uses Next.js, FastAPI, Cloud Run, Firestore, and Cloud Storage. Verify runtime identities, persistence, live traces, and latency. Interview findings and CodeBuddy development proof still require actual supporting records."
+  },
+  {
+    "id": "closing",
+    "title": "Evidence first. People in control.",
+    "sub": "Fair hearing \u2192 Policy checks \u2192 Human oversight",
+    "kind": "closing",
+    "image": null,
+    "narration": "RydeResolve\u2019s boundary is practical: use evidence and policy where automation is justified, and keep people in charge where it is not. Compare both implementations on equal terms."
+  }
+]

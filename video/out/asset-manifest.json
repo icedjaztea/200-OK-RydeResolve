@@ -1,0 +1,121 @@
+{
+  "developer_baseline": "46d17cf1b2e02ed8d4b66d6aa267ea720443ea09",
+  "duration_frames": 7661,
+  "fps": 30,
+  "scenes": [
+    {
+      "id": "opening",
+      "fromFrame": 0,
+      "duration": 340,
+      "image": null
+    },
+    {
+      "id": "problem",
+      "fromFrame": 340,
+      "duration": 359,
+      "image": null
+    },
+    {
+      "id": "rider-trip",
+      "fromFrame": 699,
+      "duration": 345,
+      "image": "rider-trip-phone"
+    },
+    {
+      "id": "intake",
+      "fromFrame": 1044,
+      "duration": 398,
+      "image": "rider-report-phone"
+    },
+    {
+      "id": "architecture",
+      "fromFrame": 1442,
+      "duration": 439,
+      "image": null
+    },
+    {
+      "id": "evidence",
+      "fromFrame": 1881,
+      "duration": 387,
+      "image": "fare-evidence"
+    },
+    {
+      "id": "policy",
+      "fromFrame": 2268,
+      "duration": 434,
+      "image": "fare-policy"
+    },
+    {
+      "id": "agents",
+      "fromFrame": 2702,
+      "duration": 441,
+      "image": "fare-agents"
+    },
+    {
+      "id": "refund",
+      "fromFrame": 3143,
+      "duration": 407,
+      "image": "fare-overview"
+    },
+    {
+      "id": "trace",
+      "fromFrame": 3550,
+      "duration": 422,
+      "image": "monitor"
+    },
+    {
+      "id": "route",
+      "fromFrame": 3972,
+      "duration": 361,
+      "image": "route"
+    },
+    {
+      "id": "safety",
+      "fromFrame": 4333,
+      "duration": 364,
+      "image": "safety"
+    },
+    {
+      "id": "other",
+      "fromFrame": 4697,
+      "duration": 436,
+      "image": "other-review"
+    },
+    {
+      "id": "driver",
+      "fromFrame": 5133,
+      "duration": 338,
+      "image": "driver-requested-card"
+    },
+    {
+      "id": "outcome",
+      "fromFrame": 5471,
+      "duration": 367,
+      "image": "rider-outcome-phone"
+    },
+    {
+      "id": "comparison",
+      "fromFrame": 5838,
+      "duration": 536,
+      "image": null
+    },
+    {
+      "id": "measurements",
+      "fromFrame": 6374,
+      "duration": 453,
+      "image": null
+    },
+    {
+      "id": "deployment",
+      "fromFrame": 6827,
+      "duration": 489,
+      "image": null
+    },
+    {
+      "id": "closing",
+      "fromFrame": 7316,
+      "duration": 345,
+      "image": null
+    }
+  ]
+}

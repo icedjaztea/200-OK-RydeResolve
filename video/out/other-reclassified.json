@@ -1,0 +1,106 @@
+{
+  "case_id": "RIDER-B377JA-4B68",
+  "trip_id": "DEMO-DISP-003",
+  "category": "fare_dispute",
+  "filed_by": "rider",
+  "description": "A charge appeared after my trip and I am unsure which category applies. Please review.",
+  "dispute_amount": 4.5,
+  "dispute_value_basis": "disputed_remedy_amount",
+  "facts": {},
+  "fraud_flags": 0,
+  "synthetic": true,
+  "source_trust": "UNVERIFIED_USER_REPORT",
+  "rider_id": "rider_a",
+  "status": "NEW",
+  "evidence": [],
+  "events": [
+    {
+      "kind": "case_created",
+      "timestamp": "2026-10-16T14:52:45.699372+00:00",
+      "details": {
+        "synthetic": true,
+        "category": "other"
+      },
+      "previous_hash": "",
+      "hash": "085e6b31b9b0a932524d1c16bb07d069500bbb62101cf96612b4e22743eb7914"
+    },
+    {
+      "kind": "routing_index_read",
+      "timestamp": "2026-10-16T14:53:31.850414+00:00",
+      "details": {
+        "count": 6,
+        "matched_rule_ids": []
+      },
+      "previous_hash": "085e6b31b9b0a932524d1c16bb07d069500bbb62101cf96612b4e22743eb7914",
+      "hash": "fb146b72150b66586dd76c6e6bf021468af4840a825cc5c162effddac11a2fe8"
+    },
+    {
+      "kind": "manual_classification_required",
+      "timestamp": "2026-10-16T14:53:31.850440+00:00",
+      "details": {
+        "original_category": "other"
+      },
+      "previous_hash": "fb146b72150b66586dd76c6e6bf021468af4840a825cc5c162effddac11a2fe8",
+      "hash": "b4d501ad890c1f6bdad0b8f7fcfa058a8ab79795f096fe8ddffbee75848a0db9"
+    },
+    {
+      "kind": "case_reclassified",
+      "timestamp": "2026-10-16T14:53:36.248654+00:00",
+      "details": {
+        "from": "other",
+        "to": "fare_dispute",
+        "reason": "Reviewer reclassification from \"other\" to fare_dispute"
+      },
+      "previous_hash": "b4d501ad890c1f6bdad0b8f7fcfa058a8ab79795f096fe8ddffbee75848a0db9",
+      "hash": "e0cec274d50b26c8dfdd87283dcdec2f0c5e1807bf24c80c12bc43a9ed3772bd"
+    }
+  ],
+  "clarifications": [],
+  "revision": 0,
+  "driver_id": null,
+  "policy_version": "2.1",
+  "rulebook_version": "1.0.0-draft",
+  "evidence_snapshot_hash": "568156985054b693270f499db54a957499aa81c939c20d48e900e6c016925c4c",
+  "routing": {
+    "candidate_rule_ids": [
+      "SF-5.1",
+      "SF-5.2",
+      "TH-6.1-LOW",
+      "TH-6.1-MID",
+      "TH-6.1-HIGH",
+      "PR-7"
+    ],
+    "matched_phrase_rule_ids": [],
+    "evidence_to_fetch": [
+      "dispute_amount",
+      "dispute_type",
+      "policy_version",
+      "case_snapshot_id"
+    ],
+    "uncertain_conditions": [],
+    "safety_screen": "not_observed",
+    "policy_version": "2.1",
+    "rulebook_version": "1.0.0-draft"
+  },
+  "sla_routing": {
+    "priority": "P2_STANDARD",
+    "queue": "STANDARD_DISPUTES",
+    "requires_immediate_attention": false,
+    "target_minutes": null,
+    "source": "demo_priority_proposal_not_Ryde_SLA"
+  },
+  "original_escalation": "MANUAL_CLASSIFICATION",
+  "notifications": [
+    {
+      "kind": "CLARIFICATION_REQUEST",
+      "recipient": "reviewer",
+      "message": "Case RIDER-B377JA-4B68: \"Other\" category submitted. Manual classification required before policy adjudication can proceed. No automated financial action.",
+      "status": "SIMULATED_OUTBOX_NOT_DELIVERED",
+      "created_at": "2026-10-16T14:53:31.850448+00:00"
+    }
+  ],
+  "processing_ms": 0.94,
+  "original_category": "other",
+  "reclassification_reason": "Reviewer reclassification from \"other\" to fare_dispute",
+  "reclassified_at": "2026-10-16T14:53:36.248615+00:00"
+}
