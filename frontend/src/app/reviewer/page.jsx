@@ -108,6 +108,7 @@ export default function ReviewerWorkbench(){
       <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
         {policy&&<span className="micro" style={{padding:0}}>{policy.ai_mode==='mock'?'Mock':'Live ADK'} · signoff: {policy.team_signoff_valid?'verified':'missing'}</span>}
         <div className="demo-label">DEMO</div>
+        <Link href="/monitor" className="lab-enter">ADK Monitor</Link>
         <Link href="/" className="lab-enter">← Exit</Link>
       </div>
     </div>
