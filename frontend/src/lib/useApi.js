@@ -1,27 +1,28 @@
 'use client';
-import {useState,useCallback} from 'react';
+import {useState,useCallback,useEffect} from 'react';
 
 /**
  * Shared API hook — wraps the /api/proxy pattern used across all portals.
- * Stores the demo passcode in React state (never in URLs).
- * The backend independently authorizes every request via X-Demo-Key.
+ * Open access: no passcode needed. The key is auto-set based on the page.
  */
-export function useApi(){
-  const [key,setKey]=useState('');
+export function useApi(defaultKey='rider'){
+  const [key,setKey]=useState(defaultKey);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
 
+  useEffect(()=>{ if(!key) setKey(defaultKey); },[key,defaultKey]);
+
   const call=useCallback(async(path,opts={})=>{
-    if(!key)throw Error('Enter your demo passcode first.');
-    const headers={'X-Demo-Key':key,...opts.headers};
+    const k=key||defaultKey;
+    const headers={'X-Demo-Key':k,...opts.headers};
     if(opts.body && !(opts.body instanceof FormData))headers['Content-Type']='application/json';
     const response=await fetch('/api/proxy/'+path,{method:opts.method||'GET',headers,
       body:opts.body instanceof FormData?opts.body:opts.body?JSON.stringify(opts.body):undefined});
     let data;try{data=await response.json()}catch{data={detail:`HTTP ${response.status}`}}
     if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:JSON.stringify(data));
     return data;
-  },[key]);
+  },[key,defaultKey]);
 
   async function run(fn){
     setBusy(true);setError('');setNotice('');

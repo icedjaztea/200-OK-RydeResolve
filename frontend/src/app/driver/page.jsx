@@ -28,7 +28,7 @@ const NAV_TABS = [
 ];
 
 export default function DriverPortal(){
-  const api=useApi();
+  const api=useApi('driver_a');
   const [cases,setCases]=useState([]);
   const [detail,setDetail]=useState(null);
   const [tab,setTab]=useState('disputes');
@@ -36,20 +36,26 @@ export default function DriverPortal(){
   const [trips,setTrips]=useState([]);
   const [selectedTrip,setSelectedTrip]=useState(null);
   const [showTripForm,setShowTripForm]=useState(false);
+  const [identity,setIdentity]=useState('driver_a');
   const [tripForm,setTripForm]=useState({
     pickup_location:'',dropoff_location:'',date:'',time:'',
     fare:'',distance_km:'',duration_min:'',rider_name:'',rider_rating:''
   });
 
   useEffect(()=>{
-    if(api.key) setTrips(getTrips(api.key));
-  },[api.key]);
+    setTrips(getTrips(identity));
+  },[identity]);
+
+  // Auto-connect on mount
+  useEffect(()=>{
+    api.run(connect);
+  },[]);
 
   async function connect(){
     await api.call('health');
     const list=await api.call('cases');
     setCases(list);
-    setTrips(getTrips(api.key));
+    setTrips(getTrips(identity));
   }
 
   async function selectCase(id){
@@ -84,10 +90,10 @@ export default function DriverPortal(){
       rider_rating:isNaN(parseFloat(tripForm.rider_rating))?4.8:parseFloat(tripForm.rider_rating),
       status:'completed',
       payment_method:'Credit card',
-      identity_id:api.key,
+      identity_id:identity,
       perspective:'driver',
     };
-    const updated=addTrip(api.key,trip);
+    const updated=addTrip(identity,trip);
     setTrips(updated);
     setShowTripForm(false);
     setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',rider_name:'',rider_rating:''});
@@ -99,21 +105,15 @@ export default function DriverPortal(){
   const pendingClarifications=detail?.clarifications?.filter(c=>c.status==='PENDING'&&c.recipient==='driver')||[];
   const actionNeededCases=cases.filter(c=>c.status==='AWAITING_CLARIFICATION');
   const activeCases=cases.filter(c=>c.status!=='RESOLVED'&&c.status!=='REVIEWED_AND_RESOLVED');
-  const caseTrip=detail?findTrip(api.key,detail.trip_id):null;
+  const caseTrip=detail?findTrip(identity,detail.trip_id):null;
 
-  // --- Not connected ---
-  if(!api.key||!cases.length){
+  // --- Loading ---
+  if(!cases.length){
     return <div className="app-shell">
       <div className="app-connect driver">
         <div className="app-logo-big">D</div>
         <h2>RydeResolve Driver</h2>
-        <p>Select your demo identity to view disputes involving your trips and your trip history. Case isolation is enforced — you can only see your own cases.</p>
-        <select aria-label="Demo identity" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}>
-          <option value="">Select your identity…</option>
-          <option value="change-driver-key">Driver A</option>
-          <option value="change-driver-b-key">Driver B</option>
-        </select>
-        <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>{api.busy?'Connecting…':'Connect'}</button>
+        <p>Loading your disputes and trip history…</p>
       </div>
       {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}
       <div style={{textAlign:'center',padding:'16px'}}>
@@ -130,6 +130,10 @@ export default function DriverPortal(){
         <h1>RydeResolve <span>Driver</span></h1>
         <p className="app-sub">{activeCases.length} active case{activeCases.length!==1?'s':''}{actionNeededCases.length>0?` · ${actionNeededCases.length} need response`:''}</p>
       </div>
+      <select aria-label="Switch driver" value={identity} onChange={e=>{setIdentity(e.target.value);api.setKey(e.target.value);api.run(connect)}} style={{padding:'6px 10px',borderRadius:'8px',border:'1px solid var(--border)'}}>
+        <option value="driver_a">Driver A</option>
+        <option value="driver_b">Driver B</option>
+      </select>
     </header>
 
     {api.error&&<div className="alert error" role="alert" style={{margin:'0 12px'}}>{api.error}</div>}

@@ -24,15 +24,8 @@ app.add_middleware(CORSMiddleware,allow_origins=origins,allow_credentials=False,
 
 
 def demo_auth(x_demo_key:str|None=Header(default=None)) -> DemoIdentity:
-    """Authenticate X-Demo-Key and return a DemoIdentity.
-
-    These are demo passcodes, not production authentication.
-    The browser never supplies an identity; the server resolves it.
-    """
-    try:
-        return authenticate(x_demo_key)
-    except ValueError:
-        raise HTTPException(status_code=401,detail='Invalid synthetic-demo key')
+    """Open access — any caller is accepted. Role is inferred from the key."""
+    return authenticate(x_demo_key)
 
 
 def reviewer_only(identity:DemoIdentity=Depends(demo_auth)):

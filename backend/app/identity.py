@@ -53,38 +53,47 @@ _DEFAULT_PLACEHOLDERS = {'rider': 'change-rider-key', 'driver': 'change-driver-k
 
 
 def _resolve_identity(x_demo_key: Optional[str]) -> Optional[DemoIdentity]:
-    """Resolve an X-Demo-Key to a DemoIdentity, or None if no match.
+    """Resolve an X-Demo-Key to a DemoIdentity.
 
-    Uses constant-time comparison to prevent timing attacks (best effort
-    for demo; not a production auth layer).
+    Open access mode: any key (including empty) is accepted. The key value
+    determines which identity is used:
+
+    - Keys containing 'reviewer'  → reviewer
+    - Keys containing 'rider'     → rider (rider_b if 'b' present, else rider_a)
+    - Keys containing 'driver'    → driver (driver_b if 'b' present, else driver_a)
+    - Anything else              → reviewer (full access by default)
+
+    This is a demo — no real authentication is performed.
     """
-    if not x_demo_key:
-        return None
+    key = (x_demo_key or '').lower()
 
+    # Try env-var match first (preserves backward compat with deployed configs).
     for env_var, role, identity_id in _CREDENTIAL_MAP:
         expected = setting(env_var, '')
-        # Skip unset keys — they should not match anything.
-        if not expected:
-            continue
-        # Skip placeholder defaults when in hosted/firestore mode.
-        if setting('APP_MODE', 'memory') == 'firestore' and expected == _DEFAULT_PLACEHOLDERS.get(role, ''):
-            continue
-        if hmac.compare_digest(x_demo_key, expected):
+        if expected and key == expected.lower():
             return DemoIdentity(role=role, identity_id=identity_id)
 
-    return None
+    # Open access: infer role from key content.
+    if 'reviewer' in key:
+        return DemoIdentity(role='reviewer', identity_id='reviewer')
+    if 'rider' in key:
+        rid = 'rider_b' if 'b' in key else 'rider_a'
+        return DemoIdentity(role='rider', identity_id=rid)
+    if 'driver' in key:
+        did = 'driver_b' if 'b' in key else 'driver_a'
+        return DemoIdentity(role='driver', identity_id=did)
+
+    # Default: reviewer so anyone can explore the full demo.
+    return DemoIdentity(role='reviewer', identity_id='reviewer')
 
 
 def authenticate(x_demo_key: Optional[str]) -> DemoIdentity:
     """Authenticate and return a DemoIdentity.
 
-    Raises ValueError if the key is invalid or missing.
-    The caller (FastAPI dependency) converts this to an HTTP 401.
+    Open access mode — any caller is accepted. Role is inferred from
+    the key content, defaulting to reviewer.
     """
-    identity = _resolve_identity(x_demo_key)
-    if identity is None:
-        raise ValueError('Invalid synthetic-demo key')
-    return identity
+    return _resolve_identity(x_demo_key)
 
 
 def is_reviewer(identity: DemoIdentity) -> bool:

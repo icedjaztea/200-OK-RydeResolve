@@ -45,7 +45,7 @@ const NAV_TABS = [
 ];
 
 export default function RiderPortal(){
-  const api=useApi();
+  const api=useApi('rider_a');
   const [cases,setCases]=useState([]);
   const [detail,setDetail]=useState(null);
   const [tab,setTab]=useState('cases');
@@ -54,6 +54,7 @@ export default function RiderPortal(){
   const [trips,setTrips]=useState([]);
   const [selectedTrip,setSelectedTrip]=useState(null);
   const [showTripForm,setShowTripForm]=useState(false);
+  const [identity,setIdentity]=useState('rider_a');
 
   // Trip creation form
   const [tripForm,setTripForm]=useState({
@@ -67,14 +68,19 @@ export default function RiderPortal(){
   const [formBusy,setFormBusy]=useState(false);
 
   useEffect(()=>{
-    if(api.key) setTrips(getTrips(api.key));
-  },[api.key]);
+    setTrips(getTrips(identity));
+  },[identity]);
+
+  // Auto-connect on mount
+  useEffect(()=>{
+    api.run(connect);
+  },[]);
 
   async function connect(){
     await api.call('health');
     const list=await api.call('cases');
     setCases(list);
-    setTrips(getTrips(api.key));
+    setTrips(getTrips(identity));
   }
 
   async function selectCase(id){
@@ -117,9 +123,9 @@ export default function RiderPortal(){
       driver_rating:4.8,
       status:'completed',
       payment_method:'Credit card',
-      identity_id:api.key,
+      identity_id:identity,
     };
-    const updated=addTrip(api.key,trip);
+    const updated=addTrip(identity,trip);
     setTrips(updated);
     setShowTripForm(false);
     setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',driver_name:'',vehicle_info:''});
@@ -165,21 +171,15 @@ export default function RiderPortal(){
   const pendingClarifications=detail?.clarifications?.filter(c=>c.status==='PENDING'&&c.recipient==='rider')||[];
   const activeCases=cases.filter(c=>c.status!=='RESOLVED'&&c.status!=='REVIEWED_AND_RESOLVED');
 
-  const caseTrip=detail?findTrip(api.key,detail.trip_id):null;
+  const caseTrip=detail?findTrip(identity,detail.trip_id):null;
 
-  // --- Not connected: mobile connect screen ---
-  if(!api.key||!cases.length){
+  // --- Loading screen ---
+  if(!cases.length){
     return <div className="app-shell">
       <div className="app-connect">
         <div className="app-logo-big">R</div>
         <h2>RydeResolve Rider</h2>
-        <p>Select your demo identity to view your disputes and trip history. The backend enforces case isolation — you can only see your own cases.</p>
-        <select aria-label="Demo identity" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}>
-          <option value="">Select your identity…</option>
-          <option value="change-rider-key">Rider A</option>
-          <option value="change-rider-b-key">Rider B</option>
-        </select>
-        <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>{api.busy?'Connecting…':'Connect'}</button>
+        <p>Loading your disputes and trip history…</p>
       </div>
       {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}
       <div style={{textAlign:'center',padding:'16px'}}>
@@ -197,6 +197,10 @@ export default function RiderPortal(){
         <h1>RydeResolve <span>Rider</span></h1>
         <p className="app-sub">{activeCases.length} active case{activeCases.length!==1?'s':''}{pendingClarifications.length>0?` · ${pendingClarifications.length} awaiting your response`:''}</p>
       </div>
+      <select aria-label="Switch rider" value={identity} onChange={e=>{setIdentity(e.target.value);api.setKey(e.target.value);api.run(connect)}} style={{padding:'6px 10px',borderRadius:'8px',border:'1px solid var(--border)'}}>
+        <option value="rider_a">Rider A</option>
+        <option value="rider_b">Rider B</option>
+      </select>
     </header>
 
     {api.error&&<div className="alert error" role="alert" style={{margin:'0 12px'}}>{api.error}</div>}
@@ -212,7 +216,7 @@ export default function RiderPortal(){
         {cases.length===0?
           <div className="card empty" style={{padding:'40px 16px'}}><div className="empty-symbol">📋</div><h2>No cases yet</h2><p>Tap "Report an issue" to file a dispute.</p></div>
         :cases.map(item=>{
-            const t=findTrip(api.key,item.trip_id);
+            const t=findTrip(identity,item.trip_id);
             return <div key={item.case_id} className={'app-case-card '+(detail?.case_id===item.case_id?'selected':'')} onClick={()=>api.run(()=>selectCase(item.case_id))} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')api.run(()=>selectCase(item.case_id))}}>
               <div className="acc-top">
                 <strong>{item.case_id}</strong>

@@ -5,7 +5,7 @@ import {
 } from '../../lib/labels';
 
 export default function Dashboard(){
-  const [key,setKey]=useState('');const [role,setRole]=useState('reviewer');
+  const [key,setKey]=useState('reviewer');const [role,setRole]=useState('reviewer');
   const [cases,setCases]=useState([]);const [detail,setDetail]=useState(null);
   const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');
   const [reviewDisposition,setReviewDisposition]=useState('refund');const [reviewAmount,setReviewAmount]=useState('0');
@@ -20,7 +20,6 @@ export default function Dashboard(){
   const [packet,setPacket]=useState(null);
 
   const call=useCallback(async(path,opts={})=>{
-    if(!key)throw Error('Enter your demo passcode first.');
     const headers={'X-Demo-Key':key,...opts.headers};
     if(opts.body && !(opts.body instanceof FormData))headers['Content-Type']='application/json';
     const response=await fetch('/api/proxy/'+path,{method:opts.method||'GET',headers,
@@ -31,13 +30,13 @@ export default function Dashboard(){
   },[key]);
 
   const refresh=useCallback(async(keep)=>{
-    if(!key)return;
     const list=await call('cases');setCases(list);
     if(keep){setDetail(await call('cases/'+keep))}
-  },[call,key]);
+  },[call]);
 
-  useEffect(()=>{if(key){refresh(detail?.case_id).catch(e=>setError(e.message))}},[key]);
-  async function run(fn){setBusy(true);setError('');setNotice('');try{await fn()}catch(e){setError(e.message)}finally{setBusy(false)}}
+  useEffect(()=>{refresh(detail?.case_id).catch(e=>setError(e.message));setPolicy(null);call('health').then(p=>setPolicy(p)).catch(e=>setError(e.message))},[key]);
+  async function run(fn){setBusy(true);setError('');setNotice('');try{await fn()}catch(e){setError(e.message)}finally{setBusy(false)}
+  }
   const selected=detail?.case_id;
   const latestPending=detail?.clarifications?.find(c=>c.status==='PENDING');
 
@@ -47,17 +46,16 @@ export default function Dashboard(){
       <div className="demo-label">DEMO · SYNTHETIC DATA</div>
     </header>
     <section className="connection card">
-      <div><h2>Demo access</h2><p>Enter a role's passcode from backend/.env. This is demo-only access, not production identity.</p></div>
-      <select value={role} onChange={e=>setRole(e.target.value)}><option value="reviewer">Reviewer</option><option value="rider">Rider</option><option value="driver">Driver</option></select>
-      <input aria-label="Demo passcode" type="password" placeholder={`${role} passcode`} value={key} onChange={e=>setKey(e.target.value)}/>
-      <button onClick={()=>run(async()=>{await refresh(selected);setPolicy(await call('health'))})} disabled={busy||!key}>Connect</button>
+      <div><h2>Demo access</h2><p>Open access — select a role to explore. No passcode needed.</p></div>
+      <select value={role} onChange={e=>{setRole(e.target.value);setKey(e.target.value)}}><option value="reviewer">Reviewer</option><option value="rider_a">Rider A</option><option value="rider_b">Rider B</option><option value="driver_a">Driver A</option><option value="driver_b">Driver B</option></select>
+      <button onClick={()=>run(async()=>{await refresh(selected);setPolicy(await call('health'))})} disabled={busy}>Refresh</button>
     </section>
     {error&&<div className="alert error" role="alert">{error}</div>}{notice&&<div className="alert success">{notice}</div>}
     {policy&&<div className="micro">Backend: {policy.ai_mode==='mock'?'MOCK MODE (no model calls)':'LIVE ADK'} · Policy signoff: {policy.team_signoff_valid?'verified':'missing — automatic decisions blocked'} · {policy.storage_mode}</div>}
     <section className="workspace">
       <aside className="card sidebar">
-        <div className="section-head"><h2>Case queue</h2><button className="small" disabled={!key||busy} onClick={()=>run(async()=>{await call('cases/seed',{method:'POST'});await refresh();setNotice('Synthetic cases loaded.')})}>Load demos</button></div>
-        {cases.length===0?<p className="muted">Enter demo key, click Connect, then Load demos.</p>:cases.map(item=><button key={item.case_id} className={'case-item '+(selected===item.case_id?'selected':'')} onClick={()=>run(async()=>setDetail(await call('cases/'+item.case_id)))}>
+        <div className="section-head"><h2>Case queue</h2><button className="small" disabled={busy} onClick={()=>run(async()=>{await call('cases/seed',{method:'POST'});await refresh();setNotice('Synthetic cases loaded.')})}>Load demos</button></div>
+        {cases.length===0?<p className="muted">Click Load demos to begin.</p>:cases.map(item=><button key={item.case_id} className={'case-item '+(selected===item.case_id?'selected':'')} onClick={()=>run(async()=>setDetail(await call('cases/'+item.case_id)))}>
           <strong>{item.case_id}</strong><span>{categoryLabel(item.category)}</span><em className={'status '+(TONES[item.status]||'neutral')}>{statusLabel(item.status)}</em>
         </button>)}
       </aside>

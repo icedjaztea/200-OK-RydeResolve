@@ -1,0 +1,2 @@
+case_id,path,expected_path,path_correct,policy_citations_valid,adk_trace_events,latency_seconds,ai_mode,error
+DISP-003,HUMAN_REVIEW,AUTO_ELIGIBLE,False,True,24,143.63,adk,

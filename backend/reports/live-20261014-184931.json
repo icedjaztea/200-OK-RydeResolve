@@ -1,0 +1,21 @@
+{
+  "timestamp_utc": "2026-10-14T18:49:31.071553+00:00",
+  "model": "gemini-3.8-flash",
+  "case_count": 1,
+  "paths_correct": 0,
+  "live_execution_verified": true,
+  "notes": "Synthetic cases; not Ryde production or calibrated confidence. Inspect supporting-evidence citations manually.",
+  "results": [
+    {
+      "case_id": "DISP-003",
+      "path": "HUMAN_REVIEW",
+      "expected_path": "AUTO_ELIGIBLE",
+      "path_correct": false,
+      "policy_citations_valid": true,
+      "adk_trace_events": 24,
+      "latency_seconds": 143.63,
+      "ai_mode": "adk",
+      "error": null
+    }
+  ]
+}

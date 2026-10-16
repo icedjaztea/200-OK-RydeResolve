@@ -146,7 +146,7 @@ function ruleTitle(rule){
 }
 
 export default function ReviewerWorkbench(){
-  const api=useApi();
+  const api=useApi('reviewer');
   const [cases,setCases]=useState([]);
   const [detail,setDetail]=useState(null);
   const [policy,setPolicy]=useState(null);
@@ -181,6 +181,11 @@ export default function ReviewerWorkbench(){
     const list=await api.call('cases');
     setCases(list);
   }
+
+  // Auto-connect on mount
+  useEffect(()=>{
+    api.run(connect);
+  },[]);
 
   async function selectCase(id){
     if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
@@ -303,11 +308,8 @@ export default function ReviewerWorkbench(){
 
     {/* Connect */}
     {!policy&&<div className="card" style={{maxWidth:'500px',margin:'40px auto'}}>
-      <h3 style={{marginTop:0}}>Reviewer access</h3>
-      <p className="muted">Click Connect to enter the reviewer workbench.</p>
-      <div className="fieldgrid" style={{marginBottom:'12px'}}>
-        <button disabled={api.busy} onClick={()=>{api.setKey('change-reviewer-key');api.run(connect)}}>{api.busy?'Connecting…':'Connect'}</button>
-      </div>
+      <h3 style={{marginTop:0}}>Loading reviewer workbench…</h3>
+      <p className="muted">Connecting to the dispute resolution backend.</p>
       {api.error&&<div className="alert error">{api.error}</div>}
     </div>}
 

@@ -142,7 +142,7 @@ const STATE_LABEL={
 const REPLAY_STEPS=NODES.map(n=>n.id);
 
 export default function MonitorPage(){
-  const api=useApi();
+  const api=useApi('reviewer');
   const [cases,setCases]=useState([]);
   const [detail,setDetail]=useState(null);
   const [selected,setSelected]=useState('');
@@ -159,6 +159,11 @@ export default function MonitorPage(){
     const list=await api.call('cases');
     setCases(list);
   }
+
+  // Auto-connect on mount
+  useEffect(()=>{
+    api.run(connect);
+  },[]);
 
   // ── Load a case for replay ───────────────────────────────────────────────
   async function loadCase(id){
@@ -238,23 +243,12 @@ export default function MonitorPage(){
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
-  if(!api.key){
+  if(!cases.length){
     return(
       <main className="monitor-page">
         <div className="monitor-auth-card">
           <h1>ADK Execution Monitor</h1>
-          <p className="monitor-subtitle">Recorded run replay — reviewer access required</p>
-          <p className="monitor-hint">Technical agent traces are visible only to authorized Reviewer identity.</p>
-          <input
-            className="passcode-input"
-            placeholder="Enter reviewer demo passcode"
-            type="password"
-            value={api.key}
-            onChange={e=>api.setKey(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&api.run(connect)}
-            aria-label="Reviewer demo passcode"
-          />
-          <button disabled={api.busy} onClick={()=>api.run(connect)}>Connect</button>
+          <p className="monitor-subtitle">Loading recorded execution traces…</p>
           {api.error&&<div className="alert alert-error">{api.error}</div>}
           <div className="monitor-back-link"><Link href="/">← Back to home</Link></div>
         </div>

@@ -1,0 +1,44 @@
+{
+  "timestamp_utc": "2026-10-14T18:58:47.482144+00:00",
+  "model": "gemini-3.8-flash",
+  "case_count": 1,
+  "paths_correct": 0,
+  "live_execution_verified": true,
+  "notes": "Synthetic cases; not Ryde production or calibrated confidence. Inspect supporting-evidence citations manually.",
+  "results": [
+    {
+      "case_id": "DISP-003",
+      "path": "HUMAN_REVIEW",
+      "expected_path": "AUTO_ELIGIBLE",
+      "path_correct": false,
+      "policy_citations_valid": true,
+      "adk_trace_events": 26,
+      "latency_seconds": 102.636,
+      "ai_mode": "adk",
+      "error": null,
+      "diagnostics": {
+        "det_candidate_disposition": "refund",
+        "det_candidate_amount": 4.5,
+        "judge_disposition": "refund",
+        "judge_amount": 4.5,
+        "gate_path": "HUMAN_REVIEW",
+        "gate_blocking_rules": [],
+        "gate_reasons": [
+          "One or more agents failed (parse_failed, agent_error, or missing required fields); cannot finalize autonomously"
+        ],
+        "failed_agent_names": [
+          "DisputeOrchestrator",
+          "PolicyPrecedent"
+        ],
+        "judge_consistency_passed": true,
+        "adk_tools_invoked": [
+          "get_full_policy_rules",
+          "get_relevant_precedents",
+          "get_rulebook_candidates"
+        ],
+        "sanitized_failure_codes": []
+      },
+      "diagnostics_json": "{\"det_candidate_disposition\": \"refund\", \"det_candidate_amount\": 4.5, \"judge_disposition\": \"refund\", \"judge_amount\": 4.5, \"gate_path\": \"HUMAN_REVIEW\", \"gate_blocking_rules\": [], \"gate_reasons\": [\"One or more agents failed (parse_failed, agent_error, or missing required fields); cannot finalize autonomously\"], \"failed_agent_names\": [\"DisputeOrchestrator\", \"PolicyPrecedent\"], \"judge_consistency_passed\": true, \"adk_tools_invoked\": [\"get_full_policy_rules\", \"get_relevant_precedents\", \"get_rulebook_candidates\"], \"sanitized_failure_codes\": []}"
+    }
+  ]
+}

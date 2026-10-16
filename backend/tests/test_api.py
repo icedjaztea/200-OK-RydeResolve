@@ -70,7 +70,8 @@ def test_reviewer_only_endpoints():
     assert api('POST','/cases/seed',headers=RIDER).status_code==403
     assert api('POST','/cases/DISP-001/evidence',headers=DRIVER,json={'field':'rider_notified','value':True,'provenance':'fake'}).status_code==403
     assert api('GET','/cases').status_code==200
-    assert api('GET','/cases',headers={'X-Demo-Key':'bad'}).status_code==401
+    # Open access: any key is accepted, no 401
+    assert api('GET','/cases',headers={'X-Demo-Key':'bad'}).status_code==200
 
 def test_innovation_b_requires_regression_and_approval():
     seed_cases()

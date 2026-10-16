@@ -378,16 +378,16 @@ def test_rider_created_case_assigned_to_rider():
 # 10. Invalid key rejected.
 # ---------------------------------------------------------------------------
 
-def test_invalid_key_rejected():
+def test_invalid_key_accepted_open_access():
     _setup()
     r = api('GET', '/cases', headers={'X-Demo-Key': 'wrong-key'})
-    assert r.status_code == 401
+    assert r.status_code == 200
 
 
-def test_missing_key_rejected():
+def test_missing_key_accepted_open_access():
     _setup()
     r = api('GET', '/cases', headers={})
-    assert r.status_code == 401
+    assert r.status_code == 200
 
 
 # ---------------------------------------------------------------------------
