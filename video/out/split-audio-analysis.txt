@@ -1,0 +1,186 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/workspace/ryderesolve-video-v2/video/out/RydeResolve-Split-View-Walkthrough.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.7.103
+  Duration: 00:04:15.50, start: 0.000000, bitrate: 981 kb/s
+  Chapters:
+    Chapter #0:0: start 0.000000, end 11.333000
+      Metadata:
+        title           : RydeResolve
+    Chapter #0:1: start 11.333000, end 23.300000
+      Metadata:
+        title           : One trip. Three perspectives.
+    Chapter #0:2: start 23.300000, end 34.800000
+      Metadata:
+        title           : Start with the trip
+    Chapter #0:3: start 34.800000, end 48.067000
+      Metadata:
+        title           : Report it in your own words
+    Chapter #0:4: start 48.067000, end 62.700000
+      Metadata:
+        title           : Advocacy is not authority
+    Chapter #0:5: start 62.700000, end 75.600000
+      Metadata:
+        title           : Check facts before conclusions
+    Chapter #0:6: start 75.600000, end 90.067000
+      Metadata:
+        title           : Read the rule behind the reference
+    Chapter #0:7: start 90.067000, end 104.767000
+      Metadata:
+        title           : Inspect both sides of the case
+    Chapter #0:8: start 104.767000, end 118.333000
+      Metadata:
+        title           : Return the disputed difference
+    Chapter #0:9: start 118.333000, end 132.400000
+      Metadata:
+        title           : Inspect the stored workflow
+    Chapter #0:10: start 132.400000, end 144.433000
+      Metadata:
+        title           : A small claim can require review
+    Chapter #0:11: start 144.433000, end 156.567000
+      Metadata:
+        title           : Safety goes straight to a person
+    Chapter #0:12: start 156.567000, end 171.100000
+      Metadata:
+        title           : Unclear category? Classify first.
+    Chapter #0:13: start 171.100000, end 182.367000
+      Metadata:
+        title           : Request evidence. Hear the response.
+    Chapter #0:14: start 182.367000, end 194.600000
+      Metadata:
+        title           : Make the next step clear
+    Chapter #0:15: start 194.600000, end 212.467000
+      Metadata:
+        title           : Compare on evidence, not a winner
+    Chapter #0:16: start 212.467000, end 227.567000
+      Metadata:
+        title           : Measure what was actually checked
+    Chapter #0:17: start 227.567000, end 243.867000
+      Metadata:
+        title           : Validate the hosted path next
+    Chapter #0:18: start 243.867000, end 255.367000
+      Metadata:
+        title           : Evidence first. People in control.
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuvj420p(pc, bt470bg/unknown/unknown, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 799 kb/s, 30 fps, 30 tbr, 90k tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+      Side data:
+        ICC Profile
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 173 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:2[0x3](eng): Subtitle: mov_text (tx3g / 0x67337874), 0 kb/s (default)
+      Metadata:
+        handler_name    : SubtitleHandler
+  Stream #0:3[0x4](eng): Data: bin_data (text / 0x74786574), 0 kb/s
+      Metadata:
+        handler_name    : SubtitleHandler
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
+  Stream #0:1 -> #0:1 (aac (native) -> pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, null, to 'pipe:':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf61.7.103
+  Chapters:
+    Chapter #0:0: start 0.000000, end 11.333000
+      Metadata:
+        title           : RydeResolve
+    Chapter #0:1: start 11.333000, end 23.300000
+      Metadata:
+        title           : One trip. Three perspectives.
+    Chapter #0:2: start 23.300000, end 34.800000
+      Metadata:
+        title           : Start with the trip
+    Chapter #0:3: start 34.800000, end 48.067000
+      Metadata:
+        title           : Report it in your own words
+    Chapter #0:4: start 48.067000, end 62.700000
+      Metadata:
+        title           : Advocacy is not authority
+    Chapter #0:5: start 62.700000, end 75.600000
+      Metadata:
+        title           : Check facts before conclusions
+    Chapter #0:6: start 75.600000, end 90.067000
+      Metadata:
+        title           : Read the rule behind the reference
+    Chapter #0:7: start 90.067000, end 104.767000
+      Metadata:
+        title           : Inspect both sides of the case
+    Chapter #0:8: start 104.767000, end 118.333000
+      Metadata:
+        title           : Return the disputed difference
+    Chapter #0:9: start 118.333000, end 132.400000
+      Metadata:
+        title           : Inspect the stored workflow
+    Chapter #0:10: start 132.400000, end 144.433000
+      Metadata:
+        title           : A small claim can require review
+    Chapter #0:11: start 144.433000, end 156.567000
+      Metadata:
+        title           : Safety goes straight to a person
+    Chapter #0:12: start 156.567000, end 171.100000
+      Metadata:
+        title           : Unclear category? Classify first.
+    Chapter #0:13: start 171.100000, end 182.367000
+      Metadata:
+        title           : Request evidence. Hear the response.
+    Chapter #0:14: start 182.367000, end 194.600000
+      Metadata:
+        title           : Make the next step clear
+    Chapter #0:15: start 194.600000, end 212.467000
+      Metadata:
+        title           : Compare on evidence, not a winner
+    Chapter #0:16: start 212.467000, end 227.567000
+      Metadata:
+        title           : Measure what was actually checked
+    Chapter #0:17: start 227.567000, end 243.867000
+      Metadata:
+        title           : Validate the hosted path next
+    Chapter #0:18: start 243.867000, end 255.367000
+      Metadata:
+        title           : Evidence first. People in control.
+  Stream #0:0(und): Video: wrapped_avframe, yuvj420p(pc, bt470bg/unknown/unknown, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.101 wrapped_avframe
+      Side data:
+        ICC Profile
+  Stream #0:1(und): Audio: pcm_s16le, 192000 Hz, stereo, s16, 6144 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.101 pcm_s16le
+frame=  700 fps=0.0 q=-0.0 size=N/A time=00:00:20.70 bitrate=N/A speed=41.4x
+frame= 1324 fps=1323 q=-0.0 size=N/A time=00:00:41.60 bitrate=N/A speed=41.6x
+frame= 2142 fps=1428 q=-0.0 size=N/A time=00:01:08.90 bitrate=N/A speed=45.9x
+frame= 2926 fps=1463 q=-0.0 size=N/A time=00:01:34.90 bitrate=N/A speed=47.4x
+frame= 3669 fps=1467 q=-0.0 size=N/A time=00:01:59.70 bitrate=N/A speed=47.9x
+frame= 4340 fps=1446 q=-0.0 size=N/A time=00:02:22.20 bitrate=N/A speed=47.4x
+frame= 4920 fps=1405 q=-0.0 size=N/A time=00:02:41.50 bitrate=N/A speed=46.1x
+frame= 5658 fps=1414 q=-0.0 size=N/A time=00:03:06.00 bitrate=N/A speed=46.5x
+frame= 6336 fps=1407 q=-0.0 size=N/A time=00:03:28.70 bitrate=N/A speed=46.4x
+frame= 7058 fps=1411 q=-0.0 size=N/A time=00:03:52.80 bitrate=N/A speed=46.5x
+[Parsed_loudnorm_0 @ 0x7f0d10002740]
+{
+	"input_i" : "-16.09",
+	"input_tp" : "-1.41",
+	"input_lra" : "3.00",
+	"input_thresh" : "-26.42",
+	"output_i" : "-16.00",
+	"output_tp" : "-1.60",
+	"output_lra" : "2.90",
+	"output_thresh" : "-26.33",
+	"normalization_type" : "dynamic",
+	"target_offset" : "-0.00"
+}
+[out#0/null @ 0x56375f629a00] video:3292KiB audio:191568KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame= 7661 fps=1423 q=-0.0 Lsize=N/A time=00:04:15.36 bitrate=N/A speed=47.4x

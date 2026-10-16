@@ -2,7 +2,18 @@
 
 English narrated and captioned walkthrough, approximately 4:15, 1920×1080 at 30 fps. Built from initial frontend commit `1a6d3fa` plus the subsequent `46d17cf` Request More Information update, on a separate branch, `feat/three-role-video-shotcraft-v2`.
 
-## Deliverables
+## Latest split-view revision
+
+Rider or Driver screens appear on the left, with the corresponding Reviewer view on the right in seven applicable scenes. Agent findings switch from Rider to Driver context. Captures show labelled recorded stages. The film remains 4:15 with the same English narration, captions, and safety disclosures.
+
+- [Split-view MP4](out/RydeResolve-Split-View-Walkthrough.mp4)
+- [Split-view editable ZIP](out/RydeResolve-Split-View-Editable-Project.zip)
+- [Layout and scene mapping](split-layout-notes.md)
+- [Split-view independent review](out/split-independent-review.md)
+
+Render the current split revision with `bash render-split.sh`. The original v2 MP4 and ZIP below remain available as prior exports. The current source and `npm run render` use the split layout.
+
+## Earlier v2 deliverables
 
 - [Final MP4](out/RydeResolve-Submission-Walkthrough-v2.mp4)
 - [Editable project ZIP](out/RydeResolve-editable-project-v2.zip)
