@@ -1,82 +1,165 @@
-# RydeResolve - Winning Hybrid Implementation Kit
+# RydeResolve
 
-**Status:** working offline policy/backend reference implementation; **live Google ADK, Firestore, GCS, Cloud Run, frontend npm build require your own environment and have not been verified here**. Synthetic data and mock refunds ONLY.
+**Policy-grounded dispute resolution for ride-hailing.**
 
-## Start here
-Read `RydeResolve_Complete_Implementation_Guide.pdf` (delivered alongside the ZIP) or `docs/IMPLEMENTATION_GUIDE.md` within this kit. The guide gives every milestone's commands, checks, expected results, and recovery steps.
+Live demo: **[https://ryderesolve-web-oydodesgeq-as.a.run.app](https://ryderesolve-web-oydodesgeq-as.a.run.app)**
 
-### 1. Local backend
-```bash
-cd backend
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-PYTHONPATH=. python scripts/check_contract.py
-PYTHONPATH=. pytest -q
-PYTHONPATH=. python scripts/evaluate.py
-# TEAM: review the eight source policy ambiguities before creating the approval file
-PYTHONPATH=. python scripts/signoff_policy.py --reviewer TEAM --acknowledge I_REVIEWED_POLICY_AMBIGUITIES
-uvicorn app.main:app --reload --port 8000
+No login or passcode needed — just open the link and explore.
+
+---
+
+## What is RydeResolve?
+
+RydeResolve is a synthetic demonstration of a multi-agent dispute resolution system for ride-hailing platforms. When a rider or driver reports a problem with a trip — a fare discrepancy, a route deviation, a no-show charge, property damage, or a safety incident — RydeResolve doesn't just forward it to a human. It runs the case through a structured pipeline of AI agents and a deterministic policy engine, then presents the reviewer with a complete investigation packet and a recommended outcome.
+
+The reviewer makes the final call. The system never lets AI authorize a financial action on its own.
+
+All data is synthetic. No real payments, accounts, or notifications are involved.
+
+---
+
+## How it works
+
+Every dispute goes through a **six-stage pipeline**:
+
+```
+1. Intake          Rider or driver files a dispute with a category and description
+                   Safety screening runs immediately — safety cases skip all AI
+                   
+2. Routing Index   A candidate policy rule lookup matches the dispute category and
+                   description against a 41-rule routing index (this is a search
+                   index, not authority to rule)
+                   
+3. Evidence Check  The system checks for missing or conflicting evidence. If gaps
+                   exist, it asks the relevant party a clarification question
+                   
+4. Agent Evaluation  Five independent AI agents analyze the case in parallel:
+                     - Rider Advocate      — argues the rider's position
+                     - Driver Advocate     — argues the driver's position
+                     - Policy & Precedent  — matches applicable policy rules and prior precedents
+                     - Fraud & Bad-Faith    — screens for fraud indicators
+                     - Consistency Judge   — cross-checks all advocates for consistency
+                     
+5. Policy Gate     A deterministic Python policy engine (not an LLM) validates the
+                   candidate outcome against structured policy rules. If the agents
+                   disagree, if evidence is incomplete, or if the case involves safety,
+                   the gate blocks automatic resolution and routes to human review
+                   
+6. Outcome         If the gate approves and all agents agree → auto-resolve with a
+                   simulated refund/credit receipt. Otherwise → reviewer takes over.
 ```
 
-### 2. Seed synthetic demo cases (second terminal)
-```bash
-curl -X POST http://127.0.0.1:8000/cases/seed -H 'X-Demo-Key: change-reviewer-key'
-curl -X POST http://127.0.0.1:8000/cases/DISP-003/process -H 'X-Demo-Key: change-rider-key'
-```
-**Expected:** DISP-003 recommends/refunds **SGD 4.50 simulated** if contract approval exists. DISP-001 (4.3 km deviation) escalates. DISP-002 (fraud flag) escalates.
+**Key safety property:** AI agents can only *recommend*. The deterministic policy gate and the human reviewer are the only authorities that can authorize a financial action.
 
-### 3. Frontend (third terminal)
-```bash
-cd frontend
-cp .env.example .env.local
-npm install
-npm run dev
-```
-Open http://localhost:3000. Enter `change-reviewer-key` for LOCAL demonstration only; use secure random codes for cloud.
+---
 
-### 4. Run full offline test suite
-```bash
-bash scripts/verify_all_local.sh
-```
-The currently tested Python suite contains 24 tests plus 12 reference cases and 3 injection boundary scenarios. **These are not production safety or model accuracy measurements.**
+## The four portals
 
-### 5. Activate real Google ADK
-```bash
-cd backend
-pip install -r requirements-cloud.txt
-gcloud auth application-default login
-# set GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION in backend/.env
-# set AI_MODE=adk and APP_MODE=memory first
-PYTHONPATH=. python scripts/live_eval.py
-```
-This performs real model calls. Do not label a mock run as a successful ADK integration.
+The app is organized into four role-based interfaces. All are accessible from the landing page — no passcode needed.
+
+### /rider — Rider Portal
+
+The rider's mobile-app-style interface. Riders can:
+
+- **View their cases** — active and resolved disputes, with status, category, and outcome
+- **Report an issue** — file a new dispute by selecting a category (fare, route, no-show, damage, safety, or "Other / I'm not sure"), choosing a past trip from their trip history, and describing the problem
+- **Respond to clarification requests** — when the reviewer asks a question, the rider sees it here and can reply
+- **Browse trip history** — synthetic past trips with pickup/drop-off locations, fares, and a map view
+- **Create trips** — add synthetic trips to their history
+- **Switch identity** — a Rider A / Rider B dropdown in the header lets you see different cases (case isolation is enforced — Rider A cannot see Rider B's cases)
+
+### /driver — Driver Portal
+
+The driver's mobile-app-style interface. Drivers can:
+
+- **View cases involving them** — disputes where they are the respondent, with action-needed alerts for pending clarification requests
+- **Respond to clarification requests** — same as riders, but filtered to driver-recipient questions
+- **Browse trip history** — synthetic past trips from the driver's perspective
+- **Create trips** — add synthetic trips
+- **Switch identity** — Driver A / Driver B dropdown in the header
+
+### /reviewer — Reviewer Workbench
+
+The reviewer's full investigation dashboard. This is the core of the system. Reviewers can:
+
+- **Load demo cases** — click "Load demos" to seed synthetic fixture cases (fare disputes, route deviations, no-shows, damage, safety, fraud)
+- **View the case queue** — all cases sorted by status, with urgent cases highlighted
+- **Process a case** — runs the full six-stage pipeline with a live progress display showing each step (safety screening → routing index → evidence check → agent evaluation → policy gate → outcome)
+- **Investigate** — five tabs per case:
+  - **Overview** — case summary, next action, recommended outcome, policy rationale
+  - **Evidence** — all verified facts, their values, and provenance sources
+  - **Agent Findings** — each agent's summary, recommended disposition, and detailed trace
+  - **Review Decision** — the reviewer's form to issue a ruling (refund, credit, no action, reject claim), with optional proposed precedent
+  - **Audit / Advanced** — tamper-evident event chain verification, review packet, learning proposals
+- **Request more information** — ask the rider or driver a free-form question at any time (before or after processing)
+- **Reclassify "Other" cases** — when a rider files under "Other / I'm not sure," the reviewer classifies it to a specific category before adjudication
+- **Upload evidence** — add verified demo evidence (facts with provenance) or upload files
+- **Manage learning** — review, evaluate, approve, or rollback learning proposals (precedents from reviewed decisions)
+
+### /monitor — ADK Execution Monitor
+
+A visual replay of the agent execution pipeline for any processed case. Shows:
+
+- The workflow graph with all six stages and the agents within each
+- Actual stored agent outputs and traces (not live execution — this replays recorded data)
+- Node-by-node click to inspect what each agent produced, including error states
+- A replay button to animate the pipeline progression
+
+This is a technical inspection view — the same data the reviewer sees in the Agent Findings tab, but visualized as a flow graph.
+
+---
+
+## Dispute categories
+
+| Category | Example | Typical outcome |
+|---|---|---|
+| Fare dispute | Surge applied without notification | Refund of difference if rider wasn't notified |
+| Route deviation | Driver took a longer route without informing rider | Refund for excess distance if no traffic justification |
+| No-show charge (rider) | Rider charged no-show fee but was present | Fee voided if rider was present |
+| Driver no-show | Driver didn't arrive at pickup | Refund or credit |
+| Property damage | Driver claims rider damaged vehicle | Reviewer adjudicates based on photo evidence |
+| Safety incident | Rider alleges unsafe behavior | **Immediate human review — no AI ruling** |
+| Other / I'm not sure | Rider isn't sure what category fits | **Manual classification required** |
+
+---
 
 ## Architecture
-Next.js UI -> FastAPI on Cloud Run -> Google ADK/Gemini agents + policy routing index -> deterministic Python safety and remedy gates -> mock financial ledger -> Firestore cases/precedents, GCS image evidence. Innovation A adds active evidence clarification. Innovation B adds reviewed correction, regression evaluation, approval and versioned precedent release.
 
-## Policy contracts
-- `backend/policy/04_rulebook.json`: candidate routing/search index, *not* authority to issue rulings.
-- `backend/policy/02_policy_rules.json`: structured policy rules by exact IDs.
-- `backend/policy/policy_v2.1.md`: original source policy (SHA-256 validated).
-- `backend/policy/contract_approval.json`: generated only after explicit TEAM signoff; **not** Ryde's signature.
+```
+Next.js Frontend (Cloud Run)
+    │
+    ▼
+FastAPI Backend (Cloud Run)
+    │
+    ├── Policy routing index (41 rules, JSON)
+    ├── Five Google ADK / Gemini agents (or offline mock mode)
+    ├── Deterministic Python policy engine (the gate)
+    ├── Tamper-evident audit chain (SHA-256 linked events)
+    ├── Mock financial ledger (simulated receipts, no real money)
+    ├── Firestore (case storage, precedents)
+    └── Google Cloud Storage (file evidence)
+```
 
-## Frontend implementation status
-The supplied reviewer workbench includes a synthetic PNG/JPEG/PDF upload control and a reviewer-only precedent rollback button. These have not yet been verified by a Next.js build in the authoring environment; complete the frontend npm build and browser tests in the PDF before claiming them working.
+**Tech stack:** Next.js, FastAPI, Google Cloud Run, Google ADK with Gemini, Firestore, GCS.
 
-## Safety and limitations
-- No real Ryde telemetry/payment/notifications or accounts are connected.
-- No live funds movement or account changes are implemented.
-- User-submitted facts never qualify for automatic settlement merely because they are supplied.
-- Safety cases cannot reach the Judge ruling step; reviewer receives the file.
-- Canned image fixtures and EXIF do not prove trusted in-app camera origin.
-- The demo passcode system is NOT production authentication.
-- Firestore create-once mock actions provide action-key deduplication; concurrent case-state changes still need production transactions / locking.
-- Model self-assessed confidence is NOT calibrated.
+---
 
-## Build and source-of-truth verification
-The source policy is supplied as internal challenge material. The index is explicitly marked draft by its author. Document and team-approve policy ambiguities before the first auto-remedy. Public Ryde policies can differ; the supplied v2.1 challenge policy controls the synthetic prototype.
+## Try it
 
-## Provenance
-This code package was generated specifically for the Ryde track. See `docs/IMPLEMENTATION_GUIDE.md` for official Tencent handbook pages, Google docs URLs, testing evidence and exact release checklist.
+1. Open **[https://ryderesolve-web-oydodesgeq-as.a.run.app](https://ryderesolve-web-oydodesgeq-as.a.run.app)**
+2. Click **Reviewer Workbench** → click **Load demos** → select a case → click **Process**
+3. Watch the pipeline run. Then explore the Evidence, Agent Findings, and Review Decision tabs.
+4. Go to **Rider Portal** or **Driver Portal** — cases and trips load automatically. Switch between Rider A and Rider B to see case isolation.
+5. Open **ADK Monitor** to see the agent execution graph for any processed case.
+
+No setup, no keys, no login. Just explore.
+
+---
+
+## Important limitations
+
+- All data is synthetic. No real Ryde accounts, payments, or notifications are connected.
+- AI agents recommend; they do not authorize. The deterministic policy gate and human reviewer are the only authorities for financial actions.
+- Safety cases cannot reach the AI ruling step — they go straight to human review.
+- Model self-assessed confidence is not calibrated.
+- The demo passcode system has been removed — anyone can access all roles.
