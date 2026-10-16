@@ -1,15 +1,29 @@
 'use client';
-import {useState} from 'react';
+import {useState,useEffect} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
 import {CaseTimeline} from '../../lib/Timeline';
+import MapView from '../../lib/MapView';
+import {getTrips,addTrip,findTrip,formatTripDateTime,formatFare} from '../../lib/trips';
 import {
   TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel,
   outcomeExplanation, driverNextAction,
 } from '../../lib/labels';
 
+const SINGAPORE_AREAS = [
+  'Orchard Road','Marina Bay','Tampines','Jurong East','Ang Mo Kio',
+  'Bedok','Clementi','Bishan','Paya Lebar','Holland Village',
+  'Sentosa','Changi Airport','Sengkang','Punggol','Woodlands',
+  'Yishun','Serangoon','Kallang','Geylang','Novena',
+];
+
+function rand(items){return items[Math.floor(Math.random()*items.length)];}
+function randBetween(min,max){return Math.random()*(max-min)+min;}
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
 const NAV_TABS = [
-  {id:'disputes',label:'Disputes',icon:'🚗'},
+  {id:'disputes',label:'Disputes',icon:'📋'},
+  {id:'trips',label:'Trips',icon:'🚗'},
   {id:'account',label:'Account',icon:'⚙'},
 ];
 
@@ -19,21 +33,73 @@ export default function DriverPortal(){
   const [detail,setDetail]=useState(null);
   const [tab,setTab]=useState('disputes');
   const [answer,setAnswer]=useState('');
+  const [trips,setTrips]=useState([]);
+  const [selectedTrip,setSelectedTrip]=useState(null);
+  const [showTripForm,setShowTripForm]=useState(false);
+  const [tripForm,setTripForm]=useState({
+    pickup_location:'',dropoff_location:'',date:'',time:'',
+    fare:'',distance_km:'',duration_min:'',rider_name:'',rider_rating:''
+  });
+
+  useEffect(()=>{
+    if(api.key) setTrips(getTrips(api.key));
+  },[api.key]);
 
   async function connect(){
     await api.call('health');
     const list=await api.call('cases');
     setCases(list);
+    setTrips(getTrips(api.key));
   }
 
   async function selectCase(id){
     setDetail(await api.call('cases/'+id));
   }
 
+  function selectTrip(trip){
+    setSelectedTrip(trip);
+    setTab('trips');
+  }
+
+  function createTrip(){
+    const fare=parseFloat(tripForm.fare);
+    const distance=parseFloat(tripForm.distance_km);
+    const duration=parseInt(tripForm.duration_min,10);
+    const now=new Date();
+    const trip={
+      trip_id:`TRIP-${now.toISOString().slice(0,10).replace(/-/g,'')}-${String.fromCharCode(65+trips.length)}${randInt(100,999)}`,
+      date:tripForm.date||now.toISOString().slice(0,10),
+      time:tripForm.time||now.toTimeString().slice(0,5),
+      pickup_location:tripForm.pickup_location||rand(SINGAPORE_AREAS),
+      dropoff_location:tripForm.dropoff_location||rand(SINGAPORE_AREAS),
+      pickup_lat:1.35+randBetween(-0.06,0.06),
+      pickup_lng:103.82+randBetween(-0.08,0.08),
+      dropoff_lat:1.35+randBetween(-0.06,0.06),
+      dropoff_lng:103.82+randBetween(-0.08,0.08),
+      distance_km:isNaN(distance)?Number(randBetween(3,12).toFixed(1)):distance,
+      duration_min:isNaN(duration)?randInt(10,40):duration,
+      fare:isNaN(fare)?Number(randBetween(8,35).toFixed(2)):fare,
+      currency:'SGD',
+      rider_name:tripForm.rider_name||'Demo Rider',
+      rider_rating:isNaN(parseFloat(tripForm.rider_rating))?4.8:parseFloat(tripForm.rider_rating),
+      status:'completed',
+      payment_method:'Credit card',
+      identity_id:api.key,
+      perspective:'driver',
+    };
+    const updated=addTrip(api.key,trip);
+    setTrips(updated);
+    setShowTripForm(false);
+    setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',rider_name:'',rider_rating:''});
+    setSelectedTrip(trip);
+    api.setNotice(`Trip ${trip.trip_id} created. Synthetic only.`);
+  }
+
   const outcome=outcomeExplanation(detail);
   const pendingClarifications=detail?.clarifications?.filter(c=>c.status==='PENDING'&&c.recipient==='driver')||[];
   const actionNeededCases=cases.filter(c=>c.status==='AWAITING_CLARIFICATION');
   const activeCases=cases.filter(c=>c.status!=='RESOLVED'&&c.status!=='REVIEWED_AND_RESOLVED');
+  const caseTrip=detail?findTrip(api.key,detail.trip_id):null;
 
   // --- Not connected ---
   if(!api.key||!cases.length){
@@ -41,7 +107,7 @@ export default function DriverPortal(){
       <div className="app-connect driver">
         <div className="app-logo-big">D</div>
         <h2>RydeResolve Driver</h2>
-        <p>Enter your demo passcode to view disputes involving your trips. Case isolation is enforced — you can only see your own cases.</p>
+        <p>Enter your demo passcode to view disputes involving your trips and your trip history. Case isolation is enforced — you can only see your own cases.</p>
         <input aria-label="Demo passcode" type="password" placeholder="Enter passcode" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}/>
         <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>{api.busy?'Connecting…':'Connect'}</button>
       </div>
@@ -85,7 +151,7 @@ export default function DriverPortal(){
         {/* All cases */}
         <div className="app-section-head"><h2>Your disputes</h2></div>
         {cases.length===0?
-          <div className="card empty" style={{padding:'40px 16px'}}><div className="empty-symbol">🚗</div><h2>No disputes</h2><p>No cases involving you at this time.</p></div>
+          <div className="card empty" style={{padding:'40px 16px'}}><div className="empty-symbol">📋</div><h2>No disputes</h2><p>No cases involving you at this time.</p></div>
         :cases.map(item=>(
           <div key={item.case_id} className={'app-case-card '+(detail?.case_id===item.case_id?'selected':'')} onClick={()=>api.run(()=>selectCase(item.case_id))} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')api.run(()=>selectCase(item.case_id))}}>
             <div className="acc-top">
@@ -123,6 +189,25 @@ export default function DriverPortal(){
             <span>Filed by: {detail.filed_by||'—'}</span>
           </div>
         </div>
+
+        {/* Trip info for dispute */}
+        {caseTrip&&<div className="card trip-card">
+          <p className="eyebrow">TRIP DETAILS</p>
+          <div className="trip-row">
+            <span className="trip-time">{formatTripDateTime(caseTrip)}</span>
+            <span className="trip-fare">{formatFare(caseTrip)}</span>
+          </div>
+          <MapView trip={caseTrip} height={140} />
+          <div className="trip-meta">
+            <span>{caseTrip.distance_km.toFixed(1)} km</span>
+            <span>{caseTrip.duration_min} min</span>
+            <span>{caseTrip.payment_method}</span>
+          </div>
+          {caseTrip.perspective==='driver'&&caseTrip.rider_name&&<div className="trip-driver">
+            <strong>{caseTrip.rider_name}</strong>
+            <span>Rider rating {caseTrip.rider_rating}</span>
+          </div>}
+        </div>}
 
         {/* Safety */}
         {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="app-action-card" style={{background:'var(--bad-bg)',borderColor:'var(--bad-border)'}}>
@@ -175,6 +260,104 @@ export default function DriverPortal(){
         </div>}
       </>}
 
+      {/* Tab: Trips */}
+      {tab==='trips'&&!selectedTrip&&!showTripForm&&<>
+        <div className="app-section-head">
+          <h2>Your trips</h2>
+          <button onClick={()=>setShowTripForm(true)}>Add trip</button>
+        </div>
+        {trips.length===0?
+          <div className="card empty" style={{padding:'40px 16px'}}><div className="empty-symbol">🚗</div><h2>No trips yet</h2><p>Synthetic trips will appear here. Tap "Add trip" to create one.</p></div>
+        :trips.map(trip=><div key={trip.trip_id} className="app-case-card" onClick={()=>selectTrip(trip)} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')selectTrip(trip)}}>
+          <div className="acc-top">
+            <strong>{trip.trip_id}</strong>
+            <span className="trip-fare-inline">{formatFare(trip)}</span>
+          </div>
+          <div className="acc-cat">{formatTripDateTime(trip)}</div>
+          <div className="trip-list-route">{trip.pickup_location} → {trip.dropoff_location}</div>
+        </div>)}
+      </>}
+
+      {/* Tab: Trips — detail */}
+      {tab==='trips'&&selectedTrip&&!showTripForm&&<>
+        <div className="app-section-head">
+          <button className="secondary" onClick={()=>setSelectedTrip(null)}>← Back</button>
+        </div>
+        <div className="card trip-card">
+          <p className="eyebrow">TRIP</p>
+          <div className="trip-header">
+            <h3>{selectedTrip.trip_id}</h3>
+            <span className="trip-status completed">Completed</span>
+          </div>
+          <div className="trip-row">
+            <span className="trip-time">{formatTripDateTime(selectedTrip)}</span>
+            <span className="trip-fare">{formatFare(selectedTrip)}</span>
+          </div>
+          <MapView trip={selectedTrip} height={180} />
+          <div className="trip-locations">
+            <div className="trip-location pickup">
+              <span className="trip-dot"/>
+              <div>
+                <div className="trip-loc-label">Pickup</div>
+                <div className="trip-loc-name">{selectedTrip.pickup_location}</div>
+              </div>
+            </div>
+            <div className="trip-location dropoff">
+              <span className="trip-dot"/>
+              <div>
+                <div className="trip-loc-label">Drop-off</div>
+                <div className="trip-loc-name">{selectedTrip.dropoff_location}</div>
+              </div>
+            </div>
+          </div>
+          <div className="trip-meta">
+            <span>{selectedTrip.distance_km.toFixed(1)} km</span>
+            <span>{selectedTrip.duration_min} min</span>
+            <span>{selectedTrip.payment_method}</span>
+          </div>
+          {selectedTrip.perspective==='driver'&&selectedTrip.rider_name&&<div className="trip-driver">
+            <strong>{selectedTrip.rider_name}</strong>
+            <span>Rider rating {selectedTrip.rider_rating}</span>
+          </div>}
+        </div>
+      </>}
+
+      {/* Tab: Trips — add form */}
+      {tab==='trips'&&showTripForm&&<>
+        <div className="app-section-head">
+          <button className="secondary" onClick={()=>setShowTripForm(false)}>← Cancel</button>
+        </div>
+        <div className="app-form">
+          <h2 style={{fontSize:'18px',marginBottom:'8px'}}>Add a synthetic trip</h2>
+          <p className="muted" style={{marginBottom:'12px'}}>Only synthetic demo data. Fill in a few details or leave fields blank for random values.</p>
+          <label>Pickup location</label>
+          <select value={tripForm.pickup_location} onChange={e=>setTripForm({...tripForm,pickup_location:e.target.value})}>
+            <option value="">Select pickup…</option>
+            {SINGAPORE_AREAS.map(a=><option key={a} value={a}>{a}</option>)}
+          </select>
+          <label>Drop-off location</label>
+          <select value={tripForm.dropoff_location} onChange={e=>setTripForm({...tripForm,dropoff_location:e.target.value})}>
+            <option value="">Select drop-off…</option>
+            {SINGAPORE_AREAS.map(a=><option key={a} value={a}>{a}</option>)}
+          </select>
+          <label>Date</label>
+          <input type="date" value={tripForm.date} onChange={e=>setTripForm({...tripForm,date:e.target.value})}/>
+          <label>Time</label>
+          <input type="time" value={tripForm.time} onChange={e=>setTripForm({...tripForm,time:e.target.value})}/>
+          <label>Fare (SGD)</label>
+          <input type="number" min="0" step="0.01" value={tripForm.fare} onChange={e=>setTripForm({...tripForm,fare:e.target.value})} placeholder="e.g. 15.50"/>
+          <label>Distance (km)</label>
+          <input type="number" min="0" step="0.1" value={tripForm.distance_km} onChange={e=>setTripForm({...tripForm,distance_km:e.target.value})} placeholder="e.g. 8.5"/>
+          <label>Duration (min)</label>
+          <input type="number" min="1" value={tripForm.duration_min} onChange={e=>setTripForm({...tripForm,duration_min:e.target.value})} placeholder="e.g. 25"/>
+          <label>Rider name</label>
+          <input value={tripForm.rider_name} onChange={e=>setTripForm({...tripForm,rider_name:e.target.value})} placeholder="e.g. Jane Doe"/>
+          <label>Rider rating</label>
+          <input type="number" min="1" max="5" step="0.1" value={tripForm.rider_rating} onChange={e=>setTripForm({...tripForm,rider_rating:e.target.value})} placeholder="e.g. 4.8"/>
+          <button onClick={()=>createTrip()}>Create trip</button>
+        </div>
+      </>}
+
       {tab==='account'&&<>
         <div className="app-section-head"><h2>Account</h2></div>
         <div className="card">
@@ -192,7 +375,7 @@ export default function DriverPortal(){
     </div>
 
     <nav className="app-nav" role="navigation" aria-label="Main navigation">
-      {NAV_TABS.map(t=><button key={t.id} className={tab===t.id?'active':''} onClick={()=>{setTab(t.id);setDetail(null)}} aria-label={t.label}>
+      {NAV_TABS.map(t=><button key={t.id} className={tab===t.id?'active':''} onClick={()=>{setTab(t.id);setDetail(null);setSelectedTrip(null);setShowTripForm(false)}} aria-label={t.label}>
         <span className="nav-icon">{t.icon}</span>
         {t.label}
       </button>)}

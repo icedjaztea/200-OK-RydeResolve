@@ -67,6 +67,84 @@ function formatFactValue(v){
   return JSON.stringify(v);
 }
 
+// Convert rule condition/effect objects into reader-friendly sentences.
+function readableCondition(rule){
+  if(!rule)return null;
+  const c=rule.condition;
+  if(!c)return null;
+  const parts=[];
+  if(c.trigger==='route_differs_from_recommended') parts.push('The actual route differs from the GPS-recommended route.');
+  if(c.notification_timing==='before_or_at_deviation') parts.push('Notification must be given before or at the point of deviation.');
+  if(c.traffic_justification===true) parts.push('Traffic justification is present.');
+  if(c.traffic_justification===false) parts.push('No traffic justification is present.');
+  if(c.rider_informed_and_agreed===true) parts.push('The rider was informed and agreed.');
+  if(c.rider_informed_and_agreed===false) parts.push('The rider was not informed or did not agree.');
+  if(c.deviation_gt_1km===true) parts.push('The deviation exceeds 1 km.');
+  if(c.deviation_gt_1km===false) parts.push('The deviation is 1 km or less.');
+  if(c.rider_absent===true) parts.push('The rider was absent at pickup.');
+  if(c.rider_absent===false) parts.push('The rider was present at pickup.');
+  if(c.driver_arrived===true) parts.push('The driver arrived at the pickup location.');
+  if(c.driver_arrived===false) parts.push('The driver did not arrive at the pickup location.');
+  if(c.driver_contact_attempts?.chat>=1) parts.push('At least 1 in-app chat message was sent.');
+  if(c.driver_contact_attempts?.call>=1) parts.push('At least 1 call was made via the app.');
+  if(c.photo_verifiable===true) parts.push('Photo evidence is verifiable.');
+  if(c.photo_verifiable===false) parts.push('Photo evidence is not verifiable.');
+  if(c.photo_submitted_within_24h===true) parts.push('Photo evidence was submitted within 24 hours.');
+  if(c.photo_submitted_within_24h===false) parts.push('Photo evidence was not submitted within 24 hours.');
+  if(c.trip_link_verified===true) parts.push('The damage is linked to the trip.');
+  if(c.trip_link_verified===false) parts.push('The damage is not linked to the trip.');
+  if(c.fraud_flags>=1) parts.push(`At least ${c.fraud_flags} fraud flag(s) are present.`);
+  // Fallback: list unknown boolean/object fields as bullet phrases.
+  Object.entries(c).forEach(([k,v])=>{
+    if(k.startsWith('dispute_value'))return;
+    if(v===true) parts.push(`${k.replace(/_/g,' ')}.`);
+    if(v===false) parts.push(`Not ${k.replace(/_/g,' ')}.`);
+    if(typeof v==='string') parts.push(`${k.replace(/_/g,' ')}: ${v}.`);
+  });
+  return parts.length?parts:null;
+}
+
+function readableEffect(rule){
+  if(!rule)return null;
+  const e=rule.effect;
+  if(!e)return null;
+  const parts=[];
+  if(e.permitted_reasons?.length) parts.push(`Permitted reasons: ${e.permitted_reasons.join(', ')}.`);
+  if(e.notification_required===true) parts.push('Notification is required.');
+  if(e.notification_required===false) parts.push('Notification is not required.');
+  if(e.valid_notification_methods?.length) parts.push(`Valid notification methods: ${e.valid_notification_methods.map(m=>m.replace(/_/g,' ')).join(', ')}.`);
+  if(e.reason_required===true) parts.push('A brief reason must be provided.');
+  if(e.disposition){
+    const amt=e.amount!=null?` SGD ${Number(e.amount).toFixed(2)}`:'';
+    parts.push(`Ruling outcome: ${e.disposition.replace(/_/g,' ')}${amt}.`);
+  }
+  if(e.max_refund!=null) parts.push(`Maximum refund/credit: SGD ${Number(e.max_refund).toFixed(2)}.`);
+  if(e.void_cancellation_fee===true) parts.push('The cancellation fee is voided.');
+  if(e.goodwill_credit!=null) parts.push(`Goodwill credit of SGD ${Number(e.goodwill_credit).toFixed(2)} may apply.`);
+  if(e.suspension_interim===true) parts.push('Interim suspension may apply pending human review.');
+  // Fallback for other boolean/string fields.
+  Object.entries(e).forEach(([k,v])=>{
+    if(['permitted_reasons','valid_notification_methods','disposition','amount','max_refund'].includes(k))return;
+    if(v===true) parts.push(`${k.replace(/_/g,' ')}.`);
+    if(v===false) parts.push(`Not ${k.replace(/_/g,' ')}.`);
+    if(typeof v==='string') parts.push(`${k.replace(/_/g,' ')}: ${v}.`);
+  });
+  return parts.length?parts:null;
+}
+
+function ruleTitle(rule){
+  if(!rule)return '';
+  if(rule.title)return rule.title;
+  const id=rule.rule_id||'';
+  if(id.startsWith('RD')) return 'Route deviation';
+  if(id.startsWith('NS')) return 'No-show / cancellation';
+  if(id.startsWith('FA')) return 'Fare / surge';
+  if(id.startsWith('PD')) return 'Property damage';
+  if(id.startsWith('SF')) return 'Safety';
+  if(id.startsWith('TH')) return 'Threshold / confidence';
+  return 'Policy rule';
+}
+
 export default function ReviewerWorkbench(){
   const api=useApi();
   const [cases,setCases]=useState([]);
@@ -102,6 +180,9 @@ export default function ReviewerWorkbench(){
   }
 
   async function selectCase(id){
+    if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
+    setProcessing(false);
+    setProcessStep(-1);
     setDetail(await api.call('cases/'+id));
     setRuleSnippets({});
     setExpandedRules({});
@@ -150,11 +231,10 @@ export default function ReviewerWorkbench(){
   useEffect(()=>()=>{if(processTimerRef.current) clearInterval(processTimerRef.current)},[]);
 
   async function doProcess(){
-    if(processing) return; // prevent duplicate
+    if(processing) return; // prevent duplicate clicks
     setProcessing(true);
     setProcessStep(0);
     // Walk through pipeline steps for visual feedback.
-    // Steps 0-5 are shown sequentially with short intervals.
     // The actual API call blocks until processing completes server-side.
     let stepIdx=0;
     processTimerRef.current=setInterval(()=>{
@@ -162,9 +242,17 @@ export default function ReviewerWorkbench(){
       if(stepIdx<PROCESS_STEPS.length) setProcessStep(stepIdx);
       else if(processTimerRef.current) clearInterval(processTimerRef.current);
     },400);
+    // Safety timeout: if the server call hangs, reset the UI so the user can retry.
+    const timeoutRef=setTimeout(()=>{
+      if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
+      setProcessing(false);
+      setProcessStep(-1);
+      api.setError('Processing timed out. Please try again.');
+    },25000);
     try{
       const r=await api.call('cases/'+selected+'/process',{method:'POST'});
-      if(processTimerRef.current) clearInterval(processTimerRef.current);
+      clearTimeout(timeoutRef);
+      if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
       setProcessStep(PROCESS_STEPS.length-1);
       setDetail(r);
       // Preload rule snippets for the routing + agent + gate rules
@@ -178,7 +266,8 @@ export default function ReviewerWorkbench(){
       // Clear processing highlight after 2s
       setTimeout(()=>{setProcessStep(-1)},2000);
     }catch(e){
-      if(processTimerRef.current) clearInterval(processTimerRef.current);
+      clearTimeout(timeoutRef);
+      if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
       setProcessStep(-1);
       api.setError(e.message);
     }finally{setProcessing(false)}
@@ -267,7 +356,7 @@ export default function ReviewerWorkbench(){
                 <span>Policy: {detail.policy_version||'2.1'}</span>
                 <span>Source: SYNTHETIC</span>
               </div>
-              {!isResolved&&<button disabled={api.busy||processing} onClick={()=>{setTab('overview');api.run(doProcess)}}>{processing?'Processing…':'Process / Re-evaluate'}</button>}
+              {!isResolved&&<button disabled={processing} onClick={()=>{setTab('overview');api.run(doProcess)}}>{processing?'Processing…':'Process / Re-evaluate'}</button>}
               {processing&&processStep>=0&&<div className="process-timeline">
                 {PROCESS_STEPS.map((step,i)=>{
                   const state=i<processStep?'done':i===processStep?'active':'pending';
@@ -413,10 +502,17 @@ export default function ReviewerWorkbench(){
                           <span className="rule-expand">{isExpanded?'▾':'▸'}</span>
                         </div>
                         {isExpanded&&rule&&<div className="rule-detail">
-                          {rule.condition&&<div className="rule-field"><span className="rule-field-label">Condition:</span> <code>{JSON.stringify(rule.condition)}</code></div>}
-                          {rule.effect&&<div className="rule-field"><span className="rule-field-label">Effect:</span> <code>{JSON.stringify(rule.effect)}</code></div>}
+                          <div className="rule-detail-title">{ruleTitle(rule)}</div>
+                          {rule.notes&&<div className="rule-field"><span className="rule-field-label">Summary:</span> {rule.notes}</div>}
+                          {readableCondition(rule)&&<div className="rule-field">
+                            <span className="rule-field-label">Condition:</span>
+                            <ul className="rule-readable-list">{readableCondition(rule).map((line,i)=><li key={i}>{line}</li>)}</ul>
+                          </div>}
+                          {readableEffect(rule)&&<div className="rule-field">
+                            <span className="rule-field-label">Effect:</span>
+                            <ul className="rule-readable-list">{readableEffect(rule).map((line,i)=><li key={i}>{line}</li>)}</ul>
+                          </div>}
                           {rule.evidence_requirements?.length>0&&<div className="rule-field"><span className="rule-field-label">Evidence required:</span> {rule.evidence_requirements.join(', ')}</div>}
-                          {rule.notes&&<div className="rule-field"><span className="rule-field-label">Notes:</span> {rule.notes}</div>}
                           {rule.precedence&&<div className="rule-field"><span className="rule-field-label">Precedence:</span> {rule.precedence}</div>}
                         </div>}
                         {isExpanded&&!rule&&<div className="rule-detail"><span className="muted">Loading rule details…</span></div>}
@@ -492,10 +588,17 @@ export default function ReviewerWorkbench(){
                               </button>
                               {isExpanded&&rule&&<div className="rule-popover">
                                 <div className="rule-popover-head"><b>{rid}</b> <span className="muted">§{rule.source_section}</span></div>
-                                {rule.condition&&<div><span className="rule-field-label">Condition:</span> <code>{JSON.stringify(rule.condition)}</code></div>}
-                                {rule.effect&&<div><span className="rule-field-label">Effect:</span> <code>{JSON.stringify(rule.effect)}</code></div>}
-                                {rule.evidence_requirements?.length>0&&<div><span className="rule-field-label">Evidence:</span> {rule.evidence_requirements.join(', ')}</div>}
-                                {rule.notes&&<div className="rule-field-label">{rule.notes}</div>}
+                                <div className="rule-detail-title">{ruleTitle(rule)}</div>
+                                {rule.notes&&<div className="rule-field"><span className="rule-field-label">Summary:</span> {rule.notes}</div>}
+                                {readableCondition(rule)&&<div className="rule-field">
+                                  <span className="rule-field-label">Condition:</span>
+                                  <ul className="rule-readable-list">{readableCondition(rule).map((line,i)=><li key={i}>{line}</li>)}</ul>
+                                </div>}
+                                {readableEffect(rule)&&<div className="rule-field">
+                                  <span className="rule-field-label">Effect:</span>
+                                  <ul className="rule-readable-list">{readableEffect(rule).map((line,i)=><li key={i}>{line}</li>)}</ul>
+                                </div>}
+                                {rule.evidence_requirements?.length>0&&<div className="rule-field"><span className="rule-field-label">Evidence:</span> {rule.evidence_requirements.join(', ')}</div>}
                               </div>}
                               {isExpanded&&!rule&&<div className="rule-popover"><span className="muted">Loading…</span></div>}
                             </div>;
