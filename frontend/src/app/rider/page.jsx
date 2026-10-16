@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
+import {CaseTimeline} from '../../lib/Timeline';
 import {
   TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel,
   outcomeExplanation, riderNextAction,
@@ -108,13 +109,13 @@ export default function RiderPortal(){
         <div className="brand-icon">R</div>
         <div><h1>RydeResolve <span>Rider</span></h1><p>View cases, provide clarification, and report issues</p></div>
       </div>
-      <div className="demo-label">DEMO ENVIRONMENT · SYNTHETIC DATA</div>
+      <div className="demo-label">DEMO · SYNTHETIC DATA</div>
     </header>
 
     <section className="card connection">
       <div>
         <h2>Rider access</h2>
-        <p>Enter your rider demo passcode from backend/.env. This is a demo environment using synthetic data only — not production identity. The backend enforces case isolation per authenticated demo identity.</p>
+        <p>Enter your demo passcode. The backend enforces case isolation per authenticated identity — you can only see your own cases.</p>
       </div>
       <input aria-label="Demo passcode" type="password" placeholder="rider passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
       <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
@@ -123,12 +124,12 @@ export default function RiderPortal(){
     {api.error&&<div className="alert error" role="alert">{api.error}</div>}
     {api.notice&&<div className="alert success">{api.notice}</div>}
 
-    {policy&&<div className="micro">Demo environment · {policy.ai_mode==='mock'?'Mock mode (no model calls)':'Live ADK'} · Policy signoff: {policy.team_signoff_valid?'verified':'missing'} · Storage: {policy.storage_mode}</div>}
+    {policy&&<div className="micro">{policy.ai_mode==='mock'?'Mock mode (no model calls)':'Live ADK'} · Policy signoff: {policy.team_signoff_valid?'verified':'missing'} · Storage: {policy.storage_mode}</div>}
 
     <div className="workspace">
       <aside className="card sidebar">
         <div className="section-head">
-          <h2>Synthetic demo cases</h2>
+          <h2>Your cases</h2>
           {api.key&&<button className="small" disabled={api.busy} onClick={()=>setShowForm(!showForm)}>{showForm?'Cancel':'Report an issue'}</button>}
         </div>
         {cases.length===0?
@@ -147,20 +148,20 @@ export default function RiderPortal(){
           <div className="card">
             <p className="eyebrow">REPORT AN ISSUE</p>
             <h3>File a new dispute</h3>
-            <p className="muted">Use synthetic test information only — do not enter real customer personal data. Your report will be recorded as an unverified user submission and will not automatically trigger any financial action.</p>
+            <p className="muted">Use synthetic test information only — do not enter real personal data. Your report will be recorded as an unverified user submission.</p>
             <div className="fieldgrid" style={{flexDirection:'column',alignItems:'stretch'}}>
-              <label style={{fontSize:'12px',fontWeight:600,color:'#3d516c'}}>Dispute category</label>
+              <label style={{fontSize:'12px',fontWeight:600,color:'var(--ink-secondary)'}}>Dispute category</label>
               <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
                 <option value="">Select a category…</option>
                 {CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
-              <label style={{fontSize:'12px',fontWeight:600,color:'#3d516c',marginTop:'8px'}}>Trip reference</label>
+              <label style={{fontSize:'12px',fontWeight:600,color:'var(--ink-secondary)',marginTop:'8px'}}>Trip reference</label>
               <input value={form.trip_id} onChange={e=>setForm({...form,trip_id:e.target.value})} placeholder="e.g. TRIP-2024-00123"/>
-              <label style={{fontSize:'12px',fontWeight:600,color:'#3d516c',marginTop:'8px'}}>Description <span style={{fontWeight:400,color:'#8899aa'}}>({form.description.length}/3000)</span></label>
+              <label style={{fontSize:'12px',fontWeight:600,color:'var(--ink-secondary)',marginTop:'8px'}}>Description <span style={{fontWeight:400,color:'var(--ink-faint)'}}>({form.description.length}/3000)</span></label>
               <textarea style={{minHeight:'120px'}} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Describe what happened during the trip…"/>
-              <label style={{fontSize:'12px',fontWeight:600,color:'#3d516c',marginTop:'8px'}}>Disputed amount (SGD, optional)</label>
+              <label style={{fontSize:'12px',fontWeight:600,color:'var(--ink-secondary)',marginTop:'8px'}}>Disputed amount (SGD, optional)</label>
               <input type="number" min="0" step="0.01" max="100000" value={form.dispute_amount} onChange={e=>setForm({...form,dispute_amount:e.target.value})} placeholder="e.g. 15.50"/>
-              <small style={{color:'#8899aa',fontSize:'11px'}}>Provide the amount you believe was incorrectly charged. Leave blank if the dispute is not about a specific amount (e.g. route deviation or safety).</small>
+              <small style={{color:'var(--ink-faint)',fontSize:'11px'}}>Provide the amount you believe was incorrectly charged. Leave blank if not about a specific amount.</small>
               {form.category==='safety_incident'&&<div className="alert error" style={{marginTop:'8px'}}>Safety allegations are escalated immediately for mandatory human review. AI will not determine fault or propose a remedy.</div>}
             </div>
             {formError&&<div className="alert error" style={{marginTop:'10px'}}>{formError}</div>}
@@ -188,15 +189,21 @@ export default function RiderPortal(){
             <p className="eyebrow">CURRENT STATUS</p>
             <h2>{pathLabel(detail.path)}</h2>
             <p>{detail.candidate?.reason||riderNextAction(detail)}</p>
-            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'#3d516c',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
+            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'var(--ink-secondary)',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
             {detail.mock_action&&<div className="receipt">
               <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
-              <br/><small style={{color:'#5a7a62'}}>Test transaction · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
+              <br/><small style={{color:'var(--good-fg)'}}>Simulated record · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
             </div>}
           </div>}
 
-          {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="card highlight" style={{borderLeft:'5px solid #ad3140'}}>
-            <p className="eyebrow">⚠ SAFETY ESCALATION</p>
+          {detail.events?.length>0&&<div className="card">
+            <p className="eyebrow">CASE ACTIVITY</p>
+            <h3>Timeline</h3>
+            <CaseTimeline detail={detail} role="rider"/>
+          </div>}
+
+          {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="card highlight" style={{borderLeft:'4px solid var(--bad-fg)'}}>
+            <p className="eyebrow">SAFETY ESCALATION</p>
             <h3>This case requires immediate human review</h3>
             <p className="muted">Your report has been escalated for mandatory human review. AI does not determine fault or propose a remedy for safety incidents. A reviewer will assess the situation and contact you through official channels if needed. No automated decision has been made.</p>
           </div>}
@@ -211,7 +218,7 @@ export default function RiderPortal(){
                   <p style={{fontWeight:500}}>{c.question}</p>
                   <em className="status bad">Your account statement — unverified</em>
                   <textarea placeholder="Type your response here…" value={answer} onChange={e=>setAnswer(e.target.value)} style={{marginTop:'8px'}}/>
-                  <button disabled={api.busy||!answer.trim()} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/clarifications/'+c.request_id+'/reply',{method:'POST',body:{answer}});setDetail(r);setAnswer('');api.setNotice('Your response has been recorded as an unverified claim. The reviewer may request source documentation.')})}>Submit response</button>
+                  <button disabled={api.busy||!answer.trim()} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/clarifications/'+c.request_id+'/reply',{method:'POST',body:{answer}});setDetail(r);setAnswer('');api.setNotice('Your response has been recorded as an unverified claim.')})}>Submit response</button>
                 </div>
               ))}
             </div>
@@ -221,7 +228,7 @@ export default function RiderPortal(){
             <div className="card outbox">
               <p className="eyebrow">CASE UPDATES</p>
               <h3>Simulated notifications — not delivered</h3>
-              <p className="muted">These are simulated messages for demo purposes. No email, SMS, push notification, or payment was sent.</p>
+              <p className="muted">No email, SMS, push notification, or payment was sent.</p>
               <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='rider'||n.recipient==='all').map((n,i)=>(
                 <div key={i} className="notif-item">
                   <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>
@@ -235,7 +242,7 @@ export default function RiderPortal(){
           {outcome&&<div className="card">
             <p className="eyebrow">OUTCOME</p>
             <h3>Case outcome</h3>
-            <p style={{fontSize:'13px',lineHeight:'1.6',color:'#3d516c'}}>{outcome}</p>
+            <p style={{fontSize:'13px',lineHeight:'1.6',color:'var(--ink-secondary)'}}>{outcome}</p>
             <p className="muted" style={{marginTop:'8px'}}>{riderNextAction(detail)}</p>
           </div>}
 
@@ -250,10 +257,10 @@ export default function RiderPortal(){
 
     <div className="card" style={{textAlign:'center',padding:'16px'}}>
       <Link href="/" className="lab-enter">← Back to role selection</Link>
-      <span style={{margin:'0 12px',color:'#ccc'}}>·</span>
+      <span style={{margin:'0 12px',color:'var(--ink-faint)'}}>·</span>
       <Link href="/lab" className="lab-enter">Full dashboard →</Link>
     </div>
 
-    <footer>RydeResolve is a synthetic hackathon demo. No real payments, notifications, or account actions were executed. All data is synthetic.</footer>
+    <footer>RydeResolve is a synthetic demo. No real payments, notifications, or account actions were executed.</footer>
   </main>;
 }

@@ -101,7 +101,7 @@ export function riderNextAction(detail) {
   if (!detail) return '';
   switch (detail.status) {
     case 'NEW':
-      return 'Your case has been received. Click "Check status" to process it and see the initial assessment.';
+      return 'Your case has been received and is awaiting initial processing by the review team.';
     case 'AWAITING_CLARIFICATION':
       return 'Please respond to the clarification request below so the reviewer can continue the investigation.';
     case 'REVIEW_REQUIRED':

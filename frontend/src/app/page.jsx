@@ -2,66 +2,53 @@
 import {useState} from 'react';
 import Link from 'next/link';
 
-const ROLES=[
-  {id:'rider',label:'Rider',href:'/rider',icon:'R',tagline:'File a dispute, track your case, answer clarifications, and see outcomes in plain language.',
-   accent:'rider-accent'},
-  {id:'driver',label:'Driver',href:'/driver',icon:'D',tagline:'View case history, respond to requests, and check outcomes.',
-   accent:'driver-accent'},
-  {id:'reviewer',label:'Reviewer',href:'/reviewer',icon:'Rv',tagline:'Operational queue, advocate perspectives, policy gates, escalation, decision packet.',
-   accent:'reviewer-accent'},
-];
-
-export default function LandingPage(){
+export default function Landing(){
   const [showLab,setShowLab]=useState(false);
-
   return <main className="landing">
     <header className="landing-hero">
       <div className="landing-brand">
         <div className="landing-logo">R</div>
-        <div>
-          <h1>RydeResolve</h1>
-          <p>Policy-grounded dispute resolution · Tencent Cloud AI Agent Hackathon</p>
-        </div>
+        <div><h1>RydeResolve</h1><p>Policy-grounded dispute resolution demo</p></div>
       </div>
-      <div className="demo-banner">HACKATHON DEMO · SYNTHETIC DATA · NO REAL PAYMENTS</div>
+      <div className="demo-banner">SYNTHETIC DEMO · NO REAL PAYMENTS</div>
     </header>
 
     <section className="landing-intro">
-      <h2>Choose your role to continue</h2>
-      <p className="landing-subtitle">
-        Each portal uses role-specific demo passcodes from the backend. The backend independently
-        authorizes every request and enforces case isolation per authenticated demo identity.
-        All data is synthetic.
-      </p>
+      <h2>Resolve trip disputes through structured policy and evidence</h2>
+      <p className="landing-subtitle">A synthetic demonstration of a multi-agent dispute resolution workflow. Six independent AI agents analyze each case, a deterministic policy engine validates outcomes, and a human reviewer makes the final call. This is a demo — no real payments, accounts, or notifications are involved.</p>
     </section>
 
     <div className="role-grid">
-      {ROLES.map(r=>(
-        <Link key={r.id} href={r.href} className={`role-card ${r.accent}`}>
-          <div className="role-icon">{r.icon}</div>
-          <h3>{r.label}</h3>
-          <p>{r.tagline}</p>
-          <span className="role-cta">Enter portal →</span>
-        </Link>
-      ))}
+      <Link href="/rider" className="role-card rider-accent">
+        <div className="role-icon">R</div>
+        <h3>Rider Portal</h3>
+        <p>File a dispute, respond to clarification requests, and check your case status</p>
+        <span className="role-cta">Enter as Rider →</span>
+      </Link>
+      <Link href="/driver" className="role-card driver-accent">
+        <div className="role-icon">D</div>
+        <h3>Driver Portal</h3>
+        <p>View cases involving you, respond to requests, and check outcomes</p>
+        <span className="role-cta">Enter as Driver →</span>
+      </Link>
+      <Link href="/reviewer" className="role-card reviewer-accent">
+        <div className="role-icon">Rv</div>
+        <h3>Reviewer Workbench</h3>
+        <p>Full investigation workbench with evidence, advocates, and decision tools</p>
+        <span className="role-cta">Enter as Reviewer →</span>
+      </Link>
     </div>
 
-    <section className="lab-link-section">
-      <button className="lab-toggle" onClick={()=>setShowLab(!showLab)}>
-        {showLab?'Hide':'Show'} full dashboard
-      </button>
-      {showLab&&(
-        <div className="lab-link-card">
-          <p className="muted">The complete lab dashboard with all features — case queue, processing,
-          advocate outputs, reviewer packet, learning loop, evaluation report, and event traces.</p>
-          <Link href="/lab" className="lab-enter">Open /lab dashboard →</Link>
-        </div>
-      )}
-    </section>
+    <div className="lab-link-section">
+      <button className="lab-toggle" onClick={()=>setShowLab(!showLab)}>{showLab?'Hide':'Show'} full dashboard</button>
+      {showLab&&<div className="lab-link-card">
+        <p className="muted">The full dashboard shows complete case details including all roles, agents, and events in one view. This is a reviewer-equivalent view for technical inspection.</p>
+        <Link href="/lab" className="lab-enter">Full dashboard →</Link>
+      </div>}
+    </div>
 
     <footer className="landing-footer">
-      RydeResolve is a synthetic hackathon prototype. No Ryde APIs, customer data, payments,
-      or account actions are connected. All data is synthetic.
+      RydeResolve is a synthetic demo environment. No real Ryde account, payment, or notification integrations exist. <br/>All data is synthetic. Do not enter real personal information.
     </footer>
   </main>;
 }

@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
+import {CaseTimeline} from '../../lib/Timeline';
 import {
   TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel,
 } from '../../lib/labels';
@@ -49,28 +50,35 @@ export default function ReviewerWorkbench(){
 
   const selected=detail?.case_id;
   const isSafety=detail?.path==='IMMEDIATE_HUMAN_REVIEW';
+  const needsAttention=detail?.status==='REVIEW_REQUIRED'||detail?.status==='AWAITING_CLARIFICATION'||isSafety;
+  const reviewCases=cases.filter(c=>c.status==='REVIEW_REQUIRED'||c.status==='AWAITING_CLARIFICATION');
 
   return <main>
     <header className="masthead">
       <div className="brand">
-        <div className="brand-icon" style={{background:'linear-gradient(135deg,#6b4fce,#9a7ee5)'}}>Rv</div>
+        <div className="brand-icon" style={{background:'linear-gradient(135deg,#9a2a52,#c91f56)'}}>Rv</div>
         <div><h1>RydeResolve <span>Reviewer</span></h1><p>Operational dispute resolution workbench</p></div>
       </div>
-      <div className="demo-label">DEMO ENVIRONMENT · SYNTHETIC DATA</div>
+      <div className="demo-label">DEMO · SYNTHETIC DATA</div>
     </header>
 
     <section className="card connection">
       <div>
         <h2>Reviewer access</h2>
-        <p>Enter your reviewer demo passcode from backend/.env. The backend enforces reviewer authorization independently. The backend enforces case isolation per authenticated demo identity.</p>
+        <p>Enter your reviewer demo passcode. The backend enforces reviewer authorization independently.</p>
       </div>
       <input aria-label="Demo passcode" type="password" placeholder="reviewer passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
       <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
-      {policy&&<span className="micro" style={{marginLeft:'12px'}}>Demo · {policy.ai_mode==='mock'?'Mock':'Live ADK'} · signoff: {policy.team_signoff_valid?'verified':'missing'}</span>}
+      {policy&&<span className="micro" style={{marginLeft:'12px'}}>{policy.ai_mode==='mock'?'Mock':'Live ADK'} · signoff: {policy.team_signoff_valid?'verified':'missing'}</span>}
     </section>
 
     {api.error&&<div className="alert error" role="alert">{api.error}</div>}
     {api.notice&&<div className="alert success">{api.notice}</div>}
+
+    {reviewCases.length>0&&<div className="alert error" style={{display:'flex',alignItems:'center',gap:'10px'}}>
+      <strong>{reviewCases.length} case{reviewCases.length>1?'s':''} need attention</strong>
+      <span style={{fontSize:'12px'}}>{reviewCases.map(c=>c.case_id).join(', ')}</span>
+    </div>}
 
     <div className="workspace">
       <aside className="card sidebar">
@@ -78,19 +86,21 @@ export default function ReviewerWorkbench(){
           <h2>Case queue</h2>
           <button className="small" disabled={!api.key||api.busy} onClick={()=>api.run(async()=>{await api.call('cases/seed',{method:'POST'});const l=await api.call('cases');setCases(l);api.setNotice('Synthetic demo cases loaded.')})}>Load demos</button>
         </div>
-        {cases.length===0?<p className="muted">Enter passcode, click Connect, then Load demos.</p>:cases.map(item=>(
-          <button key={item.case_id} className={'case-item '+(selected===item.case_id?'selected':'')} onClick={()=>api.run(()=>selectCase(item.case_id))}>
+        {cases.length===0?<p className="muted">Enter passcode, click Connect, then Load demos.</p>:cases.map(item=>{
+          const urgent=item.status==='REVIEW_REQUIRED'||item.path==='IMMEDIATE_HUMAN_REVIEW';
+          const clarifying=item.status==='AWAITING_CLARIFICATION';
+          return <button key={item.case_id} className={'case-item '+(selected===item.case_id?'selected':'')+(urgent?' urgent':'')} onClick={()=>api.run(()=>selectCase(item.case_id))}>
             <strong>{item.case_id}</strong>
             <span>{categoryLabel(item.category)}</span>
             <em className={'status '+(TONES[item.status]||'neutral')}>{statusLabel(item.status)}</em>
-          </button>
-        ))}
+          </button>;
+        })}
       </aside>
 
       <div className="primary">
         {!detail?<div className="card empty"><div className="empty-symbol">⌁</div><h2>Select a case</h2><p>Full reviewer workbench: evidence review, advocate perspectives, policy gates, decision packet, learning loop.</p></div>:
         <>
-          <div className="card case-title">
+          <div className="card case-title" style={needsAttention?{borderLeft:'4px solid var(--pink)'}:{}}>
             <div className="section-head">
               <div><p className="eyebrow">CASE {detail.case_id}</p><h2>{categoryLabel(detail.category)}</h2></div>
               <em className={'status '+(TONES[detail.status]||'neutral')}>{statusLabel(detail.status)}</em>
@@ -110,15 +120,21 @@ export default function ReviewerWorkbench(){
             <p className="eyebrow">DECISION PATH</p>
             <h2>{pathLabel(detail.path)}</h2>
             <p>{detail.candidate?.reason||'Awaiting evidence or human review.'}</p>
-            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'#3d516c',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
+            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'var(--ink-secondary)',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
             {detail.mock_action&&<div className="receipt">
               <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
-              <br/><small style={{color:'#5a7a62'}}>Test transaction · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
+              <br/><small style={{color:'var(--good-fg)'}}>Simulated record · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
             </div>}
           </div>}
 
-          {isSafety&&<div className="card highlight" style={{borderLeft:'5px solid #ad3140'}}>
-            <p className="eyebrow">⚠ IMMEDIATE HUMAN REVIEW</p>
+          {detail.events?.length>0&&<div className="card">
+            <p className="eyebrow">CASE ACTIVITY</p>
+            <h3>Timeline</h3>
+            <CaseTimeline detail={detail}/>
+          </div>}
+
+          {isSafety&&<div className="card highlight" style={{borderLeft:'4px solid var(--bad-fg)'}}>
+            <p className="eyebrow">IMMEDIATE HUMAN REVIEW</p>
             <h3>Safety case — no AI fault or remedy ruling</h3>
             <p className="muted">AI does not determine fault or propose a remedy for safety incidents. The reviewer must independently assess safety allegations, determine fault, and select the remedy. Mandatory human review per SF-5.1 and SF-5.2.</p>
           </div>}
@@ -172,7 +188,7 @@ export default function ReviewerWorkbench(){
           {detail.status!=='RESOLVED'&&detail.status!=='REVIEWED_AND_RESOLVED'&&<div className="card">
             <p className="eyebrow">EVIDENCE UPLOAD</p>
             <h3>Upload image or evidence file</h3>
-            <p className="muted">PNG, JPEG, or PDF up to 5 MB. The visual description does not prove the image is authentic, taken in-app, or tied to the rider. Authenticity is unknown. Damage claims require mandatory human review.</p>
+            <p className="muted">PNG, JPEG, or PDF up to 5 MB. The visual description does not prove the image is authentic, taken in-app, or tied to the rider. Authenticity is unknown.</p>
             <input aria-label="Choose synthetic image or evidence document" type="file" accept="image/png,image/jpeg,application/pdf" onChange={e=>setUploadFile(e.target.files?.[0]||null)}/>
             <button disabled={api.busy||!uploadFile} onClick={()=>api.run(async()=>{const form=new FormData();form.append('file',uploadFile);const result=await api.call('cases/'+selected+'/files',{method:'POST',body:form});setUploadReport(result);setDetail(await api.call('cases/'+selected));api.setNotice('Evidence file stored. Capture origin and authenticity remain unverified.')})}>Upload evidence</button>
             {uploadReport&&<details><summary>Image analysis and storage details</summary><pre className="json">{JSON.stringify(uploadReport,null,2)}</pre></details>}
@@ -180,7 +196,7 @@ export default function ReviewerWorkbench(){
 
           {detail.status!=='RESOLVED'&&detail.status!=='REVIEWED_AND_RESOLVED'&&<div className="card">
             <h3>Reviewer-only: Add synthetic verified-source fact</h3>
-            <p className="muted">Import a synthetic system fact with provenance. Not a real integration. Party statements are never promoted to system facts.</p>
+            <p className="muted">Import a synthetic system fact with provenance. Party statements are never promoted to system facts.</p>
             <div className="fieldgrid">
               <input value={field} onChange={e=>setField(e.target.value)} placeholder="Field name"/>
               <input value={factValue} onChange={e=>setFactValue(e.target.value)} placeholder="JSON value, e.g. true"/>
@@ -198,7 +214,7 @@ export default function ReviewerWorkbench(){
             </div>
             <textarea value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="Write justification based on evidence and policy (10+ characters)"/>
             <textarea value={precedent} onChange={e=>setPrecedent(e.target.value)} placeholder="Optional staged precedent for Innovation B"/>
-            <button disabled={api.busy||reviewReason.length<10} onClick={()=>api.run(async()=>{const p=await api.call('cases/'+selected+'/review',{method:'POST',body:{disposition:reviewDisposition,amount:Number(reviewAmount),reason:reviewReason,proposed_precedent:precedent||null}});setDetail(p);if(p.learning_proposal_id)setLearningId(p.learning_proposal_id);api.setNotice('Reviewer decision recorded. Test transaction generated — no real funds transferred.')})}>Finalize review</button>
+            <button disabled={api.busy||reviewReason.length<10} onClick={()=>api.run(async()=>{const p=await api.call('cases/'+selected+'/review',{method:'POST',body:{disposition:reviewDisposition,amount:Number(reviewAmount),reason:reviewReason,proposed_precedent:precedent||null}});setDetail(p);if(p.learning_proposal_id)setLearningId(p.learning_proposal_id);api.setNotice('Reviewer decision recorded. Simulated record generated — no real funds transferred.')})}>Finalize review</button>
           </div>}
 
           {detail.status==='REVIEW_REQUIRED'&&<div className="card packet">
@@ -276,12 +292,12 @@ export default function ReviewerWorkbench(){
                   <div><span className="pkt-label">Timestamp</span><span className="pkt-val">{packet.human_decision.timestamp}</span></div>
                   <div><span className="pkt-label">Test receipt</span><span className="pkt-val">{packet.human_decision.simulated_receipt}</span></div>
                 </div>
-                <p className="muted" style={{marginTop:'6px'}}>Test transaction — no real funds transferred.</p>
+                <p className="muted" style={{marginTop:'6px'}}>Simulated record — no real funds transferred.</p>
               </div>:<div className="packet-section"><h4>Human decision</h4><p className="muted">No human decision recorded yet</p></div>}
 
               <div className="packet-section"><h4>Original escalation (preserved for traceability)</h4><p className="pkt-val">{pathLabel(packet.original_escalation)||'—'}</p></div>
 
-              <div className="packet-section pkt-warning"><h4>⚠ Synthetic demo warning</h4><p>{packet.synthetic_warning}</p></div>
+              <div className="packet-section pkt-warning"><h4>Synthetic demo warning</h4><p>{packet.synthetic_warning}</p></div>
             </>}
           </div>}
 
@@ -314,10 +330,10 @@ export default function ReviewerWorkbench(){
 
     <div className="card" style={{textAlign:'center',padding:'16px'}}>
       <Link href="/" className="lab-enter">← Back to role selection</Link>
-      <span style={{margin:'0 12px',color:'#ccc'}}>·</span>
+      <span style={{margin:'0 12px',color:'var(--ink-faint)'}}>·</span>
       <Link href="/lab" className="lab-enter">Full dashboard →</Link>
     </div>
 
-    <footer>RydeResolve is a synthetic hackathon demo. No real payments, notifications, or account actions were executed. All data is synthetic.</footer>
+    <footer>RydeResolve is a synthetic demo. No real payments, notifications, or account actions were executed.</footer>
   </main>;
 }

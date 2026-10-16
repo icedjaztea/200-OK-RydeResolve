@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
+import {CaseTimeline} from '../../lib/Timeline';
 import {
   TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel,
   outcomeExplanation, driverNextAction,
@@ -29,16 +30,16 @@ export default function DriverPortal(){
   return <main>
     <header className="masthead">
       <div className="brand">
-        <div className="brand-icon" style={{background:'linear-gradient(135deg,#0e8f87,#2dbfa8)'}}>D</div>
+        <div className="brand-icon" style={{background:'linear-gradient(135deg,#c91f56,#e8336a)'}}>D</div>
         <div><h1>RydeResolve <span>Driver</span></h1><p>View cases, respond to requests, and check outcomes</p></div>
       </div>
-      <div className="demo-label">DEMO ENVIRONMENT · SYNTHETIC DATA</div>
+      <div className="demo-label">DEMO · SYNTHETIC DATA</div>
     </header>
 
     <section className="card connection">
       <div>
         <h2>Driver access</h2>
-        <p>Enter your driver demo passcode from backend/.env. This is a demo environment using synthetic data only — not production identity. The backend enforces case isolation per authenticated demo identity.</p>
+        <p>Enter your demo passcode. The backend enforces case isolation per authenticated identity — you can only see cases involving you.</p>
       </div>
       <input aria-label="Demo passcode" type="password" placeholder="driver passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
       <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
@@ -47,11 +48,11 @@ export default function DriverPortal(){
     {api.error&&<div className="alert error" role="alert">{api.error}</div>}
     {api.notice&&<div className="alert success">{api.notice}</div>}
 
-    {policy&&<div className="micro">Demo environment · {policy.ai_mode==='mock'?'Mock mode (no model calls)':'Live ADK'} · Policy signoff: {policy.team_signoff_valid?'verified':'missing'} · Storage: {policy.storage_mode}</div>}
+    {policy&&<div className="micro">{policy.ai_mode==='mock'?'Mock mode (no model calls)':'Live ADK'} · Policy signoff: {policy.team_signoff_valid?'verified':'missing'} · Storage: {policy.storage_mode}</div>}
 
     <div className="workspace">
       <aside className="card sidebar">
-        <div className="section-head"><h2>Synthetic demo cases</h2></div>
+        <div className="section-head"><h2>Your cases</h2></div>
         {cases.length===0?
           <p className="muted">{api.key?'No cases loaded.':'Enter passcode and click Connect.'}</p>
         :cases.map(item=>(
@@ -84,15 +85,21 @@ export default function DriverPortal(){
             <p className="eyebrow">CURRENT STATUS</p>
             <h2>{pathLabel(detail.path)}</h2>
             <p>{detail.candidate?.reason||driverNextAction(detail)}</p>
-            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'#3d516c',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
+            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'var(--ink-secondary)',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
             {detail.mock_action&&<div className="receipt">
               <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
-              <br/><small style={{color:'#5a7a62'}}>Test transaction · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
+              <br/><small style={{color:'var(--good-fg)'}}>Simulated record · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
             </div>}
           </div>}
 
-          {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="card highlight" style={{borderLeft:'5px solid #ad3140'}}>
-            <p className="eyebrow">⚠ SAFETY ESCALATION</p>
+          {detail.events?.length>0&&<div className="card">
+            <p className="eyebrow">CASE ACTIVITY</p>
+            <h3>Timeline</h3>
+            <CaseTimeline detail={detail} role="driver"/>
+          </div>}
+
+          {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="card highlight" style={{borderLeft:'4px solid var(--bad-fg)'}}>
+            <p className="eyebrow">SAFETY ESCALATION</p>
             <h3>This case requires immediate human review</h3>
             <p className="muted">This trip has been escalated for mandatory human review. AI does not determine fault or propose a remedy. A reviewer will investigate and contact you through official channels if needed. No automated decision has been made.</p>
           </div>}
@@ -101,13 +108,13 @@ export default function DriverPortal(){
             <div className="card highlight">
               <p className="eyebrow">CLARIFICATION REQUESTED</p>
               <h3>The reviewer needs more information from you</h3>
-              <p className="muted">⚠ Do not reply while driving. Pull over safely before responding. Your response will be recorded as an unverified claim — the reviewer may request source documentation to verify it.</p>
+              <p className="muted">Do not reply while driving. Pull over safely before responding. Your response will be recorded as an unverified claim — the reviewer may request source documentation to verify it.</p>
               {detail.clarifications.filter(c=>c.status==='PENDING'&&c.recipient==='driver').map(c=>(
                 <div key={c.request_id} style={{marginTop:'12px'}}>
                   <p style={{fontWeight:500}}>{c.question}</p>
                   <em className="status bad">Your account statement — unverified</em>
                   <textarea placeholder="Type your response here…" value={answer} onChange={e=>setAnswer(e.target.value)} style={{marginTop:'8px'}}/>
-                  <button disabled={api.busy||!answer.trim()} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/clarifications/'+c.request_id+'/reply',{method:'POST',body:{answer}});setDetail(r);setAnswer('');api.setNotice('Your response has been recorded as an unverified claim. The reviewer may request source documentation.')})}>Submit response</button>
+                  <button disabled={api.busy||!answer.trim()} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/clarifications/'+c.request_id+'/reply',{method:'POST',body:{answer}});setDetail(r);setAnswer('');api.setNotice('Your response has been recorded as an unverified claim.')})}>Submit response</button>
                 </div>
               ))}
             </div>
@@ -117,7 +124,7 @@ export default function DriverPortal(){
             <div className="card outbox">
               <p className="eyebrow">CASE UPDATES</p>
               <h3>Simulated notifications — not delivered</h3>
-              <p className="muted">These are simulated messages for demo purposes. No email, SMS, push notification, or payment was sent.</p>
+              <p className="muted">No email, SMS, push notification, or payment was sent.</p>
               <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='driver'||n.recipient==='all').map((n,i)=>(
                 <div key={i} className="notif-item">
                   <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>
@@ -131,13 +138,13 @@ export default function DriverPortal(){
           {outcome&&<div className="card">
             <p className="eyebrow">OUTCOME</p>
             <h3>Case outcome</h3>
-            <p style={{fontSize:'13px',lineHeight:'1.6',color:'#3d516c'}}>{outcome}</p>
+            <p style={{fontSize:'13px',lineHeight:'1.6',color:'var(--ink-secondary)'}}>{outcome}</p>
             <p className="muted" style={{marginTop:'8px'}}>{driverNextAction(detail)}</p>
           </div>}
 
           <div className="card">
             <h3>Evidence and case details</h3>
-            <p className="muted">The information below is from the initial report and any verified evidence the reviewer has added. Claims are not automatically verified.</p>
+            <p className="muted">Claims are not automatically verified. The reviewer may add verified evidence.</p>
             <details><summary>Show case facts</summary><pre className="json">{JSON.stringify(detail.facts,null,2)}</pre></details>
             <details><summary>Show event record</summary><pre className="json">{JSON.stringify(detail.events,null,2)}</pre></details>
           </div>
@@ -147,10 +154,10 @@ export default function DriverPortal(){
 
     <div className="card" style={{textAlign:'center',padding:'16px'}}>
       <Link href="/" className="lab-enter">← Back to role selection</Link>
-      <span style={{margin:'0 12px',color:'#ccc'}}>·</span>
+      <span style={{margin:'0 12px',color:'var(--ink-faint)'}}>·</span>
       <Link href="/lab" className="lab-enter">Full dashboard →</Link>
     </div>
 
-    <footer>RydeResolve is a synthetic hackathon demo. No real payments, notifications, or account actions were executed. All data is synthetic.</footer>
+    <footer>RydeResolve is a synthetic demo. No real payments, notifications, or account actions were executed.</footer>
   </main>;
 }
