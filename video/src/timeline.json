@@ -1,0 +1,561 @@
+[
+  {
+    "id": "opening",
+    "title": "RydeResolve",
+    "sub": "Evidence first. People in control.",
+    "kind": "brand",
+    "image": null,
+    "narration": "RydeResolve brings structure to trip disputes: evidence for both sides, policy grounded recommendations, and clear human oversight. This walkthrough uses the three role frontend and synthetic demo cases. No real payments or notifications are connected.",
+    "fromFrame": 0,
+    "duration": 438,
+    "captions": [
+      {
+        "start": 13,
+        "end": 222,
+        "text": "RydeResolve brings structure to trip disputes: evidence for both sides, policy grounded recommendations, and clear human oversight."
+      },
+      {
+        "start": 226,
+        "end": 336,
+        "text": "This walkthrough uses the three role frontend and synthetic demo cases."
+      },
+      {
+        "start": 340,
+        "end": 414,
+        "text": "No real payments or notifications are connected."
+      }
+    ]
+  },
+  {
+    "id": "problem",
+    "title": "One trip. Three perspectives.",
+    "sub": "Rider \u00b7 Driver \u00b7 Reviewer",
+    "kind": "priorities",
+    "image": null,
+    "narration": "A rider needs to understand a charge. A driver needs a fair opportunity to respond. A reviewer needs a traceable account of what happened. These are the stakeholder needs this prototype addresses. Named interview findings are not included because supporting research records were not supplied.",
+    "fromFrame": 438,
+    "duration": 459,
+    "captions": [
+      {
+        "start": 13,
+        "end": 68,
+        "text": "A rider needs to understand a charge."
+      },
+      {
+        "start": 72,
+        "end": 138,
+        "text": "A driver needs a fair opportunity to respond."
+      },
+      {
+        "start": 142,
+        "end": 214,
+        "text": "A reviewer needs a traceable account of what happened."
+      },
+      {
+        "start": 219,
+        "end": 292,
+        "text": "These are the stakeholder needs this prototype addresses."
+      },
+      {
+        "start": 297,
+        "end": 436,
+        "text": "Named interview findings are not included because supporting research records were not supplied."
+      }
+    ]
+  },
+  {
+    "id": "portals",
+    "title": "A dedicated view for each role",
+    "sub": "Actual frontend \u00b7 synthetic data",
+    "kind": "screen",
+    "image": "landing",
+    "narration": "The frontend separates those needs into three portals. Riders can file disputes and check progress. Drivers can see cases involving them and respond to requests. Reviewers work with the complete investigation, evidence, and decision tools.",
+    "fromFrame": 897,
+    "duration": 400,
+    "captions": [
+      {
+        "start": 13,
+        "end": 92,
+        "text": "The frontend separates those needs into three portals."
+      },
+      {
+        "start": 97,
+        "end": 161,
+        "text": "Riders can file disputes and check progress."
+      },
+      {
+        "start": 165,
+        "end": 261,
+        "text": "Drivers can see cases involving them and respond to requests."
+      },
+      {
+        "start": 265,
+        "end": 377,
+        "text": "Reviewers work with the complete investigation, evidence, and decision tools."
+      }
+    ],
+    "pageH": 1080.0,
+    "cx": 960,
+    "cy": 500,
+    "zoom": 1,
+    "pan": 0
+  },
+  {
+    "id": "architecture",
+    "title": "Advocacy is not authority",
+    "sub": "Six agents + an independent policy gate",
+    "kind": "architecture",
+    "image": null,
+    "narration": "The workflow starts with a safety screen and an orchestrator. Rider and Driver Advocates work alongside Policy and Precedent, and Fraud and Bad Faith analysis. The Judge proposes an outcome. A separate deterministic policy gate checks whether that proposal is eligible for a simulated remedy or must go to a reviewer.",
+    "fromFrame": 1297,
+    "duration": 519,
+    "captions": [
+      {
+        "start": 13,
+        "end": 92,
+        "text": "The workflow starts with a safety screen and an orchestrator."
+      },
+      {
+        "start": 96,
+        "end": 251,
+        "text": "Rider and Driver Advocates work alongside Policy and Precedent, and Fraud and Bad Faith analysis."
+      },
+      {
+        "start": 255,
+        "end": 299,
+        "text": "The Judge proposes an outcome."
+      },
+      {
+        "start": 303,
+        "end": 497,
+        "text": "A separate deterministic policy gate checks whether that proposal is eligible for a simulated remedy or must go to a reviewer."
+      }
+    ]
+  },
+  {
+    "id": "fare-intro",
+    "title": "Start with the disputed difference",
+    "sub": "SGD 16.50 charged \u2212 SGD 12.00 quoted",
+    "kind": "fare",
+    "image": null,
+    "narration": "Consider case DISP zero zero three. The quoted fare is twelve Singapore dollars; the final fare is sixteen fifty. The dispute concerns an unnotified surge increase. The candidate refund is the four dollar fifty difference, rather than the entire fare.",
+    "fromFrame": 1816,
+    "duration": 409,
+    "captions": [
+      {
+        "start": 13,
+        "end": 70,
+        "text": "Consider case DISP zero zero three."
+      },
+      {
+        "start": 75,
+        "end": 186,
+        "text": "The quoted fare is twelve Singapore dollars; the final fare is sixteen fifty."
+      },
+      {
+        "start": 190,
+        "end": 261,
+        "text": "The dispute concerns an unnotified surge increase."
+      },
+      {
+        "start": 265,
+        "end": 386,
+        "text": "The candidate refund is the four dollar fifty difference, rather than the entire fare."
+      }
+    ]
+  },
+  {
+    "id": "evidence",
+    "title": "Inspect the evidence before the outcome",
+    "sub": "Reviewer workbench \u00b7 Evidence tab",
+    "kind": "screen",
+    "image": "fare-evidence",
+    "narration": "In the Evidence tab, the reviewer can inspect the case facts and their provenance. A user submission is not automatically a trusted fact. The distinction matters: an unsupported assertion should prompt clarification or review, rather than become a reason to release funds.",
+    "fromFrame": 2225,
+    "duration": 430,
+    "captions": [
+      {
+        "start": 13,
+        "end": 119,
+        "text": "In the Evidence tab, the reviewer can inspect the case facts and their provenance."
+      },
+      {
+        "start": 123,
+        "end": 209,
+        "text": "A user submission is not automatically a trusted fact."
+      },
+      {
+        "start": 214,
+        "end": 406,
+        "text": "The distinction matters: an unsupported assertion should prompt clarification or review, rather than become a reason to release funds."
+      }
+    ],
+    "pageH": 1152.0,
+    "cx": 1120,
+    "cy": 760,
+    "zoom": 1.3,
+    "pan": 90
+  },
+  {
+    "id": "agents",
+    "title": "Make both perspectives inspectable",
+    "sub": "Reviewer workbench \u00b7 Agent Findings",
+    "kind": "screen",
+    "image": "fare-agents",
+    "narration": "Agent Findings exposes the individual contributions to the investigation. The point is to make the reasoning inspectable, including the interests of both parties. This recording uses the offline mock agent mode; it is not evidence of a live Gemini execution.",
+    "fromFrame": 2655,
+    "duration": 445,
+    "captions": [
+      {
+        "start": 13,
+        "end": 136,
+        "text": "Agent Findings exposes the individual contributions to the investigation."
+      },
+      {
+        "start": 140,
+        "end": 258,
+        "text": "The point is to make the reasoning inspectable, including the interests of both parties."
+      },
+      {
+        "start": 263,
+        "end": 422,
+        "text": "This recording uses the offline mock agent mode; it is not evidence of a live Gemini execution."
+      }
+    ],
+    "pageH": 1152.0,
+    "cx": 1120,
+    "cy": 780,
+    "zoom": 1.3,
+    "pan": 15
+  },
+  {
+    "id": "refund",
+    "title": "A narrow, simulated remedy",
+    "sub": "DISP-003 \u00b7 AUTO ELIGIBLE \u00b7 SGD 4.50",
+    "kind": "screen",
+    "image": "fare-overview",
+    "narration": "For this synthetic fare case, the independent gate permits the verified differential. The result is a simulated refund of four dollars fifty, with a mock receipt. No money moves. The notification outbox is also simulated and explicitly marked as not delivered.",
+    "fromFrame": 3100,
+    "duration": 429,
+    "captions": [
+      {
+        "start": 13,
+        "end": 130,
+        "text": "For this synthetic fare case, the independent gate permits the verified differential."
+      },
+      {
+        "start": 134,
+        "end": 246,
+        "text": "The result is a simulated refund of four dollars fifty, with a mock receipt."
+      },
+      {
+        "start": 250,
+        "end": 275,
+        "text": "No money moves."
+      },
+      {
+        "start": 279,
+        "end": 406,
+        "text": "The notification outbox is also simulated and explicitly marked as not delivered."
+      }
+    ],
+    "pageH": 1265.0,
+    "cx": 1080,
+    "cy": 530,
+    "zoom": 1.13,
+    "pan": 40
+  },
+  {
+    "id": "trace",
+    "title": "Trace the stored execution",
+    "sub": "Recorded replay \u2260 live execution",
+    "kind": "screen",
+    "image": "monitor",
+    "narration": "The execution monitor visualizes stored agent outputs, the candidate proposal, and the policy gate. It is a recorded replay, not a live workflow animation. That separation lets a reviewer inspect what the system stored without inventing tool calls, durations, or timestamps.",
+    "fromFrame": 3529,
+    "duration": 463,
+    "captions": [
+      {
+        "start": 13,
+        "end": 166,
+        "text": "The execution monitor visualizes stored agent outputs, the candidate proposal, and the policy gate."
+      },
+      {
+        "start": 170,
+        "end": 256,
+        "text": "It is a recorded replay, not a live workflow animation."
+      },
+      {
+        "start": 260,
+        "end": 440,
+        "text": "That separation lets a reviewer inspect what the system stored without inventing tool calls, durations, or timestamps."
+      }
+    ],
+    "pageH": 1080.0,
+    "cx": 960,
+    "cy": 540,
+    "zoom": 1.0,
+    "pan": 20
+  },
+  {
+    "id": "route",
+    "title": "A small claim can still require review",
+    "sub": "4.3 km deviation \u00b7 mandatory human review",
+    "kind": "screen",
+    "image": "route",
+    "narration": "Now compare the route deviation case. The recorded deviation is four point three kilometres. Although the claim amount is small, the route threshold blocks automatic handling. The case goes to human review. Amount alone is not sufficient to justify automation.",
+    "fromFrame": 3992,
+    "duration": 417,
+    "captions": [
+      {
+        "start": 13,
+        "end": 64,
+        "text": "Now compare the route deviation case."
+      },
+      {
+        "start": 68,
+        "end": 144,
+        "text": "The recorded deviation is four point three kilometres."
+      },
+      {
+        "start": 148,
+        "end": 255,
+        "text": "Although the claim amount is small, the route threshold blocks automatic handling."
+      },
+      {
+        "start": 259,
+        "end": 304,
+        "text": "The case goes to human review."
+      },
+      {
+        "start": 308,
+        "end": 393,
+        "text": "Amount alone is not sufficient to justify automation."
+      }
+    ],
+    "pageH": 1152.0,
+    "cx": 1080,
+    "cy": 530,
+    "zoom": 1.13,
+    "pan": 40
+  },
+  {
+    "id": "safety",
+    "title": "Safety bypasses the Judge",
+    "sub": "Immediate human review \u00b7 no AI remedy ruling",
+    "kind": "screen",
+    "image": "safety",
+    "narration": "The safety scenario takes a stricter path. A safety concern appears inside a fare dispute, so the safety screen routes it immediately to a human reviewer. The AI does not decide fault or propose a remedy for the safety incident. The reviewer must independently assess both.",
+    "fromFrame": 4409,
+    "duration": 441,
+    "captions": [
+      {
+        "start": 13,
+        "end": 69,
+        "text": "The safety scenario takes a stricter path."
+      },
+      {
+        "start": 74,
+        "end": 237,
+        "text": "A safety concern appears inside a fare dispute, so the safety screen routes it immediately to a human reviewer."
+      },
+      {
+        "start": 242,
+        "end": 355,
+        "text": "The AI does not decide fault or propose a remedy for the safety incident."
+      },
+      {
+        "start": 359,
+        "end": 418,
+        "text": "The reviewer must independently assess both."
+      }
+    ],
+    "pageH": 1635.0,
+    "cx": 1120,
+    "cy": 680,
+    "zoom": 1.18,
+    "pan": 35
+  },
+  {
+    "id": "rider",
+    "title": "Explain the status and next step",
+    "sub": "Rider portal \u00b7 case-specific access",
+    "kind": "screen",
+    "image": "rider-detail",
+    "narration": "The rider sees the case status, a plain language explanation, and the next step. The portal is designed around the rider\u2019s own cases. It keeps internal investigation material out of the party facing response, so transparency does not mean exposing every internal trace.",
+    "fromFrame": 4850,
+    "duration": 447,
+    "captions": [
+      {
+        "start": 13,
+        "end": 129,
+        "text": "The rider sees the case status, a plain language explanation, and the next step."
+      },
+      {
+        "start": 133,
+        "end": 208,
+        "text": "The portal is designed around the rider\u2019s own cases."
+      },
+      {
+        "start": 213,
+        "end": 424,
+        "text": "It keeps internal investigation material out of the party facing response, so transparency does not mean exposing every internal trace."
+      }
+    ],
+    "pageH": 1423.0,
+    "cx": 960,
+    "cy": 450,
+    "zoom": 1.65,
+    "pan": 120
+  },
+  {
+    "id": "driver",
+    "title": "Give the driver a clear response path",
+    "sub": "Driver portal \u00b7 relevant disputes",
+    "kind": "screen",
+    "image": "driver-detail",
+    "narration": "The driver has a separate view of relevant disputes, requests, and outcomes. Both parties need clarity about whether a case is waiting for information, under review, or resolved. Demo passcodes and synthetic identities are used here; production authentication remains a deployment requirement.",
+    "fromFrame": 5297,
+    "duration": 487,
+    "captions": [
+      {
+        "start": 13,
+        "end": 122,
+        "text": "The driver has a separate view of relevant disputes, requests, and outcomes."
+      },
+      {
+        "start": 126,
+        "end": 281,
+        "text": "Both parties need clarity about whether a case is waiting for information, under review, or resolved."
+      },
+      {
+        "start": 285,
+        "end": 464,
+        "text": "Demo passcodes and synthetic identities are used here; production authentication remains a deployment requirement."
+      }
+    ],
+    "pageH": 1211.0,
+    "cx": 960,
+    "cy": 450,
+    "zoom": 1.65,
+    "pan": 120
+  },
+  {
+    "id": "comparison",
+    "title": "Compare implementations on evidence",
+    "sub": "Google ADK code path vs Tencent ADP plan",
+    "kind": "comparison",
+    "image": null,
+    "narration": "The comparison is intentionally neutral. The repository contains a Python Google ADK integration path, a deterministic policy gate, and stored trace inspection. This film verifies the local mock workflow only. Tencent ADP is an alternative workflow architecture, but no executable Tencent implementation or comparable run evidence was available for this walkthrough.",
+    "fromFrame": 5784,
+    "duration": 636,
+    "captions": [
+      {
+        "start": 13,
+        "end": 69,
+        "text": "The comparison is intentionally neutral."
+      },
+      {
+        "start": 74,
+        "end": 273,
+        "text": "The repository contains a Python Google ADK integration path, a deterministic policy gate, and stored trace inspection."
+      },
+      {
+        "start": 277,
+        "end": 351,
+        "text": "This film verifies the local mock workflow only."
+      },
+      {
+        "start": 355,
+        "end": 612,
+        "text": "Tencent ADP is an alternative workflow architecture, but no executable Tencent implementation or comparable run evidence was available for this walkthrough."
+      }
+    ]
+  },
+  {
+    "id": "measurements",
+    "title": "What this recording verifies",
+    "sub": "Local checks, not production accuracy",
+    "kind": "metrics",
+    "image": null,
+    "narration": "The measured local result is three hundred and two backend tests passed. The three demonstrated cases produced a simulated refund, route escalation, and safety escalation. These checks establish reference behavior. They do not establish model accuracy, production safety, or comparable cloud latency. The proposed ninety four to one hundred seventy six second live range was not revalidated.",
+    "fromFrame": 6420,
+    "duration": 625,
+    "captions": [
+      {
+        "start": 13,
+        "end": 108,
+        "text": "The measured local result is three hundred and two backend tests passed."
+      },
+      {
+        "start": 113,
+        "end": 270,
+        "text": "The three demonstrated cases produced a simulated refund, route escalation, and safety escalation."
+      },
+      {
+        "start": 275,
+        "end": 331,
+        "text": "These checks establish reference behavior."
+      },
+      {
+        "start": 335,
+        "end": 466,
+        "text": "They do not establish model accuracy, production safety, or comparable cloud latency."
+      },
+      {
+        "start": 470,
+        "end": 602,
+        "text": "The proposed ninety four to one hundred seventy six second live range was not revalidated."
+      }
+    ]
+  },
+  {
+    "id": "deployment",
+    "title": "A concrete path to a hosted demo",
+    "sub": "Next.js \u2192 FastAPI \u2192 cloud services",
+    "kind": "deployment",
+    "image": null,
+    "narration": "The intended Google deployment uses a Next.js frontend, FastAPI on Cloud Run, and Firestore and Cloud Storage integration. Before presenting it as a live system, verify runtime identities, persistence, real model traces, and end to end latency. CodeBuddy development proof also needs actual development records; none are manufactured in this film.",
+    "fromFrame": 7045,
+    "duration": 618,
+    "captions": [
+      {
+        "start": 13,
+        "end": 234,
+        "text": "The intended Google deployment uses a Next.js frontend, FastAPI on Cloud Run, and Firestore and Cloud Storage integration."
+      },
+      {
+        "start": 238,
+        "end": 437,
+        "text": "Before presenting it as a live system, verify runtime identities, persistence, real model traces, and end to end latency."
+      },
+      {
+        "start": 442,
+        "end": 595,
+        "text": "CodeBuddy development proof also needs actual development records; none are manufactured in this film."
+      }
+    ]
+  },
+  {
+    "id": "closing",
+    "title": "Resolve with evidence.",
+    "sub": "Escalate when people must decide.",
+    "kind": "closing",
+    "image": null,
+    "narration": "RydeResolve demonstrates a practical boundary: automate only when evidence and policy support it; escalate when they do not. The next validation step is to run the same case set on both cloud implementations and compare recorded outcomes, latency, and review effort on equal terms.",
+    "fromFrame": 7663,
+    "duration": 482,
+    "captions": [
+      {
+        "start": 13,
+        "end": 205,
+        "text": "RydeResolve demonstrates a practical boundary: automate only when evidence and policy support it; escalate when they do not."
+      },
+      {
+        "start": 209,
+        "end": 458,
+        "text": "The next validation step is to run the same case set on both cloud implementations and compare recorded outcomes, latency, and review effort on equal terms."
+      }
+    ]
+  }
+]

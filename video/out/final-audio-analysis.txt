@@ -1,0 +1,168 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/workspace/ryderesolve-video/out/RydeResolve-Submission-Walkthrough.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : RydeResolve — Submission walkthrough
+    encoder         : Lavf61.7.103
+    comment         : Synthetic demonstration; mock agent mode; no real payments. AI-generated narration.
+  Duration: 00:04:31.60, start: 0.000000, bitrate: 978 kb/s
+  Chapters:
+    Chapter #0:0: start 0.000000, end 14.600000
+      Metadata:
+        title           : RydeResolve
+    Chapter #0:1: start 14.600000, end 29.900000
+      Metadata:
+        title           : One trip. Three perspectives.
+    Chapter #0:2: start 29.900000, end 43.233000
+      Metadata:
+        title           : A dedicated view for each role
+    Chapter #0:3: start 43.233000, end 60.533000
+      Metadata:
+        title           : Advocacy is not authority
+    Chapter #0:4: start 60.533000, end 74.167000
+      Metadata:
+        title           : Start with the disputed difference
+    Chapter #0:5: start 74.167000, end 88.500000
+      Metadata:
+        title           : Inspect the evidence before the outcome
+    Chapter #0:6: start 88.500000, end 103.333000
+      Metadata:
+        title           : Make both perspectives inspectable
+    Chapter #0:7: start 103.333000, end 117.633000
+      Metadata:
+        title           : A narrow, simulated remedy
+    Chapter #0:8: start 117.633000, end 133.067000
+      Metadata:
+        title           : Trace the stored execution
+    Chapter #0:9: start 133.067000, end 146.967000
+      Metadata:
+        title           : A small claim can still require review
+    Chapter #0:10: start 146.967000, end 161.667000
+      Metadata:
+        title           : Safety bypasses the Judge
+    Chapter #0:11: start 161.667000, end 176.567000
+      Metadata:
+        title           : Explain the status and next step
+    Chapter #0:12: start 176.567000, end 192.800000
+      Metadata:
+        title           : Give the driver a clear response path
+    Chapter #0:13: start 192.800000, end 214.000000
+      Metadata:
+        title           : Compare implementations on evidence
+    Chapter #0:14: start 214.000000, end 234.833000
+      Metadata:
+        title           : What this recording verifies
+    Chapter #0:15: start 234.833000, end 255.433000
+      Metadata:
+        title           : A concrete path to a hosted demo
+    Chapter #0:16: start 255.433000, end 271.500000
+      Metadata:
+        title           : Resolve with evidence.
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuvj420p(pc, bt470bg/unknown/unknown, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 789 kb/s, 30 fps, 30 tbr, 90k tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+      Side data:
+        ICC Profile
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 180 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+  Stream #0:2[0x3](eng): Subtitle: mov_text (tx3g / 0x67337874), 0 kb/s (default)
+      Metadata:
+        handler_name    : SubtitleHandler
+  Stream #0:3[0x4](eng): Data: bin_data (text / 0x74786574), 0 kb/s
+      Metadata:
+        handler_name    : SubtitleHandler
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
+  Stream #0:1 -> #0:1 (aac (native) -> pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, null, to 'pipe:':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : RydeResolve — Submission walkthrough
+    comment         : Synthetic demonstration; mock agent mode; no real payments. AI-generated narration.
+    encoder         : Lavf61.7.103
+  Chapters:
+    Chapter #0:0: start 0.000000, end 14.600000
+      Metadata:
+        title           : RydeResolve
+    Chapter #0:1: start 14.600000, end 29.900000
+      Metadata:
+        title           : One trip. Three perspectives.
+    Chapter #0:2: start 29.900000, end 43.233000
+      Metadata:
+        title           : A dedicated view for each role
+    Chapter #0:3: start 43.233000, end 60.533000
+      Metadata:
+        title           : Advocacy is not authority
+    Chapter #0:4: start 60.533000, end 74.167000
+      Metadata:
+        title           : Start with the disputed difference
+    Chapter #0:5: start 74.167000, end 88.500000
+      Metadata:
+        title           : Inspect the evidence before the outcome
+    Chapter #0:6: start 88.500000, end 103.333000
+      Metadata:
+        title           : Make both perspectives inspectable
+    Chapter #0:7: start 103.333000, end 117.633000
+      Metadata:
+        title           : A narrow, simulated remedy
+    Chapter #0:8: start 117.633000, end 133.067000
+      Metadata:
+        title           : Trace the stored execution
+    Chapter #0:9: start 133.067000, end 146.967000
+      Metadata:
+        title           : A small claim can still require review
+    Chapter #0:10: start 146.967000, end 161.667000
+      Metadata:
+        title           : Safety bypasses the Judge
+    Chapter #0:11: start 161.667000, end 176.567000
+      Metadata:
+        title           : Explain the status and next step
+    Chapter #0:12: start 176.567000, end 192.800000
+      Metadata:
+        title           : Give the driver a clear response path
+    Chapter #0:13: start 192.800000, end 214.000000
+      Metadata:
+        title           : Compare implementations on evidence
+    Chapter #0:14: start 214.000000, end 234.833000
+      Metadata:
+        title           : What this recording verifies
+    Chapter #0:15: start 234.833000, end 255.433000
+      Metadata:
+        title           : A concrete path to a hosted demo
+    Chapter #0:16: start 255.433000, end 271.500000
+      Metadata:
+        title           : Resolve with evidence.
+  Stream #0:0(und): Video: wrapped_avframe, yuvj420p(pc, bt470bg/unknown/unknown, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 30 fps, 30 tbn (default)
+      Metadata:
+        handler_name    : VideoHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.101 wrapped_avframe
+      Side data:
+        ICC Profile
+  Stream #0:1(und): Audio: pcm_s16le, 192000 Hz, stereo, s16, 6144 kb/s (default)
+      Metadata:
+        handler_name    : SoundHandler
+        vendor_id       : [0][0][0][0]
+        encoder         : Lavc61.19.101 pcm_s16le
+frame=  751 fps=0.0 q=-0.0 size=N/A time=00:00:22.40 bitrate=N/A speed=44.8x    frame= 1448 fps=1448 q=-0.0 size=N/A time=00:00:45.50 bitrate=N/A speed=45.5x    frame= 2287 fps=1524 q=-0.0 size=N/A time=00:01:13.70 bitrate=N/A speed=49.1x    frame= 2949 fps=1474 q=-0.0 size=N/A time=00:01:35.70 bitrate=N/A speed=47.8x    frame= 3617 fps=1446 q=-0.0 size=N/A time=00:01:58.10 bitrate=N/A speed=47.2x    frame= 4226 fps=1408 q=-0.0 size=N/A time=00:02:18.20 bitrate=N/A speed=  46x    frame= 4872 fps=1391 q=-0.0 size=N/A time=00:02:39.90 bitrate=N/A speed=45.6x    frame= 5563 fps=1390 q=-0.0 size=N/A time=00:03:02.90 bitrate=N/A speed=45.7x    frame= 6403 fps=1422 q=-0.0 size=N/A time=00:03:30.90 bitrate=N/A speed=46.8x    frame= 7218 fps=1443 q=-0.0 size=N/A time=00:03:57.50 bitrate=N/A speed=47.5x    frame= 8145 fps=1480 q=-0.0 size=N/A time=00:04:28.60 bitrate=N/A speed=48.8x    [Parsed_loudnorm_0 @ 0x7ff91c002740] 
+{
+	"input_i" : "-16.14",
+	"input_tp" : "-1.34",
+	"input_lra" : "2.70",
+	"input_thresh" : "-26.35",
+	"output_i" : "-16.02",
+	"output_tp" : "-1.50",
+	"output_lra" : "2.60",
+	"output_thresh" : "-26.24",
+	"normalization_type" : "dynamic",
+	"target_offset" : "0.02"
+}
+[out#0/null @ 0x55ec0b2c1600] video:3500KiB audio:203664KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame= 8145 fps=1474 q=-0.0 Lsize=N/A time=00:04:31.50 bitrate=N/A speed=49.1x    

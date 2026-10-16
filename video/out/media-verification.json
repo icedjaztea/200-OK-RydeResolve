@@ -1,0 +1,424 @@
+{
+    "streams": [
+        {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+            "profile": "High",
+            "codec_type": "video",
+            "codec_tag_string": "avc1",
+            "codec_tag": "0x31637661",
+            "width": 1920,
+            "height": 1080,
+            "coded_width": 1920,
+            "coded_height": 1080,
+            "closed_captions": 0,
+            "film_grain": 0,
+            "has_b_frames": 2,
+            "sample_aspect_ratio": "1:1",
+            "display_aspect_ratio": "16:9",
+            "pix_fmt": "yuvj420p",
+            "level": 40,
+            "color_range": "pc",
+            "color_space": "bt470bg",
+            "chroma_location": "center",
+            "field_order": "progressive",
+            "refs": 1,
+            "is_avc": "true",
+            "nal_length_size": "4",
+            "id": "0x1",
+            "r_frame_rate": "30/1",
+            "avg_frame_rate": "30/1",
+            "time_base": "1/90000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 24435000,
+            "duration": "271.500000",
+            "bit_rate": "789050",
+            "bits_per_raw_sample": "8",
+            "nb_frames": "8145",
+            "extradata_size": 51,
+            "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+            },
+            "tags": {
+                "language": "und",
+                "handler_name": "VideoHandler",
+                "vendor_id": "[0][0][0][0]"
+            },
+            "side_data_list": [
+                {
+                    "side_data_type": "ICC Profile"
+                }
+            ]
+        },
+        {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_long_name": "AAC (Advanced Audio Coding)",
+            "profile": "LC",
+            "codec_type": "audio",
+            "codec_tag_string": "mp4a",
+            "codec_tag": "0x6134706d",
+            "sample_fmt": "fltp",
+            "sample_rate": "48000",
+            "channels": 2,
+            "channel_layout": "stereo",
+            "bits_per_sample": 0,
+            "initial_padding": 0,
+            "id": "0x2",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/48000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 13036800,
+            "duration": "271.600000",
+            "bit_rate": "180123",
+            "nb_frames": "12730",
+            "extradata_size": 5,
+            "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+            },
+            "tags": {
+                "language": "und",
+                "handler_name": "SoundHandler",
+                "vendor_id": "[0][0][0][0]"
+            }
+        },
+        {
+            "index": 2,
+            "codec_name": "mov_text",
+            "codec_long_name": "MOV text",
+            "codec_type": "subtitle",
+            "codec_tag_string": "tx3g",
+            "codec_tag": "0x67337874",
+            "id": "0x3",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/1000000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 270700000,
+            "duration": "270.700000",
+            "bit_rate": "153",
+            "nb_frames": "215",
+            "extradata_size": 68,
+            "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+            },
+            "tags": {
+                "language": "eng",
+                "handler_name": "SubtitleHandler"
+            }
+        },
+        {
+            "index": 3,
+            "codec_name": "bin_data",
+            "codec_long_name": "binary data",
+            "codec_type": "data",
+            "codec_tag_string": "text",
+            "codec_tag": "0x74786574",
+            "id": "0x4",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "time_base": "1/1000",
+            "start_pts": 0,
+            "start_time": "0.000000",
+            "duration_ts": 271500,
+            "duration": "271.500000",
+            "bit_rate": "21",
+            "nb_frames": "17",
+            "extradata_size": 63,
+            "disposition": {
+                "default": 0,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+            },
+            "tags": {
+                "language": "eng",
+                "handler_name": "SubtitleHandler"
+            }
+        }
+    ],
+    "chapters": [
+        {
+            "id": 0,
+            "time_base": "1/1000",
+            "start": 0,
+            "start_time": "0.000000",
+            "end": 14600,
+            "end_time": "14.600000",
+            "tags": {
+                "title": "RydeResolve"
+            }
+        },
+        {
+            "id": 1,
+            "time_base": "1/1000",
+            "start": 14600,
+            "start_time": "14.600000",
+            "end": 29900,
+            "end_time": "29.900000",
+            "tags": {
+                "title": "One trip. Three perspectives."
+            }
+        },
+        {
+            "id": 2,
+            "time_base": "1/1000",
+            "start": 29900,
+            "start_time": "29.900000",
+            "end": 43233,
+            "end_time": "43.233000",
+            "tags": {
+                "title": "A dedicated view for each role"
+            }
+        },
+        {
+            "id": 3,
+            "time_base": "1/1000",
+            "start": 43233,
+            "start_time": "43.233000",
+            "end": 60533,
+            "end_time": "60.533000",
+            "tags": {
+                "title": "Advocacy is not authority"
+            }
+        },
+        {
+            "id": 4,
+            "time_base": "1/1000",
+            "start": 60533,
+            "start_time": "60.533000",
+            "end": 74167,
+            "end_time": "74.167000",
+            "tags": {
+                "title": "Start with the disputed difference"
+            }
+        },
+        {
+            "id": 5,
+            "time_base": "1/1000",
+            "start": 74167,
+            "start_time": "74.167000",
+            "end": 88500,
+            "end_time": "88.500000",
+            "tags": {
+                "title": "Inspect the evidence before the outcome"
+            }
+        },
+        {
+            "id": 6,
+            "time_base": "1/1000",
+            "start": 88500,
+            "start_time": "88.500000",
+            "end": 103333,
+            "end_time": "103.333000",
+            "tags": {
+                "title": "Make both perspectives inspectable"
+            }
+        },
+        {
+            "id": 7,
+            "time_base": "1/1000",
+            "start": 103333,
+            "start_time": "103.333000",
+            "end": 117633,
+            "end_time": "117.633000",
+            "tags": {
+                "title": "A narrow, simulated remedy"
+            }
+        },
+        {
+            "id": 8,
+            "time_base": "1/1000",
+            "start": 117633,
+            "start_time": "117.633000",
+            "end": 133067,
+            "end_time": "133.067000",
+            "tags": {
+                "title": "Trace the stored execution"
+            }
+        },
+        {
+            "id": 9,
+            "time_base": "1/1000",
+            "start": 133067,
+            "start_time": "133.067000",
+            "end": 146967,
+            "end_time": "146.967000",
+            "tags": {
+                "title": "A small claim can still require review"
+            }
+        },
+        {
+            "id": 10,
+            "time_base": "1/1000",
+            "start": 146967,
+            "start_time": "146.967000",
+            "end": 161667,
+            "end_time": "161.667000",
+            "tags": {
+                "title": "Safety bypasses the Judge"
+            }
+        },
+        {
+            "id": 11,
+            "time_base": "1/1000",
+            "start": 161667,
+            "start_time": "161.667000",
+            "end": 176567,
+            "end_time": "176.567000",
+            "tags": {
+                "title": "Explain the status and next step"
+            }
+        },
+        {
+            "id": 12,
+            "time_base": "1/1000",
+            "start": 176567,
+            "start_time": "176.567000",
+            "end": 192800,
+            "end_time": "192.800000",
+            "tags": {
+                "title": "Give the driver a clear response path"
+            }
+        },
+        {
+            "id": 13,
+            "time_base": "1/1000",
+            "start": 192800,
+            "start_time": "192.800000",
+            "end": 214000,
+            "end_time": "214.000000",
+            "tags": {
+                "title": "Compare implementations on evidence"
+            }
+        },
+        {
+            "id": 14,
+            "time_base": "1/1000",
+            "start": 214000,
+            "start_time": "214.000000",
+            "end": 234833,
+            "end_time": "234.833000",
+            "tags": {
+                "title": "What this recording verifies"
+            }
+        },
+        {
+            "id": 15,
+            "time_base": "1/1000",
+            "start": 234833,
+            "start_time": "234.833000",
+            "end": 255433,
+            "end_time": "255.433000",
+            "tags": {
+                "title": "A concrete path to a hosted demo"
+            }
+        },
+        {
+            "id": 16,
+            "time_base": "1/1000",
+            "start": 255433,
+            "start_time": "255.433000",
+            "end": 271500,
+            "end_time": "271.500000",
+            "tags": {
+                "title": "Resolve with evidence."
+            }
+        }
+    ],
+    "format": {
+        "filename": "/workspace/ryderesolve-video/out/RydeResolve-Submission-Walkthrough.mp4",
+        "nb_streams": 4,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+        "format_long_name": "QuickTime / MOV",
+        "start_time": "0.000000",
+        "duration": "271.600000",
+        "size": "33203397",
+        "bit_rate": "978008",
+        "probe_score": 100,
+        "tags": {
+            "major_brand": "isom",
+            "minor_version": "512",
+            "compatible_brands": "isomiso2avc1mp41",
+            "title": "RydeResolve — Submission walkthrough",
+            "encoder": "Lavf61.7.103",
+            "comment": "Synthetic demonstration; mock agent mode; no real payments. AI-generated narration."
+        }
+    }
+}

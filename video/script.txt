@@ -1,0 +1,50 @@
+RydeResolve
+RydeResolve brings structure to trip disputes: evidence for both sides, policy grounded recommendations, and clear human oversight. This walkthrough uses the three role frontend and synthetic demo cases. No real payments or notifications are connected.
+
+One trip. Three perspectives.
+A rider needs to understand a charge. A driver needs a fair opportunity to respond. A reviewer needs a traceable account of what happened. These are the stakeholder needs this prototype addresses. Named interview findings are not included because supporting research records were not supplied.
+
+A dedicated view for each role
+The frontend separates those needs into three portals. Riders can file disputes and check progress. Drivers can see cases involving them and respond to requests. Reviewers work with the complete investigation, evidence, and decision tools.
+
+Advocacy is not authority
+The workflow starts with a safety screen and an orchestrator. Rider and Driver Advocates work alongside Policy and Precedent, and Fraud and Bad Faith analysis. The Judge proposes an outcome. A separate deterministic policy gate checks whether that proposal is eligible for a simulated remedy or must go to a reviewer.
+
+Start with the disputed difference
+Consider case DISP zero zero three. The quoted fare is twelve Singapore dollars; the final fare is sixteen fifty. The dispute concerns an unnotified surge increase. The candidate refund is the four dollar fifty difference, rather than the entire fare.
+
+Inspect the evidence before the outcome
+In the Evidence tab, the reviewer can inspect the case facts and their provenance. A user submission is not automatically a trusted fact. The distinction matters: an unsupported assertion should prompt clarification or review, rather than become a reason to release funds.
+
+Make both perspectives inspectable
+Agent Findings exposes the individual contributions to the investigation. The point is to make the reasoning inspectable, including the interests of both parties. This recording uses the offline mock agent mode; it is not evidence of a live Gemini execution.
+
+A narrow, simulated remedy
+For this synthetic fare case, the independent gate permits the verified differential. The result is a simulated refund of four dollars fifty, with a mock receipt. No money moves. The notification outbox is also simulated and explicitly marked as not delivered.
+
+Trace the stored execution
+The execution monitor visualizes stored agent outputs, the candidate proposal, and the policy gate. It is a recorded replay, not a live workflow animation. That separation lets a reviewer inspect what the system stored without inventing tool calls, durations, or timestamps.
+
+A small claim can still require review
+Now compare the route deviation case. The recorded deviation is four point three kilometres. Although the claim amount is small, the route threshold blocks automatic handling. The case goes to human review. Amount alone is not sufficient to justify automation.
+
+Safety bypasses the Judge
+The safety scenario takes a stricter path. A safety concern appears inside a fare dispute, so the safety screen routes it immediately to a human reviewer. The AI does not decide fault or propose a remedy for the safety incident. The reviewer must independently assess both.
+
+Explain the status and next step
+The rider sees the case status, a plain language explanation, and the next step. The portal is designed around the rider’s own cases. It keeps internal investigation material out of the party facing response, so transparency does not mean exposing every internal trace.
+
+Give the driver a clear response path
+The driver has a separate view of relevant disputes, requests, and outcomes. Both parties need clarity about whether a case is waiting for information, under review, or resolved. Demo passcodes and synthetic identities are used here; production authentication remains a deployment requirement.
+
+Compare implementations on evidence
+The comparison is intentionally neutral. The repository contains a Python Google ADK integration path, a deterministic policy gate, and stored trace inspection. This film verifies the local mock workflow only. Tencent ADP is an alternative workflow architecture, but no executable Tencent implementation or comparable run evidence was available for this walkthrough.
+
+What this recording verifies
+The measured local result is three hundred and two backend tests passed. The three demonstrated cases produced a simulated refund, route escalation, and safety escalation. These checks establish reference behavior. They do not establish model accuracy, production safety, or comparable cloud latency. The proposed ninety four to one hundred seventy six second live range was not revalidated.
+
+A concrete path to a hosted demo
+The intended Google deployment uses a Next.js frontend, FastAPI on Cloud Run, and Firestore and Cloud Storage integration. Before presenting it as a live system, verify runtime identities, persistence, real model traces, and end to end latency. CodeBuddy development proof also needs actual development records; none are manufactured in this film.
+
+Resolve with evidence.
+RydeResolve demonstrates a practical boundary: automate only when evidence and policy support it; escalate when they do not. The next validation step is to run the same case set on both cloud implementations and compare recorded outcomes, latency, and review effort on equal terms.

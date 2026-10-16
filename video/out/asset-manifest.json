@@ -1,0 +1,138 @@
+[
+  {
+    "scene": "opening",
+    "frame_start": 0,
+    "duration_frames": 438,
+    "audio": "public/audio/opening.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "problem",
+    "frame_start": 438,
+    "duration_frames": 459,
+    "audio": "public/audio/problem.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "portals",
+    "frame_start": 897,
+    "duration_frames": 400,
+    "audio": "public/audio/portals.wav",
+    "visual": "public/textures/landing.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "architecture",
+    "frame_start": 1297,
+    "duration_frames": 519,
+    "audio": "public/audio/architecture.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "fare-intro",
+    "frame_start": 1816,
+    "duration_frames": 409,
+    "audio": "public/audio/fare-intro.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "evidence",
+    "frame_start": 2225,
+    "duration_frames": 430,
+    "audio": "public/audio/evidence.wav",
+    "visual": "public/textures/fare-evidence.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "agents",
+    "frame_start": 2655,
+    "duration_frames": 445,
+    "audio": "public/audio/agents.wav",
+    "visual": "public/textures/fare-agents.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "refund",
+    "frame_start": 3100,
+    "duration_frames": 429,
+    "audio": "public/audio/refund.wav",
+    "visual": "public/textures/fare-overview.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "trace",
+    "frame_start": 3529,
+    "duration_frames": 463,
+    "audio": "public/audio/trace.wav",
+    "visual": "public/textures/monitor.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "route",
+    "frame_start": 3992,
+    "duration_frames": 417,
+    "audio": "public/audio/route.wav",
+    "visual": "public/textures/route.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "safety",
+    "frame_start": 4409,
+    "duration_frames": 441,
+    "audio": "public/audio/safety.wav",
+    "visual": "public/textures/safety.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "rider",
+    "frame_start": 4850,
+    "duration_frames": 447,
+    "audio": "public/audio/rider.wav",
+    "visual": "public/textures/rider-detail.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "driver",
+    "frame_start": 5297,
+    "duration_frames": 487,
+    "audio": "public/audio/driver.wav",
+    "visual": "public/textures/driver-detail.png",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "comparison",
+    "frame_start": 5784,
+    "duration_frames": 636,
+    "audio": "public/audio/comparison.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "measurements",
+    "frame_start": 6420,
+    "duration_frames": 625,
+    "audio": "public/audio/measurements.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "deployment",
+    "frame_start": 7045,
+    "duration_frames": 618,
+    "audio": "public/audio/deployment.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  },
+  {
+    "scene": "closing",
+    "frame_start": 7663,
+    "duration_frames": 482,
+    "audio": "public/audio/closing.wav",
+    "visual": "custom explanatory layout",
+    "claim_boundary": "Synthetic local mock workflow; no real payments"
+  }
+]

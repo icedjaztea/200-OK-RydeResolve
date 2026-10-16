@@ -1,0 +1,138 @@
+[
+  {
+    "id": "opening",
+    "title": "RydeResolve",
+    "sub": "Evidence first. People in control.",
+    "kind": "brand",
+    "image": null,
+    "narration": "RydeResolve brings structure to trip disputes: evidence for both sides, policy grounded recommendations, and clear human oversight. This walkthrough uses the three role frontend and synthetic demo cases. No real payments or notifications are connected."
+  },
+  {
+    "id": "problem",
+    "title": "One trip. Three perspectives.",
+    "sub": "Rider \u00b7 Driver \u00b7 Reviewer",
+    "kind": "priorities",
+    "image": null,
+    "narration": "A rider needs to understand a charge. A driver needs a fair opportunity to respond. A reviewer needs a traceable account of what happened. These are the stakeholder needs this prototype addresses. Named interview findings are not included because supporting research records were not supplied."
+  },
+  {
+    "id": "portals",
+    "title": "A dedicated view for each role",
+    "sub": "Actual frontend \u00b7 synthetic data",
+    "kind": "screen",
+    "image": "landing",
+    "narration": "The frontend separates those needs into three portals. Riders can file disputes and check progress. Drivers can see cases involving them and respond to requests. Reviewers work with the complete investigation, evidence, and decision tools."
+  },
+  {
+    "id": "architecture",
+    "title": "Advocacy is not authority",
+    "sub": "Six agents + an independent policy gate",
+    "kind": "architecture",
+    "image": null,
+    "narration": "The workflow starts with a safety screen and an orchestrator. Rider and Driver Advocates work alongside Policy and Precedent, and Fraud and Bad Faith analysis. The Judge proposes an outcome. A separate deterministic policy gate checks whether that proposal is eligible for a simulated remedy or must go to a reviewer."
+  },
+  {
+    "id": "fare-intro",
+    "title": "Start with the disputed difference",
+    "sub": "SGD 16.50 charged \u2212 SGD 12.00 quoted",
+    "kind": "fare",
+    "image": null,
+    "narration": "Consider case DISP zero zero three. The quoted fare is twelve Singapore dollars; the final fare is sixteen fifty. The dispute concerns an unnotified surge increase. The candidate refund is the four dollar fifty difference, rather than the entire fare."
+  },
+  {
+    "id": "evidence",
+    "title": "Inspect the evidence before the outcome",
+    "sub": "Reviewer workbench \u00b7 Evidence tab",
+    "kind": "screen",
+    "image": "fare-evidence",
+    "narration": "In the Evidence tab, the reviewer can inspect the case facts and their provenance. A user submission is not automatically a trusted fact. The distinction matters: an unsupported assertion should prompt clarification or review, rather than become a reason to release funds."
+  },
+  {
+    "id": "agents",
+    "title": "Make both perspectives inspectable",
+    "sub": "Reviewer workbench \u00b7 Agent Findings",
+    "kind": "screen",
+    "image": "fare-agents",
+    "narration": "Agent Findings exposes the individual contributions to the investigation. The point is to make the reasoning inspectable, including the interests of both parties. This recording uses the offline mock agent mode; it is not evidence of a live Gemini execution."
+  },
+  {
+    "id": "refund",
+    "title": "A narrow, simulated remedy",
+    "sub": "DISP-003 \u00b7 AUTO ELIGIBLE \u00b7 SGD 4.50",
+    "kind": "screen",
+    "image": "fare-overview",
+    "narration": "For this synthetic fare case, the independent gate permits the verified differential. The result is a simulated refund of four dollars fifty, with a mock receipt. No money moves. The notification outbox is also simulated and explicitly marked as not delivered."
+  },
+  {
+    "id": "trace",
+    "title": "Trace the stored execution",
+    "sub": "Recorded replay \u2260 live execution",
+    "kind": "screen",
+    "image": "monitor",
+    "narration": "The execution monitor visualizes stored agent outputs, the candidate proposal, and the policy gate. It is a recorded replay, not a live workflow animation. That separation lets a reviewer inspect what the system stored without inventing tool calls, durations, or timestamps."
+  },
+  {
+    "id": "route",
+    "title": "A small claim can still require review",
+    "sub": "4.3 km deviation \u00b7 mandatory human review",
+    "kind": "screen",
+    "image": "route",
+    "narration": "Now compare the route deviation case. The recorded deviation is four point three kilometres. Although the claim amount is small, the route threshold blocks automatic handling. The case goes to human review. Amount alone is not sufficient to justify automation."
+  },
+  {
+    "id": "safety",
+    "title": "Safety bypasses the Judge",
+    "sub": "Immediate human review \u00b7 no AI remedy ruling",
+    "kind": "screen",
+    "image": "safety",
+    "narration": "The safety scenario takes a stricter path. A safety concern appears inside a fare dispute, so the safety screen routes it immediately to a human reviewer. The AI does not decide fault or propose a remedy for the safety incident. The reviewer must independently assess both."
+  },
+  {
+    "id": "rider",
+    "title": "Explain the status and next step",
+    "sub": "Rider portal \u00b7 case-specific access",
+    "kind": "screen",
+    "image": "rider-detail",
+    "narration": "The rider sees the case status, a plain language explanation, and the next step. The portal is designed around the rider\u2019s own cases. It keeps internal investigation material out of the party facing response, so transparency does not mean exposing every internal trace."
+  },
+  {
+    "id": "driver",
+    "title": "Give the driver a clear response path",
+    "sub": "Driver portal \u00b7 relevant disputes",
+    "kind": "screen",
+    "image": "driver-detail",
+    "narration": "The driver has a separate view of relevant disputes, requests, and outcomes. Both parties need clarity about whether a case is waiting for information, under review, or resolved. Demo passcodes and synthetic identities are used here; production authentication remains a deployment requirement."
+  },
+  {
+    "id": "comparison",
+    "title": "Compare implementations on evidence",
+    "sub": "Google ADK code path vs Tencent ADP plan",
+    "kind": "comparison",
+    "image": null,
+    "narration": "The comparison is intentionally neutral. The repository contains a Python Google ADK integration path, a deterministic policy gate, and stored trace inspection. This film verifies the local mock workflow only. Tencent ADP is an alternative workflow architecture, but no executable Tencent implementation or comparable run evidence was available for this walkthrough."
+  },
+  {
+    "id": "measurements",
+    "title": "What this recording verifies",
+    "sub": "Local checks, not production accuracy",
+    "kind": "metrics",
+    "image": null,
+    "narration": "The measured local result is three hundred and two backend tests passed. The three demonstrated cases produced a simulated refund, route escalation, and safety escalation. These checks establish reference behavior. They do not establish model accuracy, production safety, or comparable cloud latency. The proposed ninety four to one hundred seventy six second live range was not revalidated."
+  },
+  {
+    "id": "deployment",
+    "title": "A concrete path to a hosted demo",
+    "sub": "Next.js \u2192 FastAPI \u2192 cloud services",
+    "kind": "deployment",
+    "image": null,
+    "narration": "The intended Google deployment uses a Next.js frontend, FastAPI on Cloud Run, and Firestore and Cloud Storage integration. Before presenting it as a live system, verify runtime identities, persistence, real model traces, and end to end latency. CodeBuddy development proof also needs actual development records; none are manufactured in this film."
+  },
+  {
+    "id": "closing",
+    "title": "Resolve with evidence.",
+    "sub": "Escalate when people must decide.",
+    "kind": "closing",
+    "image": null,
+    "narration": "RydeResolve demonstrates a practical boundary: automate only when evidence and policy support it; escalate when they do not. The next validation step is to run the same case set on both cloud implementations and compare recorded outcomes, latency, and review effort on equal terms."
+  }
+]
