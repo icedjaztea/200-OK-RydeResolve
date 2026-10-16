@@ -572,7 +572,7 @@ export default function ReviewerWorkbench(){
                             {hasError?
                               <em className="status bad">Error: {v.failure_kind||v.parse_failed?'parse failed':'agent error'}</em>
                             :<em className="status good">{v.recommended_disposition?dispositionLabel(v.recommended_disposition):'evaluated'}</em>}
-                            {v.mode&&<span className="agent-mode">{v.mode.includes('mock')||v.mode==='MOCK'?'Mock':'Live'}</span>}
+                            {v.mode&&<span className="agent-mode">{String(v.mode).toLowerCase().includes('mock')?'Mock':'Live'}</span>}
                           </div>
                         </div>
                         <p className="agent-step-summary">{v.summary}</p>
