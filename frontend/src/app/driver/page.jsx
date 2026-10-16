@@ -8,15 +8,20 @@ import {
   outcomeExplanation, driverNextAction,
 } from '../../lib/labels';
 
+const NAV_TABS = [
+  {id:'disputes',label:'Disputes',icon:'🚗'},
+  {id:'account',label:'Account',icon:'⚙'},
+];
+
 export default function DriverPortal(){
   const api=useApi();
   const [cases,setCases]=useState([]);
   const [detail,setDetail]=useState(null);
-  const [policy,setPolicy]=useState(null);
+  const [tab,setTab]=useState('disputes');
   const [answer,setAnswer]=useState('');
 
   async function connect(){
-    setPolicy(await api.call('health'));
+    await api.call('health');
     const list=await api.call('cases');
     setCases(list);
   }
@@ -26,138 +31,173 @@ export default function DriverPortal(){
   }
 
   const outcome=outcomeExplanation(detail);
+  const pendingClarifications=detail?.clarifications?.filter(c=>c.status==='PENDING'&&c.recipient==='driver')||[];
+  const actionNeededCases=cases.filter(c=>c.status==='AWAITING_CLARIFICATION');
+  const activeCases=cases.filter(c=>c.status!=='RESOLVED'&&c.status!=='REVIEWED_AND_RESOLVED');
 
-  return <main>
-    <header className="masthead">
-      <div className="brand">
-        <div className="brand-icon" style={{background:'linear-gradient(135deg,#c91f56,#e8336a)'}}>D</div>
-        <div><h1>RydeResolve <span>Driver</span></h1><p>View cases, respond to requests, and check outcomes</p></div>
+  // --- Not connected ---
+  if(!api.key||!cases.length){
+    return <div className="app-shell">
+      <div className="app-connect driver">
+        <div className="app-logo-big">D</div>
+        <h2>RydeResolve Driver</h2>
+        <p>Enter your demo passcode to view disputes involving your trips. Case isolation is enforced — you can only see your own cases.</p>
+        <input aria-label="Demo passcode" type="password" placeholder="Enter passcode" value={api.key} onChange={e=>api.setKey(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&api.key)api.run(connect)}}/>
+        <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>{api.busy?'Connecting…':'Connect'}</button>
       </div>
-      <div className="demo-label">DEMO · SYNTHETIC DATA</div>
+      {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}
+      <div style={{textAlign:'center',padding:'16px'}}>
+        <Link href="/" className="lab-enter">← Back to role selection</Link>
+      </div>
+      <div className="demo-badge">SYNTHETIC DEMO</div>
+    </div>;
+  }
+
+  return <div className="app-shell">
+    <header className="app-header">
+      <div className="app-logo driver">D</div>
+      <div style={{flex:1}}>
+        <h1>RydeResolve <span>Driver</span></h1>
+        <p className="app-sub">{activeCases.length} active case{activeCases.length!==1?'s':''}{actionNeededCases.length>0?` · ${actionNeededCases.length} need response`:''}</p>
+      </div>
     </header>
 
-    <section className="card connection">
-      <div>
-        <h2>Driver access</h2>
-        <p>Enter your demo passcode. The backend enforces case isolation per authenticated identity — you can only see cases involving you.</p>
-      </div>
-      <input aria-label="Demo passcode" type="password" placeholder="driver passcode" value={api.key} onChange={e=>api.setKey(e.target.value)}/>
-      <button disabled={api.busy||!api.key} onClick={()=>api.run(connect)}>Connect</button>
-    </section>
+    {api.error&&<div className="alert error" role="alert" style={{margin:'0 12px'}}>{api.error}</div>}
+    {api.notice&&<div className="alert success" style={{margin:'0 12px'}}>{api.notice}</div>}
 
-    {api.error&&<div className="alert error" role="alert">{api.error}</div>}
-    {api.notice&&<div className="alert success">{api.notice}</div>}
-
-    {policy&&<div className="micro">{policy.ai_mode==='mock'?'Mock mode (no model calls)':'Live ADK'} · Policy signoff: {policy.team_signoff_valid?'verified':'missing'} · Storage: {policy.storage_mode}</div>}
-
-    <div className="workspace">
-      <aside className="card sidebar">
-        <div className="section-head"><h2>Your cases</h2></div>
-        {cases.length===0?
-          <p className="muted">{api.key?'No cases loaded.':'Enter passcode and click Connect.'}</p>
-        :cases.map(item=>(
-          <button key={item.case_id} className={'case-item '+(detail?.case_id===item.case_id?'selected':'')} onClick={()=>api.run(()=>selectCase(item.case_id))}>
-            <strong>{item.case_id}</strong>
-            <span>{categoryLabel(item.category)}</span>
-            <em className={'status '+(TONES[item.status]||'neutral')}>{statusLabel(item.status)}</em>
-          </button>
-        ))}
-      </aside>
-
-      <div className="primary">
-        {!detail?<div className="card empty"><div className="empty-symbol">⌁</div><h2>Select a case</h2><p>View case history, respond to pending requests, and check outcomes.</p></div>:
-        <>
-          <div className="card case-title">
-            <div className="section-head">
-              <div><p className="eyebrow">CASE {detail.case_id}</p><h2>{categoryLabel(detail.category)}</h2></div>
-              <em className={'status '+(TONES[detail.status]||'neutral')}>{statusLabel(detail.status)}</em>
+    <div className="app-body">
+      {tab==='disputes'&&!detail&&<>
+        {/* Action Needed section */}
+        {actionNeededCases.length>0&&<>
+          <div className="app-section-head"><h2 style={{color:'var(--bad-fg)'}}>Action needed</h2></div>
+          <p className="muted" style={{margin:'0 0 12px'}}>You have pending clarification requests. Pull over safely before responding.</p>
+          {actionNeededCases.map(item=>(
+            <div key={item.case_id} className="app-case-card urgent" onClick={()=>api.run(()=>selectCase(item.case_id))} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')api.run(()=>selectCase(item.case_id))}}>
+              <div className="acc-top">
+                <strong>{item.case_id}</strong>
+                <em className="status bad">Response needed</em>
+              </div>
+              <div className="acc-cat">{categoryLabel(item.category)}</div>
             </div>
-            <p>{detail.description}</p>
-            <div className="facts">
-              <span>Disputed: SGD {detail.dispute_amount!=null?Number(detail.dispute_amount).toFixed(2):'unknown'}</span>
-              <span>Trip: {detail.trip_id||'—'}</span>
-              <span>Filed by: {detail.filed_by||'—'}</span>
-            </div>
-            <button disabled={api.busy||!api.key} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id);setDetail(r);api.setNotice('Case status refreshed.')})}>Refresh status</button>
-          </div>
-
-          {detail.path&&<div className="card result">
-            <p className="eyebrow">CURRENT STATUS</p>
-            <h2>{pathLabel(detail.path)}</h2>
-            <p>{detail.candidate?.reason||driverNextAction(detail)}</p>
-            {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted" style={{marginBottom:'4px'}}>Policy rationale:</p><ul style={{fontSize:'12px',color:'var(--ink-secondary)',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
-            {detail.mock_action&&<div className="receipt">
-              <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
-              <br/><small style={{color:'var(--good-fg)'}}>Simulated record · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
-            </div>}
-          </div>}
-
-          {detail.events?.length>0&&<div className="card">
-            <p className="eyebrow">CASE ACTIVITY</p>
-            <h3>Timeline</h3>
-            <CaseTimeline detail={detail} role="driver"/>
-          </div>}
-
-          {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="card highlight" style={{borderLeft:'4px solid var(--bad-fg)'}}>
-            <p className="eyebrow">SAFETY ESCALATION</p>
-            <h3>This case requires immediate human review</h3>
-            <p className="muted">This trip has been escalated for mandatory human review. AI does not determine fault or propose a remedy. A reviewer will investigate and contact you through official channels if needed. No automated decision has been made.</p>
-          </div>}
-
-          {detail.clarifications?.some(c=>c.status==='PENDING'&&c.recipient==='driver')&&(
-            <div className="card highlight">
-              <p className="eyebrow">CLARIFICATION REQUESTED</p>
-              <h3>The reviewer needs more information from you</h3>
-              <p className="muted">Do not reply while driving. Pull over safely before responding. Your response will be recorded as an unverified claim — the reviewer may request source documentation to verify it.</p>
-              {detail.clarifications.filter(c=>c.status==='PENDING'&&c.recipient==='driver').map(c=>(
-                <div key={c.request_id} style={{marginTop:'12px'}}>
-                  <p style={{fontWeight:500}}>{c.question}</p>
-                  <em className="status bad">Your account statement — unverified</em>
-                  <textarea placeholder="Type your response here…" value={answer} onChange={e=>setAnswer(e.target.value)} style={{marginTop:'8px'}}/>
-                  <button disabled={api.busy||!answer.trim()} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/clarifications/'+c.request_id+'/reply',{method:'POST',body:{answer}});setDetail(r);setAnswer('');api.setNotice('Your response has been recorded as an unverified claim.')})}>Submit response</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {detail.notifications&&detail.notifications.length>0&&(
-            <div className="card outbox">
-              <p className="eyebrow">CASE UPDATES</p>
-              <h3>Simulated notifications — not delivered</h3>
-              <p className="muted">No email, SMS, push notification, or payment was sent.</p>
-              <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='driver'||n.recipient==='all').map((n,i)=>(
-                <div key={i} className="notif-item">
-                  <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>
-                  <p className="notif-msg">{n.message}</p>
-                  <div className="notif-meta"><span>{n.created_at}</span>{n.receipt&&<span>Test receipt: {n.receipt}</span>}</div>
-                </div>
-              ))}</div>
-            </div>
-          )}
-
-          {outcome&&<div className="card">
-            <p className="eyebrow">OUTCOME</p>
-            <h3>Case outcome</h3>
-            <p style={{fontSize:'13px',lineHeight:'1.6',color:'var(--ink-secondary)'}}>{outcome}</p>
-            <p className="muted" style={{marginTop:'8px'}}>{driverNextAction(detail)}</p>
-          </div>}
-
-          <div className="card">
-            <h3>Evidence and case details</h3>
-            <p className="muted">Claims are not automatically verified. The reviewer may add verified evidence.</p>
-            <details><summary>Show case facts</summary><pre className="json">{JSON.stringify(detail.facts,null,2)}</pre></details>
-            <details><summary>Show event record</summary><pre className="json">{JSON.stringify(detail.events,null,2)}</pre></details>
-          </div>
+          ))}
         </>}
-      </div>
+
+        {/* All cases */}
+        <div className="app-section-head"><h2>Your disputes</h2></div>
+        {cases.length===0?
+          <div className="card empty" style={{padding:'40px 16px'}}><div className="empty-symbol">🚗</div><h2>No disputes</h2><p>No cases involving you at this time.</p></div>
+        :cases.map(item=>(
+          <div key={item.case_id} className={'app-case-card '+(detail?.case_id===item.case_id?'selected':'')} onClick={()=>api.run(()=>selectCase(item.case_id))} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')api.run(()=>selectCase(item.case_id))}}>
+            <div className="acc-top">
+              <strong>{item.case_id}</strong>
+              <em className={'status '+(TONES[item.status]||'neutral')}>{statusLabel(item.status)}</em>
+            </div>
+            <div className="acc-cat">{categoryLabel(item.category)}</div>
+            {item.dispute_amount!=null&&<div className="acc-cat">SGD {Number(item.dispute_amount).toFixed(2)}</div>}
+          </div>
+        ))}
+      </>}
+
+      {tab==='disputes'&&detail&&<>
+        <div className="app-section-head">
+          <button className="secondary" onClick={()=>setDetail(null)}>← Back</button>
+          <button disabled={api.busy} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id);setDetail(r);api.setNotice('Status refreshed.')})}>Refresh</button>
+        </div>
+
+        {/* Status hero */}
+        <div className="app-status-hero">
+          <div className="ash-icon">{detail.path==='IMMEDIATE_HUMAN_REVIEW'?'🛡':detail.status==='RESOLVED'||detail.status==='REVIEWED_AND_RESOLVED'?'✅':detail.status==='AWAITING_CLARIFICATION'?'❓':'⏳'}</div>
+          <h2>{detail.path?pathLabel(detail.path):statusLabel(detail.status)}</h2>
+          <p>{detail.candidate?.reason||driverNextAction(detail)}</p>
+          <em className={'status '+(TONES[detail.status]||'neutral')}>{statusLabel(detail.status)}</em>
+        </div>
+
+        {/* Case info */}
+        <div className="card">
+          <div className="acc-top"><strong>{detail.case_id}</strong></div>
+          <div className="acc-cat">{categoryLabel(detail.category)}</div>
+          <p style={{fontSize:'13px',color:'var(--ink-secondary)',lineHeight:'1.6',margin:'8px 0'}}>{detail.description}</p>
+          <div className="facts">
+            <span>SGD {detail.dispute_amount!=null?Number(detail.dispute_amount).toFixed(2):'—'}</span>
+            <span>Trip: {detail.trip_id||'—'}</span>
+            <span>Filed by: {detail.filed_by||'—'}</span>
+          </div>
+        </div>
+
+        {/* Safety */}
+        {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="app-action-card" style={{background:'var(--bad-bg)',borderColor:'var(--bad-border)'}}>
+          <h3 style={{color:'var(--bad-fg)'}}>Safety escalation</h3>
+          <p style={{color:'var(--bad-fg)'}}>This trip has been escalated for mandatory human review. AI does not determine fault or propose a remedy. A reviewer will investigate.</p>
+        </div>}
+
+        {/* Action needed — clarification */}
+        {pendingClarifications.length>0&&<div className="app-action-card">
+          <h3>Action needed</h3>
+          <p>Do not reply while driving. Pull over safely first. Your response will be recorded as an unverified claim.</p>
+          {pendingClarifications.map(c=>(
+            <div key={c.request_id} style={{marginBottom:'16px'}}>
+              <div className="clar-q">{c.question}</div>
+              <em className="status bad" style={{marginBottom:'8px',display:'inline-block'}}>Your statement — unverified</em>
+              <textarea placeholder="Type your response here…" value={answer} onChange={e=>setAnswer(e.target.value)}/>
+              <button disabled={api.busy||!answer.trim()} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id+'/clarifications/'+c.request_id+'/reply',{method:'POST',body:{answer}});setDetail(r);setAnswer('');api.setNotice('Response recorded as unverified claim.')})}>{api.busy?'Sending…':'Submit response'}</button>
+            </div>
+          ))}
+        </div>}
+
+        {/* Outcome */}
+        {detail.mock_action&&<div className="app-receipt">
+          <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
+          <br/><small>Simulated record · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
+        </div>}
+
+        {outcome&&<div className="card">
+          <p className="eyebrow">OUTCOME</p>
+          <p style={{fontSize:'13px',color:'var(--ink-secondary)',lineHeight:'1.6'}}>{outcome}</p>
+          <p className="muted" style={{marginTop:'8px'}}>{driverNextAction(detail)}</p>
+        </div>}
+
+        {/* Timeline */}
+        <div className="card">
+          <p className="eyebrow">CASE PROGRESS</p>
+          <CaseTimeline detail={detail} role="driver"/>
+        </div>
+
+        {/* Notifications */}
+        {detail.notifications&&detail.notifications.length>0&&<div className="card">
+          <p className="eyebrow">UPDATES</p>
+          <p className="muted">Simulated — not delivered.</p>
+          <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='driver'||n.recipient==='all').map((n,i)=>(
+            <div key={i} className="notif-item">
+              <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>
+              <p className="notif-msg">{n.message}</p>
+            </div>
+          ))}</div>
+        </div>}
+      </>}
+
+      {tab==='account'&&<>
+        <div className="app-section-head"><h2>Account</h2></div>
+        <div className="card">
+          <h3 style={{margin:'0 0 8px'}}>Demo session</h3>
+          <p className="muted">Connected as Driver. Case isolation enforced — you can only see your own cases.</p>
+        </div>
+        <div className="card">
+          <h3 style={{margin:'0 0 8px'}}>About this demo</h3>
+          <p className="muted">RydeResolve is a synthetic demo. No real payments, notifications, or account actions were executed.</p>
+        </div>
+        <div className="card" style={{textAlign:'center'}}>
+          <Link href="/" className="lab-enter">← Back to role selection</Link>
+        </div>
+      </>}
     </div>
 
-    <div className="card" style={{textAlign:'center',padding:'16px'}}>
-      <Link href="/" className="lab-enter">← Back to role selection</Link>
-      <span style={{margin:'0 12px',color:'var(--ink-faint)'}}>·</span>
-      <Link href="/lab" className="lab-enter">Full dashboard →</Link>
-    </div>
+    <nav className="app-nav" role="navigation" aria-label="Main navigation">
+      {NAV_TABS.map(t=><button key={t.id} className={tab===t.id?'active':''} onClick={()=>{setTab(t.id);setDetail(null)}} aria-label={t.label}>
+        <span className="nav-icon">{t.icon}</span>
+        {t.label}
+      </button>)}
+    </nav>
 
-    <footer>RydeResolve is a synthetic demo. No real payments, notifications, or account actions were executed.</footer>
-  </main>;
+    <div className="demo-badge">SYNTHETIC DEMO</div>
+  </div>;
 }
