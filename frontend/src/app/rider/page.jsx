@@ -15,6 +15,7 @@ const CATEGORIES = [
   {value:'driver_no_show',label:'Driver no-show'},
   {value:'property_damage',label:'Property damage'},
   {value:'safety_incident',label:'Safety incident'},
+  {value:'other',label:'Other / I\u2019m not sure'},
 ];
 
 function genCaseId(){
@@ -247,6 +248,7 @@ export default function RiderPortal(){
           <label>Disputed amount (SGD, optional)</label>
           <input type="number" min="0" step="0.01" max="100000" value={form.dispute_amount} onChange={e=>setForm({...form,dispute_amount:e.target.value})} placeholder="e.g. 15.50"/>
           {form.category==='safety_incident'&&<div className="alert error" style={{marginTop:'8px'}}>Safety allegations are escalated immediately. AI will not determine fault.</div>}
+          {form.category==='other'&&<div className="alert" style={{marginTop:'8px',background:'var(--info-bg)',color:'var(--info-fg)',border:'1px solid var(--info-border)',padding:'10px 14px',borderRadius:'var(--r-md)'}}>Not sure which category fits? That\u2019s okay. Describe the situation in your own words and a reviewer will classify it for you. No automatic decision will be made until a human reviews it.</div>}
           {formError&&<div className="alert error" style={{marginTop:'10px'}}>{formError}</div>}
           <button disabled={formBusy||!form.category||!form.trip_id.trim()||!form.description.trim()} onClick={()=>api.run(submitCase)}>{formBusy?'Creating…':'Submit report'}</button>
         </div>

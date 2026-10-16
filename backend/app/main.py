@@ -4,15 +4,15 @@ import hmac, os
 from fastapi import FastAPI, HTTPException, Header, Depends, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from .config import setting
-from .models import CaseCreate, ClarificationReply, EvidenceUpload, ReviewerDecision, LearningApproval
+from .models import CaseCreate, ClarificationReply, EvidenceUpload, ReviewerDecision, LearningApproval, ReclassifyRequest
 from .repository import repo
 from .identity import DemoIdentity, authenticate, is_reviewer, is_party, seed_case_owners
 from .safe_response import safe_case_for_rider, safe_case_for_driver, safe_case_list_item
 from .services import (create_case,seed_cases,get_case,process_case,reply_to_clarification,
                        add_verified_demo_evidence,human_review,evaluate_suite,
                        evaluate_learning,approve_learning,rollback_learning,verify_event_chain,add_file_evidence,
-                       build_review_packet)
-from .policy import contract_report, signoff_valid, load_policy
+                       build_review_packet,reclassify_case)
+from .policy import contract_report, signoff_valid, load_policy, full_rules
 from .storage import store_blob
 from .image_analysis import describe_damage_image
 from .evidence import now
@@ -110,6 +110,16 @@ def health():
             'ai_mode':setting('AI_MODE','mock'),'policy_contract':contract_report(),
             'team_signoff_valid':signoff_valid(),'timestamp':now()}
 
+@app.get('/policy/rules')
+def policy_rules(ids:str='',_=Depends(reviewer_only)):
+    """Return full policy rule snippets for the given rule IDs.
+
+    Query param `ids` is a comma-separated list of rule IDs.
+    Returns each rule's condition, effect, evidence requirements, and source section.
+    """
+    rule_ids=[r.strip() for r in ids.split(',') if r.strip()] if ids else []
+    return {'rules':full_rules(rule_ids)}
+
 @app.get('/cases')
 def cases(identity:DemoIdentity=Depends(any_actor)):
     all_cases=repo().list_cases()
@@ -192,6 +202,17 @@ async def upload(case_id:str,file:UploadFile=File(...),identity:DemoIdentity=Dep
 @app.post('/cases/{case_id}/review')
 def decide(case_id:str,body:ReviewerDecision,_=Depends(reviewer_only)):
     try:return human_review(case_id,body.model_dump())
+    except Exception as e:fail(e)
+
+@app.post('/cases/{case_id}/reclassify')
+def reclassify(case_id:str,body:ReclassifyRequest,_=Depends(reviewer_only)):
+    """Reclassify an 'other' case to a specific dispute category.
+
+    Only reviewer identity can reclassify. The original reported category
+    is preserved for audit. After reclassification the case returns to NEW
+    status and can be processed under the new category's policy rules.
+    """
+    try:return reclassify_case(case_id,body.category,body.reason)
     except Exception as e:fail(e)
 
 @app.get('/cases/{case_id}/verify-audit')

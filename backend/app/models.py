@@ -2,7 +2,10 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import Literal, Any
 
-Category = Literal['fare_dispute', 'route_deviation', 'no_show_charge', 'driver_no_show', 'property_damage', 'safety_incident']
+Category = Literal['fare_dispute', 'route_deviation', 'no_show_charge', 'driver_no_show', 'property_damage', 'safety_incident', 'other']
+
+# Categories that a reviewer may reclassify an "other" case into.
+ReclassifyCategory = Literal['fare_dispute', 'route_deviation', 'no_show_charge', 'driver_no_show', 'property_damage', 'safety_incident']
 
 class CaseCreate(BaseModel):
     case_id: str = Field(pattern=r'^[A-Za-z0-9_-]{4,80}$')
@@ -33,3 +36,8 @@ class ReviewerDecision(BaseModel):
 
 class LearningApproval(BaseModel):
     rationale: str = Field(min_length=10, max_length=500)
+
+class ReclassifyRequest(BaseModel):
+    """Reviewer reclassification of an 'other' case to a specific category."""
+    category: ReclassifyCategory
+    reason: str = Field(min_length=10, max_length=500)

@@ -21,6 +21,8 @@ _RIDER_SAFE_KEYS: set[str] = {
     'clarifications',  # filtered per-recipient below
     'notifications',  # filtered per-recipient below
     'synthetic',
+    # Reclassification info — parties see what the reviewer classified it as.
+    'original_category',
 }
 
 # Fields that a Driver is allowed to see on a case detail.

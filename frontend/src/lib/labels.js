@@ -40,6 +40,7 @@ export const CATEGORY_LABELS = {
   driver_no_show: 'Driver no-show',
   property_damage: 'Property damage',
   safety_incident: 'Safety incident',
+  other: 'Other / I\u2019m not sure',
 };
 
 export const DISPOSITION_LABELS = {

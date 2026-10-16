@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useState,useEffect,useRef} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
 import {CaseTimeline} from '../../lib/Timeline';
@@ -21,6 +21,51 @@ const TABS=[
   {id:'decision',label:'Review Decision'},
   {id:'audit',label:'Audit / Advanced'},
 ];
+
+// Reviewer-friendly agent display names and order
+const AGENT_DISPLAY={
+  RiderAdvocate:{title:'Rider Perspective',icon:'🧑',desc:'Advocates for the rider\u2019s position'},
+  DriverAdvocate:{title:'Driver Perspective',icon:'🚗',desc:'Advocates for the driver\u2019s position'},
+  PolicyPrecedent:{title:'Policy & Precedent',icon:'📐',desc:'Matches applicable policy rules and prior precedents'},
+  FraudBadFaith:{title:'Fraud & Bad-Faith Check',icon:'🔍',desc:'Screens for fraud indicators and bad-faith patterns'},
+  Judge:{title:'Consistency Judge',icon:'⚖',desc:'Cross-checks all advocates for consistency'},
+};
+const AGENT_ORDER=['RiderAdvocate','DriverAdvocate','PolicyPrecedent','FraudBadFaith','Judge'];
+
+// Human-readable labels for common fact field names
+const FACT_LABELS={
+  upfront_quote:'Upfront quote',actual_fare:'Actual fare',surge_before:'Surge before',
+  surge_after:'Surge after',rider_notified:'Rider notified',notification_log_complete:'Notification log complete',
+  difference_solely_surge:'Difference solely surge',rider_proceeded:'Rider proceeded',
+  actual_distance_km:'Actual distance (km)',recommended_distance_km:'Recommended distance (km)',
+  traffic_justified:'Traffic justified',excess_distance_fare:'Excess distance fare',
+  rider_agreed:'Rider agreed',scheduled_pickup_at:'Scheduled pickup',cancellation_at:'Cancellation time',
+  driver_arrived:'Driver arrived',rider_absent:'Rider absent',driver_message_count:'Driver messages',
+  driver_call_count:'Driver calls',rider_disputes_claim:'Rider disputes claim',damage_kind:'Damage kind',
+  photo_verifiable:'Photo verifiable',trip_link_verified:'Trip link verified',
+  photo_submitted_within_24h:'Photo submitted within 24h',dispute_amount:'Dispute amount',
+  dispute_value_basis:'Dispute value basis',
+};
+
+// Processing pipeline steps for the live progress display
+const PROCESS_STEPS=[
+  {id:'safety',label:'Safety screening',desc:'Checking for safety allegations'},
+  {id:'routing',label:'Routing index',desc:'Identifying candidate policy rules'},
+  {id:'gaps',label:'Evidence check',desc:'Checking for missing or conflicting evidence'},
+  {id:'agents',label:'Agent evaluation',desc:'Running advocate and judge agents'},
+  {id:'gate',label:'Policy gate',desc:'Applying deterministic policy validation'},
+  {id:'outcome',label:'Outcome',desc:'Recording resolution or routing to review'},
+];
+
+function factLabel(field){return FACT_LABELS[field]||field.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
+function formatFactValue(v){
+  if(v===true)return 'Yes';
+  if(v===false)return 'No';
+  if(v===null||v===undefined)return '—';
+  if(typeof v==='number')return Number.isInteger(v)?String(v):v.toFixed(2);
+  if(typeof v==='string')return v;
+  return JSON.stringify(v);
+}
 
 export default function ReviewerWorkbench(){
   const api=useApi();
@@ -45,6 +90,10 @@ export default function ReviewerWorkbench(){
   const [auditResult,setAuditResult]=useState(null);
   const [showConfirm,setShowConfirm]=useState(false);
   const [processing,setProcessing]=useState(false);
+  const [processStep,setProcessStep]=useState(-1);
+  const [ruleSnippets,setRuleSnippets]=useState({});
+  const [expandedRules,setExpandedRules]=useState({});
+  const processTimerRef=useRef(null);
 
   async function connect(){
     setPolicy(await api.call('health'));
@@ -54,8 +103,26 @@ export default function ReviewerWorkbench(){
 
   async function selectCase(id){
     setDetail(await api.call('cases/'+id));
+    setRuleSnippets({});
+    setExpandedRules({});
     setPacket(null);
     setTab('overview');
+  }
+
+  async function loadRuleSnippets(ruleIds){
+    if(!ruleIds||ruleIds.length===0) return;
+    const needed=ruleIds.filter(id=>!ruleSnippets[id]);
+    if(needed.length===0) return;
+    try{
+      const r=await api.call('policy/rules?ids='+needed.join(','));
+      setRuleSnippets(prev=>({...prev,...Object.fromEntries(r.rules.map(rule=>[rule.rule_id,rule]))}));
+    }catch{/* ignore — snippets are enhancement only */}
+  }
+
+  function toggleRule(ruleId){
+    setExpandedRules(prev=>({...prev,[ruleId]:!prev[ruleId]}));
+    const rule=ruleSnippets[ruleId];
+    if(!rule&&ruleId) loadRuleSnippets([ruleId]);
   }
 
   async function loadLearning(){const data=await api.call('learning');setLearning(data.proposals||[])}
@@ -80,13 +147,40 @@ export default function ReviewerWorkbench(){
 
   const banner=nextActionBanner();
 
+  useEffect(()=>()=>{if(processTimerRef.current) clearInterval(processTimerRef.current)},[]);
+
   async function doProcess(){
     if(processing) return; // prevent duplicate
     setProcessing(true);
+    setProcessStep(0);
+    // Walk through pipeline steps for visual feedback.
+    // Steps 0-5 are shown sequentially with short intervals.
+    // The actual API call blocks until processing completes server-side.
+    let stepIdx=0;
+    processTimerRef.current=setInterval(()=>{
+      stepIdx++;
+      if(stepIdx<PROCESS_STEPS.length) setProcessStep(stepIdx);
+      else if(processTimerRef.current) clearInterval(processTimerRef.current);
+    },400);
     try{
       const r=await api.call('cases/'+selected+'/process',{method:'POST'});
+      if(processTimerRef.current) clearInterval(processTimerRef.current);
+      setProcessStep(PROCESS_STEPS.length-1);
       setDetail(r);
+      // Preload rule snippets for the routing + agent + gate rules
+      const allRules=new Set();
+      (r.routing?.candidate_rule_ids||[]).forEach(id=>allRules.add(id));
+      (r.gate?.blocking_rules||[]).forEach(id=>allRules.add(id));
+      (r.candidate?.rule_ids||[]).forEach(id=>allRules.add(id));
+      Object.values(r.agent_outputs||{}).forEach(a=>(a.policy_rule_ids||[]).forEach(id=>allRules.add(id)));
+      loadRuleSnippets([...allRules]);
       api.setNotice('Case processing complete.');
+      // Clear processing highlight after 2s
+      setTimeout(()=>{setProcessStep(-1)},2000);
+    }catch(e){
+      if(processTimerRef.current) clearInterval(processTimerRef.current);
+      setProcessStep(-1);
+      api.setError(e.message);
     }finally{setProcessing(false)}
   }
 
@@ -173,7 +267,19 @@ export default function ReviewerWorkbench(){
                 <span>Policy: {detail.policy_version||'2.1'}</span>
                 <span>Source: SYNTHETIC</span>
               </div>
-              {!isResolved&&<button disabled={api.busy||processing} onClick={()=>api.run(doProcess)}>{processing?'Processing…':'Process / Re-evaluate'}</button>}
+              {!isResolved&&<button disabled={api.busy||processing} onClick={()=>{setTab('overview');api.run(doProcess)}}>{processing?'Processing…':'Process / Re-evaluate'}</button>}
+              {processing&&processStep>=0&&<div className="process-timeline">
+                {PROCESS_STEPS.map((step,i)=>{
+                  const state=i<processStep?'done':i===processStep?'active':'pending';
+                  return <div key={step.id} className={'process-step '+state}>
+                    <div className="process-dot"/>
+                    <div className="process-step-body">
+                      <div className="process-step-label">{step.label}</div>
+                      <div className="process-step-desc">{step.desc}</div>
+                    </div>
+                  </div>;
+                })}
+              </div>}
               {detail.mock_action&&<div className="receipt">
                 <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
                 <br/><small>Simulated · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
@@ -198,6 +304,31 @@ export default function ReviewerWorkbench(){
                 <h2>{pathLabel(detail.path)}</h2>
                 <p>{detail.candidate?.reason||'Awaiting evidence or human review.'}</p>
                 {detail.gate?.reasons?.length>0&&<div style={{marginTop:'8px'}}><p className="muted">Policy rationale:</p><ul style={{fontSize:'12px',color:'var(--ink-secondary)',lineHeight:'1.6',paddingLeft:'18px'}}>{detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}</ul></div>}
+              </div>}
+
+              {/* Manual classification required for "other" cases */}
+              {detail.category==='other'&&!isResolved&&<div className="card highlight" style={{borderLeft:'4px solid var(--warn-fg)'}}>
+                <p className="eyebrow">MANUAL CLASSIFICATION REQUIRED</p>
+                <h3>Unclassified dispute category</h3>
+                <p className="muted">This case was submitted as "Other / I'm not sure." The rider's description is shown above. Reclassify to a specific category before adjudication can proceed.</p>
+                <div style={{display:'flex',gap:'8px',marginTop:'12px',flexWrap:'wrap',alignItems:'center'}}>
+                  <select id="reclass-select" defaultValue="" aria-label="Reclassify case to category">
+                    <option value="" disabled>Select new category…</option>
+                    <option value="fare_dispute">Fare dispute</option>
+                    <option value="route_deviation">Route deviation</option>
+                    <option value="no_show_charge">No-show charge (rider)</option>
+                    <option value="driver_no_show">Driver no-show</option>
+                    <option value="property_damage">Property damage</option>
+                  </select>
+                  <button className="small" disabled={api.busy} onClick={()=>api.run(async()=>{
+                    const sel=document.getElementById('reclass-select');
+                    if(!sel||!sel.value){api.setError('Select a new category first.');return}
+                    const reason='Reviewer reclassification from "other" to '+sel.value;
+                    const r=await api.call('cases/'+detail.case_id+'/reclassify',{method:'POST',body:{category:sel.value,reason}});
+                    setDetail(r);api.setNotice('Case reclassified to '+sel.value+'. Original category preserved for audit. Process the case to run policy evaluation.');
+                  })}>Reclassify</button>
+                </div>
+                {detail.original_category&&<p className="muted" style={{fontSize:'11px',marginTop:'8px'}}>Original category: {categoryLabel(detail.original_category)}</p>}
               </div>}
 
               {isSafety&&<div className="card highlight" style={{borderLeft:'4px solid var(--bad-fg)'}}>
@@ -249,12 +380,50 @@ export default function ReviewerWorkbench(){
               <div className="card">
                 <h3>Case facts</h3>
                 <p className="muted">Claims are not automatically verified. Review provenance before relying on any fact.</p>
-                <details><summary>Show case facts</summary><pre className="json">{JSON.stringify(detail.facts,null,2)}</pre></details>
+                {detail.facts&&Object.keys(detail.facts).length>0?
+                  <div className="fact-grid">
+                    {Object.entries(detail.facts).map(([k,v])=>{
+                      const ev=detail.evidence?.find(e=>e.field===k);
+                      return <div key={k} className="fact-item">
+                        <div className="fact-label">{factLabel(k)}</div>
+                        <div className="fact-value">{formatFactValue(v)}</div>
+                        {ev&&<div className="fact-prov"><span className="fact-prov-label">Source:</span> {ev.provenance||'fixture'}</div>}
+                      </div>;
+                    })}
+                  </div>
+                :<p className="muted">No structured facts recorded for this case.</p>}
               </div>
+
               <div className="card">
-                <h3>Routing index</h3>
-                <p className="muted">Candidate rules are not rulings.</p>
-                {detail.routing?.candidate_rule_ids?.length?<div className="chips">{detail.routing.candidate_rule_ids.map(i=><span key={i}>{i}</span>)}</div>:<p className="muted">Process the case to retrieve routing IDs.</p>}
+                <div className="section-head">
+                  <h3>Routing index</h3>
+                  <button className="small" disabled={api.busy} onClick={()=>loadRuleSnippets(detail.routing?.candidate_rule_ids||[])}>Load rule details</button>
+                </div>
+                <p className="muted">Candidate rules identified for this case category. These are not rulings — they identify which policy sections may apply.</p>
+                {detail.routing?.candidate_rule_ids?.length?
+                  <div className="rule-list">
+                    {detail.routing.candidate_rule_ids.map(rid=>{
+                      const rule=ruleSnippets[rid];
+                      const isExpanded=expandedRules[rid];
+                      return <div key={rid} className="rule-item">
+                        <div className="rule-item-head" onClick={()=>{toggleRule(rid)}} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' ')toggleRule(rid)}}>
+                          <span className="rule-id">{rid}</span>
+                          {rule&&<span className="rule-section">§{rule.source_section}</span>}
+                          {detail.routing?.matched_phrase_rule_ids?.includes(rid)&&<span className="rule-matched">matched</span>}
+                          <span className="rule-expand">{isExpanded?'▾':'▸'}</span>
+                        </div>
+                        {isExpanded&&rule&&<div className="rule-detail">
+                          {rule.condition&&<div className="rule-field"><span className="rule-field-label">Condition:</span> <code>{JSON.stringify(rule.condition)}</code></div>}
+                          {rule.effect&&<div className="rule-field"><span className="rule-field-label">Effect:</span> <code>{JSON.stringify(rule.effect)}</code></div>}
+                          {rule.evidence_requirements?.length>0&&<div className="rule-field"><span className="rule-field-label">Evidence required:</span> {rule.evidence_requirements.join(', ')}</div>}
+                          {rule.notes&&<div className="rule-field"><span className="rule-field-label">Notes:</span> {rule.notes}</div>}
+                          {rule.precedence&&<div className="rule-field"><span className="rule-field-label">Precedence:</span> {rule.precedence}</div>}
+                        </div>}
+                        {isExpanded&&!rule&&<div className="rule-detail"><span className="muted">Loading rule details…</span></div>}
+                      </div>;
+                    })}
+                  </div>
+                :<p className="muted">Process the case to retrieve routing IDs.</p>}
               </div>
               {!isResolved&&<div className="card">
                 <p className="eyebrow">EVIDENCE UPLOAD</p>
@@ -277,12 +446,81 @@ export default function ReviewerWorkbench(){
             </>}
 
             {tab==='agents'&&<>
-              {detail.agent_outputs?<div className="card">
-                <h3>Advocate and Judge findings</h3>
-                <p className="muted">Visible results and traces — not private model chain of thought.</p>
-                <div className="agents">{Object.entries(detail.agent_outputs).map(([n,v])=><div key={n} className="agent"><b>{n}</b><p>{v.summary}</p><small>Rules: {(v.policy_rule_ids||[]).join(', ')||'—'}</small>{v.mode&&<small> · {v.mode}</small>}</div>)}</div>
-                <details><summary>Technical trace (events)</summary><pre className="json">{JSON.stringify(detail.agent_trace,null,2)}</pre></details>
-              </div>:<div className="card empty"><div className="empty-symbol">🤖</div><h2>No agent outputs</h2><p>Process the case to run the ADK agents.</p></div>}
+              {detail.agent_outputs&&Object.keys(detail.agent_outputs).length>0?
+                <div className="agent-flow">
+                  {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="agent-flow-skip">
+                    <div className="skip-icon">⚠</div>
+                    <div>
+                      <b>Safety escalation — agents did not adjudicate</b>
+                      <p className="muted">Safety allegations were detected during intake screening. The Consistency Judge was skipped per SF-5.1 / SF-5.2. No AI fault determination or remedy was proposed.</p>
+                    </div>
+                  </div>}
+                  {AGENT_ORDER.filter(n=>detail.agent_outputs[n]).map((agentKey,idx)=>{
+                    const v=detail.agent_outputs[agentKey];
+                    const display=AGENT_DISPLAY[agentKey]||{title:agentKey,icon:'🔧',desc:''};
+                    const hasError=v.parse_failed||v.agent_error||v.validation_error||v.failure_kind;
+                    const traceEntry=detail.agent_trace?.find(t=>t.agent===agentKey);
+                    return <div key={agentKey} className={'agent-step '+(hasError?'failed':'completed')}>
+                      <div className="agent-step-connector">
+                        <div className="agent-step-dot"/>
+                        {idx<AGENT_ORDER.length-1&&<div className="agent-step-line"/>}
+                      </div>
+                      <div className="agent-step-card">
+                        <div className="agent-step-head">
+                          <span className="agent-step-icon">{display.icon}</span>
+                          <div>
+                            <div className="agent-step-title">{display.title}</div>
+                            <div className="agent-step-sub">{display.desc}</div>
+                          </div>
+                          <div className="agent-step-meta">
+                            {hasError?
+                              <em className="status bad">Error: {v.failure_kind||v.parse_failed?'parse failed':'agent error'}</em>
+                            :<em className="status good">{v.recommended_disposition?dispositionLabel(v.recommended_disposition):'evaluated'}</em>}
+                            {v.mode&&<span className="agent-mode">{v.mode.includes('mock')||v.mode==='MOCK'?'Mock':'Live'}</span>}
+                          </div>
+                        </div>
+                        <p className="agent-step-summary">{v.summary}</p>
+                        {v.recommended_amount!=null&&v.recommended_amount>0&&
+                          <div className="agent-step-amount">Recommended: SGD {Number(v.recommended_amount).toFixed(2)}</div>}
+                        {v.policy_rule_ids?.length>0&&<div className="agent-rules">
+                          {v.policy_rule_ids.map(rid=>{
+                            const rule=ruleSnippets[rid];
+                            const isExpanded=expandedRules[rid];
+                            return <div key={rid} className="agent-rule-chip-wrap">
+                              <button className="rule-chip-btn" onClick={()=>toggleRule(rid)}>
+                                {rid} <span className="rule-chip-expand">{isExpanded?'▾':'▸'}</span>
+                              </button>
+                              {isExpanded&&rule&&<div className="rule-popover">
+                                <div className="rule-popover-head"><b>{rid}</b> <span className="muted">§{rule.source_section}</span></div>
+                                {rule.condition&&<div><span className="rule-field-label">Condition:</span> <code>{JSON.stringify(rule.condition)}</code></div>}
+                                {rule.effect&&<div><span className="rule-field-label">Effect:</span> <code>{JSON.stringify(rule.effect)}</code></div>}
+                                {rule.evidence_requirements?.length>0&&<div><span className="rule-field-label">Evidence:</span> {rule.evidence_requirements.join(', ')}</div>}
+                                {rule.notes&&<div className="rule-field-label">{rule.notes}</div>}
+                              </div>}
+                              {isExpanded&&!rule&&<div className="rule-popover"><span className="muted">Loading…</span></div>}
+                            </div>;
+                          })}
+                        </div>}
+                        {(v.supporting_evidence?.length>0||v.opposing_evidence?.length>0)&&
+                          <div className="agent-evidence-row">
+                            {v.supporting_evidence?.length>0&&<div className="agent-ev-list"><span className="agent-ev-label">Supports:</span> {v.supporting_evidence.join(', ')}</div>}
+                            {v.opposing_evidence?.length>0&&<div className="agent-ev-list"><span className="agent-ev-label">Opposes:</span> {v.opposing_evidence.join(', ')}</div>}
+                          </div>}
+                        {v.uncertainties?.length>0&&
+                          <div className="agent-uncertainties"><span className="agent-ev-label">Uncertainties:</span> {v.uncertainties.join(', ')}</div>}
+                        {traceEntry&&<details className="agent-trace"><summary>Trace entry</summary>
+                          <div className="trace-mini">
+                            {Object.entries(traceEntry).filter(([k])=>k!=='agent').map(([k,val])=>
+                              <div key={k} className={'trace-field'+(k==='error_code'?' trace-err':'')}><b>{k}:</b> {String(val)}</div>
+                            )}
+                          </div>
+                        </details>}
+                      </div>
+                    </div>;
+                  })}
+                  <details className="agent-tech-trace"><summary>Full technical trace (all agents)</summary><pre className="json">{JSON.stringify(detail.agent_trace,null,2)}</pre></details>
+                </div>
+              :<div className="card empty"><div className="empty-symbol">🤖</div><h2>No agent outputs</h2><p>Process the case to run the ADK agents.</p></div>}
             </>}
 
             {tab==='decision'&&<>

@@ -214,6 +214,26 @@ async def process_case(cid):
         _add_notification(case,'SAFETY_REVIEW_ALERT','driver',_driver_safety_message(case['case_id']))
         case['processing_ms']=round((time.perf_counter()-start)*1000,2)
         return repo().save_case(case)
+    # ── "other" category: manual classification / triage ──────────────────
+    # "other" is an intake-only category. It is NOT automatically adjudicable.
+    # Route to human review for classification. No Judge, no financial action.
+    if case['category']=='other':
+        case['status']='REVIEW_REQUIRED'
+        case['path']='HUMAN_REVIEW'
+        case['candidate']={'disposition':'undetermined','amount':0,'rule_ids':[],
+                            'reason':'Unclassified "other" category: manual classification required'}
+        case['gate']={'can_auto':False,'path':'HUMAN_REVIEW',
+                      'reasons':['Unclassified dispute category: reviewer must classify before adjudication'],
+                      'blocking_rules':[]}
+        case['original_escalation']='MANUAL_CLASSIFICATION'
+        case['agent_outputs']={}
+        case['agent_trace']=[]
+        event(case,'manual_classification_required',{'original_category':'other'})
+        _add_notification(case,'CLARIFICATION_REQUEST','reviewer',
+            f'Case {case["case_id"]}: "Other" category submitted. Manual classification required '
+            'before policy adjudication can proceed. No automated financial action.')
+        case['processing_ms']=round((time.perf_counter()-start)*1000,2)
+        return repo().save_case(case)
     missing=gaps(case);inconsistent=conflicts(case)
     if missing or inconsistent:
         # Ask at most once per revision; unverified answer alone never changes facts.
@@ -272,6 +292,11 @@ def human_review(cid,reviewer_decision:dict):
     case=get_case(cid)
     if case['status']!='REVIEW_REQUIRED':raise ValueError('Case must be in REVIEW_REQUIRED')
     if case.get('review'):raise ValueError('Already reviewed')
+    # Prevent financial decisions on unclassified "other" cases.
+    # The reviewer must reclassify first (POST /cases/{id}/reclassify).
+    if case.get('category')=='other' and reviewer_decision.get('disposition') in ('refund','credit'):
+        raise ValueError('Cannot apply refund or credit to an unclassified "other" case. '
+                          'Reclassify to a specific category first, then apply the financial decision.')
     case['review']={**reviewer_decision,'at':now(),'authorized_by':'demo_reviewer'}
     event(case,'human_review_completed',{'disposition':reviewer_decision['disposition'], 'reason':reviewer_decision['reason']})
     action,created=execute_mock(repo(),case,reviewer_decision['disposition'],reviewer_decision['amount'])
@@ -291,6 +316,39 @@ def human_review(cid,reviewer_decision:dict):
         repo().save_proposal(proposal)
         case['learning_proposal_id']=pid
         event(case,'learning_proposal_staged',{'proposal_id':pid})
+    repo().save_case(case)
+    return case
+
+
+def reclassify_case(cid, new_category, reason):
+    """Reviewer reclassifies an 'other' case to a specific dispute category.
+
+    Preserves the original reported category for audit. Records the
+    classification change as an event. The case returns to NEW status
+    so it can be processed under the new category's policy rules.
+
+    Only 'other' cases can be reclassified. The target must be one of
+    the six predefined categories — not 'other' or 'safety_incident'
+    (safety is determined by the safety screen, not by reclassification).
+    """
+    case=get_case(cid)
+    if case.get('category')!='other':
+        raise ValueError('Only "other" category cases can be reclassified')
+    if new_category not in ('fare_dispute','route_deviation','no_show_charge',
+                            'driver_no_show','property_damage'):
+        raise ValueError('Reclassification target must be a specific dispute category '
+                          '(fare_dispute, route_deviation, no_show_charge, driver_no_show, or property_damage)')
+    if case.get('status') in ('RESOLVED','REVIEWED_AND_RESOLVED'):
+        raise ValueError('Resolved case is immutable; open a new appeal')
+    case['original_category']=case.get('original_category') or case['category']
+    case['category']=new_category
+    case['reclassification_reason']=reason
+    case['reclassified_at']=now()
+    case['status']='NEW'
+    case.pop('candidate',None);case.pop('gate',None);case.pop('path',None)
+    case.pop('agent_outputs',None);case.pop('agent_trace',None)
+    case['evidence_snapshot_hash']=hash_snapshot(case)
+    event(case,'case_reclassified',{'from':'other','to':new_category,'reason':reason})
     repo().save_case(case)
     return case
 
