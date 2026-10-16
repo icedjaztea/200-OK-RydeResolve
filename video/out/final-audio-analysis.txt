@@ -151,7 +151,18 @@ Output #0, null, to 'pipe:':
         handler_name    : SoundHandler
         vendor_id       : [0][0][0][0]
         encoder         : Lavc61.19.101 pcm_s16le
-frame=  751 fps=0.0 q=-0.0 size=N/A time=00:00:22.40 bitrate=N/A speed=44.8x    frame= 1448 fps=1448 q=-0.0 size=N/A time=00:00:45.50 bitrate=N/A speed=45.5x    frame= 2287 fps=1524 q=-0.0 size=N/A time=00:01:13.70 bitrate=N/A speed=49.1x    frame= 2949 fps=1474 q=-0.0 size=N/A time=00:01:35.70 bitrate=N/A speed=47.8x    frame= 3617 fps=1446 q=-0.0 size=N/A time=00:01:58.10 bitrate=N/A speed=47.2x    frame= 4226 fps=1408 q=-0.0 size=N/A time=00:02:18.20 bitrate=N/A speed=  46x    frame= 4872 fps=1391 q=-0.0 size=N/A time=00:02:39.90 bitrate=N/A speed=45.6x    frame= 5563 fps=1390 q=-0.0 size=N/A time=00:03:02.90 bitrate=N/A speed=45.7x    frame= 6403 fps=1422 q=-0.0 size=N/A time=00:03:30.90 bitrate=N/A speed=46.8x    frame= 7218 fps=1443 q=-0.0 size=N/A time=00:03:57.50 bitrate=N/A speed=47.5x    frame= 8145 fps=1480 q=-0.0 size=N/A time=00:04:28.60 bitrate=N/A speed=48.8x    [Parsed_loudnorm_0 @ 0x7ff91c002740] 
+frame=  751 fps=0.0 q=-0.0 size=N/A time=00:00:22.40 bitrate=N/A speed=44.8x
+frame= 1448 fps=1448 q=-0.0 size=N/A time=00:00:45.50 bitrate=N/A speed=45.5x
+frame= 2287 fps=1524 q=-0.0 size=N/A time=00:01:13.70 bitrate=N/A speed=49.1x
+frame= 2949 fps=1474 q=-0.0 size=N/A time=00:01:35.70 bitrate=N/A speed=47.8x
+frame= 3617 fps=1446 q=-0.0 size=N/A time=00:01:58.10 bitrate=N/A speed=47.2x
+frame= 4226 fps=1408 q=-0.0 size=N/A time=00:02:18.20 bitrate=N/A speed=  46x
+frame= 4872 fps=1391 q=-0.0 size=N/A time=00:02:39.90 bitrate=N/A speed=45.6x
+frame= 5563 fps=1390 q=-0.0 size=N/A time=00:03:02.90 bitrate=N/A speed=45.7x
+frame= 6403 fps=1422 q=-0.0 size=N/A time=00:03:30.90 bitrate=N/A speed=46.8x
+frame= 7218 fps=1443 q=-0.0 size=N/A time=00:03:57.50 bitrate=N/A speed=47.5x
+frame= 8145 fps=1480 q=-0.0 size=N/A time=00:04:28.60 bitrate=N/A speed=48.8x
+[Parsed_loudnorm_0 @ 0x7ff91c002740]
 {
 	"input_i" : "-16.14",
 	"input_tp" : "-1.34",
@@ -165,4 +176,4 @@ frame=  751 fps=0.0 q=-0.0 size=N/A time=00:00:22.40 bitrate=N/A speed=44.8x    
 	"target_offset" : "0.02"
 }
 [out#0/null @ 0x55ec0b2c1600] video:3500KiB audio:203664KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
-frame= 8145 fps=1474 q=-0.0 Lsize=N/A time=00:04:31.50 bitrate=N/A speed=49.1x    
+frame= 8145 fps=1474 q=-0.0 Lsize=N/A time=00:04:31.50 bitrate=N/A speed=49.1x
