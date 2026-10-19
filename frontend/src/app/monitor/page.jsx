@@ -44,6 +44,13 @@ function _classifyCase(c){
   return 'in_review'; // REVIEW_REQUIRED, AWAITING_CLARIFICATION
 }
 
+function progressTone(c){
+  if(c.status==='RESOLVED'||c.status==='REVIEWED_AND_RESOLVED') return 'resolved';
+  if(c.status==='REVIEW_REQUIRED'||c.path==='IMMEDIATE_HUMAN_REVIEW') return 'review';
+  if(c.status==='AWAITING_CLARIFICATION') return 'clarification';
+  return 'active';
+}
+
 function _isFailed(out){
   if(!out) return false;
   return out.parse_failed===true||out.agent_error===true||!!out.failure_kind;
@@ -476,6 +483,16 @@ export default function MonitorPage(){
 
       {api.error&&<div className="alert alert-error">{api.error}</div>}
 
+      <div className="mon-progress-legend" aria-label="Workflow progress legend">
+        <span><i className="mon-tone-resolved"/>Resolved</span>
+        <span><i className="mon-tone-review"/>Human review / failed step</span>
+        <span><i className="mon-tone-clarification"/>Awaiting clarification</span>
+        <span><i className="mon-tone-active"/>In progress</span>
+        <span><i className="mon-legend-pending"/>Pending</span>
+        <span><i className="mon-legend-skipped"/>Skipped</span>
+        <p>Each segment is a workflow step. Filled segments show completed steps; their color reflects the case status. Resolved cases may have skipped or unrun steps.</p>
+      </div>
+
       {/* Case sections */}
       <div className="mon-sections">
         {SECTIONS.map(sec=>{
@@ -512,11 +529,16 @@ export default function MonitorPage(){
                               <span className="mon-case-status">{statusLabel(c.status)}</span>
                             </div>
                             {/* Progress bar */}
-                            <div className="mon-case-progress">
-                              <div className="mon-progress-track">
+                            <div className={'mon-case-progress mon-tone-'+progressTone(c)}>
+                              <div className="mon-progress-track" role="progressbar"
+                                aria-label={`${c.case_id} workflow progress`}
+                                aria-valuemin={0} aria-valuemax={wf.total} aria-valuenow={wf.done}
+                                aria-valuetext={`${wf.done} of ${wf.total} steps completed; ${statusLabel(c.status)}`}
+                                title={`${wf.done} of ${wf.total} steps completed · ${statusLabel(c.status)}`}>
                                 {PIPELINE.map(n=>{
-                                  const st=wf.steps?.[n.id]||'pending';
-                                  return <div key={n.id} className={'mon-progress-seg '+st} title={`${n.label}: ${st}`}/>;
+                                  const raw=wf.steps?.[n.id]||'pending';
+                                  const st=raw==='completed'?'done':raw;
+                                  return <div key={n.id} aria-hidden="true" className={'mon-progress-seg '+st} title={`${n.label}: ${st}`}/>;
                                 })}
                               </div>
                               <span className="mon-progress-count">{wf.done}/{wf.total}</span>
