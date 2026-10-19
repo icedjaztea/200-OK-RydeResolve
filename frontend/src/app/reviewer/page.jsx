@@ -308,8 +308,9 @@ export default function ReviewerWorkbench(){
 
     {/* Connect */}
     {!policy&&<div className="card" style={{maxWidth:'500px',margin:'40px auto'}}>
-      <h3 style={{marginTop:0}}>Loading reviewer workbench…</h3>
+      <h3 style={{marginTop:0}}>{api.error?'Unable to load reviewer workbench.':'Loading reviewer workbench…'}</h3>
       <p className="muted">Connecting to the dispute resolution backend.</p>
+      {api.error&&<button disabled={api.busy} onClick={()=>api.run(connect)}>Retry</button>}
       {api.error&&<div className="alert error">{api.error}</div>}
     </div>}
 
@@ -566,6 +567,26 @@ export default function ReviewerWorkbench(){
                 <input aria-label="Choose evidence document" type="file" accept="image/png,image/jpeg,application/pdf" onChange={e=>setUploadFile(e.target.files?.[0]||null)}/>
                 <button disabled={api.busy||!uploadFile} onClick={()=>api.run(async()=>{const form=new FormData();form.append('file',uploadFile);const result=await api.call('cases/'+selected+'/files',{method:'POST',body:form});setUploadReport(result);setDetail(await api.call('cases/'+selected));api.setNotice('Evidence stored. Authenticity unverified.')})}>Upload evidence</button>
                 {uploadReport&&<details><summary>Image analysis and storage</summary><pre className="json">{JSON.stringify(uploadReport,null,2)}</pre></details>}
+              </div>}
+              {/* Attachment viewer */}
+              {detail.evidence&&detail.evidence.length>0&&<div className="card">
+                <p className="eyebrow">ATTACHED FILES</p>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                  {detail.evidence.filter(e=>e.type==='image_or_document').map(ev=>{
+                    const sha=ev.content?.sha256||'';
+                    const ct=ev.content?.content_type||'';
+                    const isImg=ct.includes('image');
+                    return <div key={ev.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',border:'1px solid var(--border)',borderRadius:'8px'}}>
+                      <span style={{fontSize:'20px'}}>{ct.includes('pdf')?'📄':isImg?'🖼':'📎'}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:'13px',fontWeight:600}}>{ev.id}</div>
+                        <div style={{fontSize:'11px',color:'var(--ink-secondary)'}}>{ct} · {ev.content?.size_bytes?Math.round(ev.content.size_bytes/1024)+'KB':'—'}</div>
+                        {ev.analysis&&ev.analysis.caption&&<div style={{fontSize:'11px',color:'var(--ink-secondary)',fontStyle:'italic',marginTop:'2px'}}>{ev.analysis.caption}</div>}
+                      </div>
+                      <button className="small secondary" onClick={()=>window.open('/api/proxy/cases/'+detail.case_id+'/files/'+sha.slice(0,24),'_blank')}>View</button>
+                    </div>;
+                  })}
+                </div>
               </div>}
               {!isResolved&&<div className="card">
                 <h3>Add synthetic verified-source fact</h3>

@@ -19,6 +19,12 @@ class MemoryRepository:
         with self.lock:
             self.cases[record['case_id']]=copy.deepcopy(record)
         return record
+    def create_case_if_absent(self, record):
+        with self.lock:
+            if record['case_id'] in self.cases:
+                return False
+            self.cases[record['case_id']]=copy.deepcopy(record)
+            return True
     def list_cases(self):
         with self.lock: return sorted(copy.deepcopy(list(self.cases.values())),key=lambda x:x['case_id'])
     def create_action(self,key,action):
@@ -53,6 +59,13 @@ class FirestoreRepository:
     def save_case(self,record):
         self.db.collection('cases').document(record['case_id']).set(record)
         return record
+    def create_case_if_absent(self, record):
+        from google.api_core.exceptions import AlreadyExists
+        try:
+            self.db.collection('cases').document(record['case_id']).create(record)
+            return True
+        except AlreadyExists:
+            return False
     def list_cases(self):
         return [x.to_dict() for x in self.db.collection('cases').stream()]
     def create_action(self,key,action):

@@ -10,6 +10,7 @@ ReclassifyCategory = Literal['fare_dispute', 'route_deviation', 'no_show_charge'
 class CaseCreate(BaseModel):
     case_id: str = Field(pattern=r'^[A-Za-z0-9_-]{4,80}$')
     trip_id: str = Field(default='DEMO-TRIP')
+    counterparty_id: Literal['rider_a','rider_b','driver_a','driver_b'] | None = None
     category: Category
     filed_by: Literal['rider', 'driver'] = 'rider'
     description: str = Field(min_length=5, max_length=3000)

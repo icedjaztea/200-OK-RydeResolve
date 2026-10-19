@@ -1,5 +1,5 @@
 'use client';
-import {useState,useEffect,useRef,useCallback} from 'react';
+import {useState,useEffect,useRef} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
 import {
@@ -8,104 +8,40 @@ import {
 } from '../../lib/labels';
 
 /* ════════════════════════════════════════════════════════════════════════
-   RydeResolve — ADK Visual Execution Monitor (Stage 1: Recorded Replay)
+   RydeResolve — Workflow Monitor (redesigned)
    ════════════════════════════════════════════════════════════════════════
 
-   This page visualizes the actual stored agent_trace, agent_outputs,
-   candidate, and gate from a processed case. It does NOT execute live
-   processing. The backend returns these fields only to Reviewer identity
-   (safe_response.py strips them from Rider/Driver).
-
-   No tool calls, durations, or timestamps are invented. Node states are
-   derived from the actual stored records.
+   • Cases organised into collapsible sections: Resolved / In Review /
+     Not Started. Sorted newest-first. Only expanded section shows cards.
+   • Clicking a case opens a detail panel that immediately shows the
+     current workflow state — no replay needed.
+   • Each agent node can be expanded to show a human-readable breakdown
+     of what the agent found, recommended, and which policy rules it used.
    ════════════════════════════════════════════════════════════════════════ */
 
-// ── Workflow node definitions ──────────────────────────────────────────────
-// The order reflects the actual process_case() flow in services.py:
-// 1. Safety screen  2. Orchestrator  3. Four concurrent agents
-// 4. Judge (skipped on safety)  5. Policy gate  6. Final routing
-const NODES=[
-  {id:'intake',    label:'Dispute Intake',        sub:'Safety Screen',  roleKey:null},
-  {id:'orch',      label:'Dispute Orchestrator', sub:'Routing & lookup',roleKey:'DisputeOrchestrator'},
-  {id:'rider_adv', label:'Rider Advocate',        sub:'Advocacy',       roleKey:'RiderAdvocate'},
-  {id:'driver_adv',label:'Driver Advocate',       sub:'Advocacy',       roleKey:'DriverAdvocate'},
-  {id:'policy',    label:'Policy & Precedent',    sub:'Rule analysis',  roleKey:'PolicyPrecedent'},
-  {id:'fraud',     label:'Fraud & Bad-Faith',     sub:'Risk assessment', roleKey:'FraudBadFaith'},
-  {id:'judge',     label:'Judge',                 sub:'Final proposal', roleKey:'Judge'},
-  {id:'gate',      label:'Independent Policy Gate',sub:'Validation',    roleKey:null},
-  {id:'outcome',   label:'Final Routing',         sub:'Review or remedy',roleKey:null},
+const PIPELINE=[
+  {id:'intake',     label:'Intake',          icon:'📥', roleKey:null,                  desc:'Safety screen & case intake'},
+  {id:'orch',       label:'Orchestrator',    icon:'🔧', roleKey:'DisputeOrchestrator', desc:'Routes case, looks up trip & facts'},
+  {id:'rider_adv',  label:'Rider Advocate',  icon:'🧑', roleKey:'RiderAdvocate',       desc:'Argues the rider\u2019s position'},
+  {id:'driver_adv', label:'Driver Advocate', icon:'🚗', roleKey:'DriverAdvocate',      desc:'Argues the driver\u2019s position'},
+  {id:'policy',     label:'Policy',          icon:'📋', roleKey:'PolicyPrecedent',     desc:'Matches facts to policy rules'},
+  {id:'fraud',      label:'Fraud Check',     icon:'🛡', roleKey:'FraudBadFaith',      desc:'Checks for fraud or bad faith'},
+  {id:'judge',      label:'Judge',           icon:'⚖️', roleKey:'Judge',               desc:'Weighs evidence, proposes outcome'},
+  {id:'gate',       label:'Policy Gate',     icon:'🚦', roleKey:null,                  desc:'Independent validation checkpoint'},
+  {id:'outcome',    label:'Outcome',         icon:'✅', roleKey:null,                  desc:'Final routing — review or remedy'},
 ];
 
-// ── Node state derivation ───────────────────────────────────────────────────
-// Derives node state from actual stored data. Never uses timers.
-function deriveNodeStates(detail){
-  if(!detail) return {};
-  const outputs=detail.agent_outputs||{};
-  const trace=detail.agent_trace||[];
-  const gate=detail.gate||{};
-  const candidate=detail.candidate||{};
-  const status=detail.status;
-  const path=detail.path;
-  const isSafety=path==='IMMEDIATE_HUMAN_REVIEW';
-  const isResolved=status==='RESOLVED'||status==='REVIEWED_AND_RESOLVED';
-  const hasOutputs=Object.keys(outputs).length>0;
+const SECTIONS=[
+  {id:'resolved',   label:'Resolved',        icon:'✅', color:'green'},
+  {id:'in_review',  label:'In Review',       icon:'🔄', color:'amber'},
+  {id:'not_started',label:'Not Started',     icon:'⏳', color:'grey'},
+];
 
-  const states={};
-
-  // 1. Intake / Safety screen — always completed if we have outputs or a path
-  states.intake={state:hasOutputs||path?'completed':'pending',skipped:false};
-
-  // 2. Orchestrator — completed if present in outputs
-  const orch=outputs['DisputeOrchestrator'];
-  states.orch={
-    state:orch?(_isFailed(orch)?'failed':'completed'):(hasOutputs?'skipped':'pending'),
-    skipped:!orch&&hasOutputs,
-    output:orch,
-  };
-
-  // 3-6. Concurrent agents
-  for(const nk of ['rider_adv','driver_adv','policy','fraud']){
-    const node=NODES.find(n=>n.id===nk);
-    const out=outputs[node.roleKey];
-    if(!out){
-      // If we have outputs but this agent is missing, it was skipped
-      states[nk]={state:hasOutputs?'skipped':'pending',skipped:hasOutputs,output:null};
-    }else if(_isFailed(out)){
-      states[nk]={state:'failed',skipped:false,output:out};
-    }else{
-      states[nk]={state:'completed',skipped:false,output:out};
-    }
-  }
-
-  // 7. Judge — skipped on safety cases
-  const judge=outputs['Judge'];
-  if(isSafety){
-    states.judge={state:'skipped',skipped:true,output:null};
-  }else if(judge){
-    states.judge={state:_isFailed(judge)?'failed':'completed',skipped:false,output:judge};
-  }else{
-    states.judge={state:hasOutputs&&!isSafety?'failed':'pending',skipped:false,output:null};
-  }
-
-  // 8. Policy gate — completed if gate has a path
-  states.gate={
-    state:gate&&gate.path?'completed':'pending',
-    skipped:false,
-    output:gate,
-  };
-
-  // 9. Final routing — completed if resolved or review required
-  if(isResolved){
-    states.outcome={state:'completed',skipped:false,output:{path,mock_action:detail.mock_action}};
-  }else if(status==='REVIEW_REQUIRED'||isSafety){
-    states.outcome={state:'completed',skipped:false,output:{path,mock_action:null}};
-  }else if(status==='AWAITING_CLARIFICATION'){
-    states.outcome={state:'completed',skipped:false,output:{path}};
-  }else{
-    states.outcome={state:'pending',skipped:false,output:null};
-  }
-
-  return states;
+function _classifyCase(c){
+  const s=c.status;
+  if(s==='RESOLVED'||s==='REVIEWED_AND_RESOLVED') return 'resolved';
+  if(s==='NEW') return 'not_started';
+  return 'in_review'; // REVIEW_REQUIRED, AWAITING_CLARIFICATION
 }
 
 function _isFailed(out){
@@ -113,578 +49,644 @@ function _isFailed(out){
   return out.parse_failed===true||out.agent_error===true||!!out.failure_kind;
 }
 
-// ── Trace lookup: map trace entries to agent role ──────────────────────────
-function traceForRole(trace,roleKey){
-  if(!trace) return [];
-  return trace.filter(t=>t.agent===roleKey);
+// Derive per-step state from a full case detail object
+function deriveSteps(detail){
+  if(!detail) return {};
+  const outputs=detail.agent_outputs||{};
+  const gate=detail.gate||{};
+  const status=detail.status;
+  const path=detail.path;
+  const isSafety=path==='IMMEDIATE_HUMAN_REVIEW';
+  const isResolved=status==='RESOLVED'||status==='REVIEWED_AND_RESOLVED';
+  const hasOutputs=Object.keys(outputs).length>0;
+
+  const s={};
+
+  s.intake=hasOutputs||path?'done':'pending';
+
+  const orch=outputs['DisputeOrchestrator'];
+  s.orch=orch?(_isFailed(orch)?'failed':'done'):(hasOutputs?'skipped':'pending');
+
+  for(const nk of ['rider_adv','driver_adv','policy','fraud']){
+    const node=PIPELINE.find(n=>n.id===nk);
+    const out=outputs[node.roleKey];
+    if(!out) s[nk]=hasOutputs?'skipped':'pending';
+    else if(_isFailed(out)) s[nk]='failed';
+    else s[nk]='done';
+  }
+
+  const judge=outputs['Judge'];
+  if(isSafety) s.judge='skipped';
+  else if(judge) s.judge=_isFailed(judge)?'failed':'done';
+  else s.judge=hasOutputs?'failed':'pending';
+
+  s.gate=(gate&&gate.path)?'done':'pending';
+
+  if(isResolved) s.outcome='done';
+  else if(status==='REVIEW_REQUIRED'||isSafety||status==='AWAITING_CLARIFICATION') s.outcome='done';
+  else s.outcome='pending';
+
+  return s;
 }
 
-// ── Node color classes ─────────────────────────────────────────────────────
-const STATE_CLASS={
-  pending:'node-pending',
-  running:'node-running',
-  completed:'node-completed',
-  failed:'node-failed',
-  skipped:'node-skipped',
-};
-const STATE_LABEL={
-  pending:'Pending',
-  running:'Running',
-  completed:'Completed',
-  failed:'Failed',
-  skipped:'Skipped',
-};
+// ── Human-readable agent output formatter ──────────────────────────────────
+function AgentBreakdown({node,output,trace}){
+  if(!output){
+    return <div className="agent-card agent-card-pending">
+      <div className="agent-card-header">
+        <span className="agent-icon">{node.icon}</span>
+        <div>
+          <div className="agent-name">{node.label}</div>
+          <div className="agent-desc">{node.desc}</div>
+        </div>
+        <span className="agent-status agent-status-pending">Not run</span>
+      </div>
+    </div>;
+  }
 
-// ── Replay controller ───────────────────────────────────────────────────────
-// Steps through nodes in order, marking each as "running" then "completed"
-// using the actual derived final state. No timers create fake progress —
-// the replay simply reveals the stored states in sequence.
-const REPLAY_STEPS=NODES.map(n=>n.id);
+  const failed=_isFailed(output);
+  const isAgent=!!output.agent_name;
+
+  return(
+    <div className={'agent-card '+(failed?'agent-card-failed':'agent-card-done')}>
+      <div className="agent-card-header">
+        <span className="agent-icon">{node.icon}</span>
+        <div className="agent-card-title">
+          <div className="agent-name">{node.label}</div>
+          <div className="agent-desc">{node.desc}</div>
+        </div>
+        <span className={'agent-status '+(failed?'agent-status-failed':'agent-status-done')}>
+          {failed?'Failed':'Completed'}
+        </span>
+      </div>
+
+      <div className="agent-card-body">
+        {/* Summary */}
+        {output.summary&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Summary</div>
+            <div className="breakdown-value breakdown-summary">{output.summary}</div>
+          </div>
+        )}
+
+        {/* Failure details */}
+        {failed&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Failure details</div>
+            <div className="breakdown-value breakdown-error">
+              {output.failure_kind&&<div>Failure type: <b>{output.failure_kind}</b></div>}
+              {output.validation_error&&<div>Validation: {output.validation_error}</div>}
+              {output.error_code&&<div>Error code: {output.error_code}</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Recommendation */}
+        {isAgent&&output.recommended_disposition&&output.recommended_disposition!=='undetermined'&&(
+          <div className="breakdown-field-row">
+            <div className="breakdown-field">
+              <div className="breakdown-label">Recommendation</div>
+              <div className="breakdown-value">{dispositionLabel(output.recommended_disposition)}</div>
+            </div>
+            {output.recommended_amount!=null&&output.recommended_amount>0&&(
+              <div className="breakdown-field">
+                <div className="breakdown-label">Amount</div>
+                <div className="breakdown-value">SGD {Number(output.recommended_amount).toFixed(2)}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Evidence reviewed */}
+        {isAgent&&output.supporting_evidence&&output.supporting_evidence.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Evidence reviewed</div>
+            <div className="breakdown-value">
+              <div className="ev-tags">
+                {output.supporting_evidence.map((e,i)=><span key={i} className="ev-tag ev-supporting">{e}</span>)}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Opposing evidence */}
+        {isAgent&&output.opposing_evidence&&output.opposing_evidence.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Opposing evidence</div>
+            <div className="breakdown-value">
+              <div className="ev-tags">
+                {output.opposing_evidence.map((e,i)=><span key={i} className="ev-tag ev-opposing">{e}</span>)}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Uncertainties */}
+        {isAgent&&output.uncertainties&&output.uncertainties.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Uncertainties</div>
+            <div className="breakdown-value">
+              <ul className="breakdown-list">{output.uncertainties.map((u,i)=><li key={i}>{u}</li>)}</ul>
+            </div>
+          </div>
+        )}
+
+        {/* Policy rules */}
+        {isAgent&&output.policy_rule_ids&&output.policy_rule_ids.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Policy rules applied</div>
+            <div className="breakdown-value">
+              <div className="rule-chips">
+                {output.policy_rule_ids.map(r=><span key={r} className="rule-chip">{r}</span>)}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mode */}
+        {isAgent&&output.mode&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Mode</div>
+            <div className="breakdown-value">
+              <span className="mode-badge">{output.mode==='MOCK_NOT_MODEL_OUTPUT'?'Mock (demo)':output.mode}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Trace */}
+        {trace&&trace.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Operations performed</div>
+            <div className="breakdown-value">
+              <div className="trace-list">
+                {trace.map((t,i)=><div key={i} className="trace-item">
+                  <span className="trace-op">{t.operation||t.event_author||'—'}</span>
+                  {t.mode&&<span className="trace-mode">{t.mode==='MOCK_NOT_MODEL_OUTPUT'?'mock':t.mode}</span>}
+                </div>)}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Gate breakdown ──────────────────────────────────────────────────────────
+function GateBreakdown({gate}){
+  if(!gate||!gate.path){
+    return <div className="agent-card agent-card-pending">
+      <div className="agent-card-header">
+        <span className="agent-icon">🚦</span>
+        <div className="agent-card-title">
+          <div className="agent-name">Policy Gate</div>
+          <div className="agent-desc">Independent validation checkpoint</div>
+        </div>
+        <span className="agent-status agent-status-pending">Not run</span>
+      </div>
+    </div>;
+  }
+  return(
+    <div className="agent-card agent-card-done">
+      <div className="agent-card-header">
+        <span className="agent-icon">🚦</span>
+        <div className="agent-card-title">
+          <div className="agent-name">Policy Gate</div>
+          <div className="agent-desc">Independent validation checkpoint</div>
+        </div>
+        <span className="agent-status agent-status-done">Completed</span>
+      </div>
+      <div className="agent-card-body">
+        <div className="breakdown-field-row">
+          <div className="breakdown-field">
+            <div className="breakdown-label">Decision</div>
+            <div className="breakdown-value">{pathLabel(gate.path)}</div>
+          </div>
+          <div className="breakdown-field">
+            <div className="breakdown-label">Auto-eligible?</div>
+            <div className="breakdown-value">{gate.can_auto?'Yes':'No — human review'}</div>
+          </div>
+        </div>
+        {gate.blocking_rules&&gate.blocking_rules.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Blocking rules</div>
+            <div className="breakdown-value">
+              <div className="rule-chips">
+                {gate.blocking_rules.map(r=><span key={r} className="rule-chip rule-chip-block">{r}</span>)}
+              </div>
+            </div>
+          </div>
+        )}
+        {gate.reasons&&gate.reasons.length>0&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Reasons</div>
+            <div className="breakdown-value">
+              <ul className="breakdown-list breakdown-reasons">
+                {gate.reasons.map((r,i)=><li key={i}>{r}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Outcome breakdown ───────────────────────────────────────────────────────
+function OutcomeBreakdown({detail,stepState}){
+  const isResolved=detail.status==='RESOLVED'||detail.status==='REVIEWED_AND_RESOLVED';
+  const path=detail.path;
+  const mockAction=detail.mock_action;
+  const candidate=detail.candidate;
+
+  return(
+    <div className={'agent-card '+(isResolved?'agent-card-done':'agent-card-review')}>
+      <div className="agent-card-header">
+        <span className="agent-icon">✅</span>
+        <div className="agent-card-title">
+          <div className="agent-name">Outcome</div>
+          <div className="agent-desc">Final routing — review or remedy</div>
+        </div>
+        <span className={'agent-status '+(isResolved?'agent-status-done':'agent-status-review')}>
+          {isResolved?'Resolved':path==='IMMEDIATE_HUMAN_REVIEW'?'Safety review':'Human review'}
+        </span>
+      </div>
+      <div className="agent-card-body">
+        <div className="breakdown-field-row">
+          <div className="breakdown-field">
+            <div className="breakdown-label">Routing path</div>
+            <div className="breakdown-value">{pathLabel(path)}</div>
+          </div>
+          <div className="breakdown-field">
+            <div className="breakdown-label">Case status</div>
+            <div className="breakdown-value">{statusLabel(detail.status)}</div>
+          </div>
+        </div>
+
+        {candidate&&candidate.disposition&&candidate.disposition!=='undetermined'&&(
+          <div className="breakdown-field-row">
+            <div className="breakdown-field">
+              <div className="breakdown-label">AI recommendation</div>
+              <div className="breakdown-value">{dispositionLabel(candidate.disposition)}</div>
+            </div>
+            {candidate.amount>0&&(
+              <div className="breakdown-field">
+                <div className="breakdown-label">Recommended amount</div>
+                <div className="breakdown-value">SGD {Number(candidate.amount).toFixed(2)}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {candidate&&candidate.reason&&(
+          <div className="breakdown-field">
+            <div className="breakdown-label">Reasoning</div>
+            <div className="breakdown-value breakdown-summary">{candidate.reason}</div>
+          </div>
+        )}
+
+        {mockAction&&mockAction.disposition&&(
+          <div className="breakdown-field-row">
+            <div className="breakdown-field">
+              <div className="breakdown-label">Recorded action</div>
+              <div className="breakdown-value">{dispositionLabel(mockAction.disposition)}</div>
+            </div>
+            <div className="breakdown-field">
+              <div className="breakdown-label">Amount</div>
+              <div className="breakdown-value">SGD {Number(mockAction.amount||0).toFixed(2)}</div>
+            </div>
+          </div>
+        )}
+
+        {path==='IMMEDIATE_HUMAN_REVIEW'&&(
+          <div className="breakdown-note breakdown-note-safety">
+            ⚠️ Safety incident — mandatory human review. No AI outcome, no automated financial action.
+          </div>
+        )}
+        {path==='HUMAN_REVIEW'&&mockAction&&!mockAction.disposition&&(
+          <div className="breakdown-note">
+            Case routed to human review. The AI proposed a recommendation but a reviewer must approve before any action is taken.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 export default function MonitorPage(){
   const api=useApi('reviewer');
   const [cases,setCases]=useState([]);
+  const [monitorData,setMonitorData]=useState(null);
+  const [connected,setConnected]=useState(false);
   const [detail,setDetail]=useState(null);
-  const [selected,setSelected]=useState('');
-  const [nodeStates,setNodeStates]=useState({});
-  const [activeNode,setActiveNode]=useState(null);
-  const [replayStep,setReplayStep]=useState(0); // 0 = not started, REPLAY_STEPS.length = done
-  const [playing,setPlaying]=useState(false);
-  const [health,setHealth]=useState(null);
-  const playRef=useRef(null);
+  const [stepStates,setStepStates]=useState({});
+  const [expandedSection,setExpandedSection]=useState('in_review');
+  const [expandedAgents,setExpandedAgents]=useState({});
+  const [showAllAgents,setShowAllAgents]=useState(false);
+  const refreshRef=useRef(null);
 
-  // ── Connect: verify reviewer auth and load case list ─────────────────────
   async function connect(){
-    setHealth(await api.call('health'));
-    const list=await api.call('cases');
-    setCases(list);
+    const data=await api.call('monitor');
+    setMonitorData(data);
+    setCases(data.cases||[]);
+    setConnected(true);
   }
 
-  // Auto-connect on mount
   useEffect(()=>{
     api.run(connect);
+    refreshRef.current=setInterval(()=>{
+      api.run(async()=>{
+        try{
+          const data=await api.call('monitor');
+          setMonitorData(data);
+          setCases(data.cases||[]);
+          setConnected(true);
+        }catch{/* keep cached */}
+      });
+    },5000);
+    return()=>{if(refreshRef.current)clearInterval(refreshRef.current)};
   },[]);
 
-  // ── Load a case for replay ───────────────────────────────────────────────
   async function loadCase(id){
     const c=await api.call('cases/'+id);
     setDetail(c);
-    setSelected(id);
-    setNodeStates(deriveNodeStates(c));
-    setReplayStep(0);
-    setPlaying(false);
-    setActiveNode(null);
+    setStepStates(deriveSteps(c));
+    setExpandedAgents({});
+    setShowAllAgents(false);
   }
 
-  // ── Replay controls ───────────────────────────────────────────────────────
-  // Derive the visible state for a node during replay.
-  // Before its step: show pending (or skipped if final state is skipped).
-  // At its step: show running briefly, then the actual final state.
-  // After its step: show the actual derived state.
-  function visibleState(nodeId){
-    const actual=nodeStates[nodeId];
-    if(!actual) return 'pending';
-    if(replayStep===0) return actual.skipped?'skipped':'pending';
-    const stepIdx=REPLAY_STEPS.indexOf(nodeId);
-    if(stepIdx>=replayStep) return actual.skipped?'skipped':'pending';
-    return actual.state;
+  function closeDetail(){
+    setDetail(null);
+    setStepStates({});
+    setExpandedAgents({});
   }
 
-  function visibleStateLabel(nodeId){
-    const actual=nodeStates[nodeId];
-    if(!actual) return 'Pending';
-    if(replayStep===0) return actual.skipped?'Skipped':'Pending';
-    const stepIdx=REPLAY_STEPS.indexOf(nodeId);
-    if(stepIdx>=replayStep) return actual.skipped?'Skipped':'Pending';
-    return STATE_LABEL[actual.state]||actual.state;
+  function toggleAgent(nodeId){
+    setExpandedAgents(prev=>({...prev,[nodeId]:!prev[nodeId]}));
   }
 
-  function stepForward(){
-    if(replayStep<REPLAY_STEPS.length){
-      setReplayStep(r=>r+1);
-    }
+  // Group cases by section, sort newest-first (by case_id as proxy)
+  const grouped={};
+  for(const sec of SECTIONS) grouped[sec.id]=[];
+  // Sort newest first — use case_id string comparison (DEMO/DISP prefixed)
+  const sorted=[...cases].sort((a,b)=>b.case_id.localeCompare(a.case_id));
+  for(const c of sorted){
+    const sec=_classifyCase(c);
+    grouped[sec].push(c);
   }
 
-  function restart(){
-    setReplayStep(0);
-    setPlaying(false);
-    setActiveNode(null);
-    if(playRef.current){clearTimeout(playRef.current);playRef.current=null}
-  }
+  // Count done steps for detail view
+  const doneCount=detail?Object.values(stepStates).filter(s=>s==='done').length:0;
+  const totalCount=PIPELINE.length;
 
-  function togglePlay(){
-    if(playing){
-      setPlaying(false);
-      if(playRef.current){clearTimeout(playRef.current);playRef.current=null}
-      return;
-    }
-    if(replayStep>=REPLAY_STEPS.length) restart();
-    setPlaying(true);
-  }
-
-  // Auto-advance during play — each step reveals the next node's actual state
-  useEffect(()=>{
-    if(!playing) return;
-    if(replayStep>=REPLAY_STEPS.length){
-      setPlaying(false);
-      return;
-    }
-    playRef.current=setTimeout(()=>{
-      setReplayStep(r=>r+1);
-    },600); // brief delay to show progression — states are from actual data
-    return()=>{if(playRef.current){clearTimeout(playRef.current);playRef.current=null}};
-  },[playing,replayStep]);
-
-  // ── Node click: show actual output ───────────────────────────────────────
-  function onNodeClick(nodeId){
-    const actual=nodeStates[nodeId];
-    if(!actual||!actual.output) return;
-    setActiveNode(nodeId);
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  if(!cases.length){
+  if(!connected){
     return(
       <main className="monitor-page">
-        <div className="monitor-auth-card">
-          <h1>ADK Execution Monitor</h1>
-          <p className="monitor-subtitle">Loading recorded execution traces…</p>
+        <div className="monitor-loading">
+          {!api.error&&<div className="monitor-spinner"/>}
+          <p>{api.error?'Unable to load workflow monitor.':'Loading workflow monitor…'}</p>
+          {api.error&&<button disabled={api.busy} onClick={()=>api.run(connect)}>Retry</button>}
           {api.error&&<div className="alert alert-error">{api.error}</div>}
-          <div className="monitor-back-link"><Link href="/">← Back to home</Link></div>
+          <Link href="/" className="monitor-back-small">← Back to home</Link>
         </div>
       </main>
     );
   }
 
   return(
-    <main className="monitor-page">
-      <header className="monitor-header">
-        <div>
-          <h1>ADK Execution Monitor</h1>
-          <p className="monitor-subtitle">
-            <span className="badge badge-info">Recorded Run Replay</span>
-            {' '}· Not live execution
-          </p>
+    <main className="monitor-page monitor-page-v2">
+      {/* Header */}
+      <header className="mon-header">
+        <div className="mon-header-left">
+          <h1>Workflow Monitor</h1>
+          <div className="mon-header-meta">
+            <span className="mon-live-dot"/>
+            <span>Live · auto-refresh 5s</span>
+            <span className="mon-sep">·</span>
+            <span>{monitorData?.ai_mode==='adk'?'Live ADK':'Mock mode'}</span>
+            <span className="mon-sep">·</span>
+            <span>{cases.length} cases</span>
+          </div>
         </div>
-        <div className="monitor-header-actions">
-          <Link href="/reviewer" className="small">← Reviewer workbench</Link>
-          <button className="small secondary" disabled={api.busy} onClick={()=>api.run(connect)}>
-            Refresh cases
-          </button>
+        <div className="mon-header-right">
+          <Link href="/reviewer" className="mon-link-btn">Reviewer workbench →</Link>
         </div>
       </header>
 
       {api.error&&<div className="alert alert-error">{api.error}</div>}
-      {api.notice&&<div className="alert alert-info">{api.notice}</div>}
 
-      {/* Case selector */}
-      <section className="monitor-case-bar">
-        <label className="sr-only" htmlFor="case-select">Select case</label>
-        <select
-          id="case-select"
-          value={selected}
-          onChange={e=>api.run(()=>loadCase(e.target.value))}
-          aria-label="Select case to replay"
-        >
-          <option value="">— Select a case to replay —</option>
-          {cases.map(c=>(
-            <option key={c.case_id} value={c.case_id}>
-              {c.case_id} · {categoryLabel(c.category)} · {statusLabel(c.status)}
-            </option>
-          ))}
-        </select>
-        {health&&<span className="monitor-health">Policy v{health.policy_version} · {health.ai_mode?'AI: '+health.ai_mode:'Mock mode'}</span>}
-      </section>
+      {/* Case sections */}
+      <div className="mon-sections">
+        {SECTIONS.map(sec=>{
+          const list=grouped[sec.id]||[];
+          const isOpen=expandedSection===sec.id;
+          return(
+            <div key={sec.id} className={'mon-section mon-section-'+sec.color}>
+              <button className="mon-section-header" onClick={()=>setExpandedSection(isOpen?null:sec.id)}>
+                <div className="mon-section-title">
+                  <span className="mon-section-icon">{sec.icon}</span>
+                  <span>{sec.label}</span>
+                  <span className="mon-section-count">{list.length}</span>
+                </div>
+                <span className={'mon-chevron '+(isOpen?'mon-chevron-open':'')}>▾</span>
+              </button>
+              {isOpen&&(
+                <div className="mon-section-body">
+                  {list.length===0?
+                    <div className="mon-section-empty">No cases in this category.</div>
+                  :<div className="mon-case-list">
+                      {list.map(c=>{
+                        const wf=c.workflow||{steps:{},done:0,total:9};
+                        const isActive=detail&&detail.case_id===c.case_id;
+                        return(
+                          <div key={c.case_id}
+                            className={'mon-case-row '+(isActive?'mon-case-active':'')}
+                            onClick={()=>api.run(()=>loadCase(c.case_id))}
+                            role="button" tabIndex={0}
+                            onKeyDown={e=>{if(e.key==='Enter'||e.key===' ')api.run(()=>loadCase(c.case_id))}}
+                          >
+                            <div className="mon-case-id">{c.case_id}</div>
+                            <div className="mon-case-info">
+                              <span className="mon-case-cat">{categoryLabel(c.category)}</span>
+                              <span className="mon-case-status">{statusLabel(c.status)}</span>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="mon-case-progress">
+                              <div className="mon-progress-track">
+                                {PIPELINE.map(n=>{
+                                  const st=wf.steps?.[n.id]||'pending';
+                                  return <div key={n.id} className={'mon-progress-seg '+st} title={`${n.label}: ${st}`}/>;
+                                })}
+                              </div>
+                              <span className="mon-progress-count">{wf.done}/{wf.total}</span>
+                            </div>
+                            {c.candidate&&c.candidate.disposition&&c.candidate.disposition!=='undetermined'&&
+                              <div className="mon-case-candidate">
+                                {dispositionLabel(c.candidate.disposition)}
+                                {c.candidate.amount>0&&` · $${Number(c.candidate.amount).toFixed(0)}`}
+                              </div>
+                            }
+                          </div>
+                        );
+                      })}
+                    </div>
+                  }
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-      {!detail?(
-        <div className="monitor-empty">
-          <p>Select a processed case above to view its recorded agent workflow.</p>
-          <p className="monitor-hint">Only cases that have been processed will have agent traces.</p>
-        </div>
-      ):!detail.agent_outputs||Object.keys(detail.agent_outputs).length===0?(
-        <div className="monitor-empty">
-          <p>This case has not been processed yet, or no agent traces are stored.</p>
-          <p className="monitor-hint">Process the case from the Reviewer workbench first.</p>
-        </div>
-      ):(
-        <>
-          {/* Case summary */}
-          <section className="monitor-case-summary">
-            <div className="summary-grid">
-              <div><span className="summary-label">Case</span><b>{detail.case_id}</b></div>
-              <div><span className="summary-label">Category</span>{categoryLabel(detail.category)}</div>
-              <div><span className="summary-label">Status</span>{statusLabel(detail.status)}</div>
-              <div><span className="summary-label">Path</span>{pathLabel(detail.path)}</div>
-              {detail.candidate&&<>
-                <div><span className="summary-label">Candidate</span>{dispositionLabel(detail.candidate.disposition)}</div>
-                {detail.candidate.amount!=null&&detail.candidate.amount>0&&
-                  <div><span className="summary-label">Amount</span>SGD {Number(detail.candidate.amount).toFixed(2)}</div>
-                }
-              </>}
-              {detail.mock_action&&
-                <div><span className="summary-label">Recorded action</span>
-                  {dispositionLabel(detail.mock_action.disposition)} · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
+      {/* Case detail panel */}
+      {detail&&(
+        <div className="mon-detail-overlay" onClick={closeDetail}>
+          <div className="mon-detail-panel" onClick={e=>e.stopPropagation()}>
+            {/* Detail header */}
+            <div className="mon-detail-topbar">
+              <div className="mon-detail-topbar-left">
+                <h2>{detail.case_id}</h2>
+                <span className="mon-detail-badge">{statusLabel(detail.status)}</span>
+                <span className="mon-detail-badge mon-detail-badge-path">{pathLabel(detail.path)}</span>
+              </div>
+              <button className="mon-detail-close" onClick={closeDetail}>✕</button>
+            </div>
+
+            {/* Case summary strip */}
+            <div className="mon-detail-summary">
+              <div className="mon-summary-item">
+                <span className="mon-summary-label">Category</span>
+                <span className="mon-summary-value">{categoryLabel(detail.category)}</span>
+              </div>
+              <div className="mon-summary-item">
+                <span className="mon-summary-label">Filed by</span>
+                <span className="mon-summary-value">{detail.filed_by}</span>
+              </div>
+              {detail.dispute_amount!=null&&
+                <div className="mon-summary-item">
+                  <span className="mon-summary-label">Dispute amount</span>
+                  <span className="mon-summary-value">SGD {Number(detail.dispute_amount).toFixed(2)}</span>
                 </div>
               }
+              {detail.processing_ms!=null&&
+                <div className="mon-summary-item">
+                  <span className="mon-summary-label">Processing time</span>
+                  <span className="mon-summary-value">{detail.processing_ms}ms</span>
+                </div>
+              }
+              <div className="mon-summary-item">
+                <span className="mon-summary-label">Progress</span>
+                <span className="mon-summary-value">{doneCount}/{totalCount} steps</span>
+              </div>
             </div>
-          </section>
 
-          {/* Replay controls */}
-          <section className="replay-controls">
-            <button
-              className="replay-btn"
-              onClick={togglePlay}
-              disabled={replayStep>=REPLAY_STEPS.length&&!playing}
-              aria-label={playing?'Pause replay':'Play replay'}
-            >
-              {playing?'❚❚ Pause':'▶ Play'}
-            </button>
-            <button
-              className="replay-btn"
-              onClick={stepForward}
-              disabled={replayStep>=REPLAY_STEPS.length}
-              aria-label="Step forward"
-            >
-              ⏭ Step
-            </button>
-            <button
-              className="replay-btn secondary"
-              onClick={restart}
-              aria-label="Restart replay"
-            >
-              ↺ Restart
-            </button>
-            <span className="replay-progress">
-              Step {replayStep} / {REPLAY_STEPS.length}
-              {replayStep>=REPLAY_STEPS.length&&' · Replay complete'}
-            </span>
-          </section>
+            {/* Description */}
+            {detail.description&&
+              <div className="mon-detail-desc">{detail.description}</div>
+            }
 
-          {/* Node graph */}
-          <section className="monitor-graph" role="region" aria-label="Agent workflow graph">
-            {/* Intake → Orchestrator */}
-            <div className="graph-column">
-              <MonitorNode
-                node={NODES[0]}
-                state={visibleState('intake')}
-                stateLabel={visibleStateLabel('intake')}
-                onClick={()=>onNodeClick('intake')}
-                active={activeNode==='intake'}
-              />
-            </div>
-            <Connector />
+            {/* Workflow stepper */}
+            <div className="mon-workflow-section">
+              <div className="mon-workflow-title">Agent Workflow</div>
+              <div className="mon-stepper">
+                {PIPELINE.map((node,idx)=>{
+                  const st=stepStates[node.id]||'pending';
+                  const hasOutput=st==='done'||st==='failed';
+                  const isExpanded=expandedAgents[node.id];
+                  const isSkipped=st==='skipped';
+                  return(
+                    <div key={node.id} className="mon-step-wrap">
+                      <div className={'mon-step mon-step-'+st+(hasOutput?' mon-step-clickable':'')+(isExpanded?' mon-step-expanded':'')}
+                        onClick={()=>hasOutput&&toggleAgent(node.id)}
+                        role={hasOutput?'button':'img'}
+                        tabIndex={hasOutput?0:-1}
+                        onKeyDown={e=>{if(hasOutput&&(e.key==='Enter'||e.key===' ')){e.preventDefault();toggleAgent(node.id)}}}
+                      >
+                        <div className="mon-step-circle">
+                          {st==='done'?'✓':st==='failed'?'✗':st==='skipped'?'—':node.icon}
+                        </div>
+                        <div className="mon-step-info">
+                          <div className="mon-step-name">{node.label}</div>
+                          <div className="mon-step-state">
+                            {st==='done'?'Completed':st==='failed'?'Failed':st==='skipped'?'Skipped':'Pending'}
+                          </div>
+                        </div>
+                        {hasOutput&&!isExpanded&&<span className="mon-step-expand">▼ details</span>}
+                        {hasOutput&&isExpanded&&<span className="mon-step-expand">▲ hide</span>}
+                      </div>
 
-            {/* Orchestrator */}
-            <div className="graph-column">
-              <MonitorNode
-                node={NODES[1]}
-                state={visibleState('orch')}
-                stateLabel={visibleStateLabel('orch')}
-                onClick={()=>onNodeClick('orch')}
-                active={activeNode==='orch'}
-              />
-            </div>
-            <Connector />
+                      {/* Connector */}
+                      {idx<PIPELINE.length-1&&(
+                        <div className={'mon-step-connector mon-step-connector-'+st}/>
+                      )}
 
-            {/* Four concurrent agents */}
-            <div className="graph-column graph-concurrent">
-              <p className="concurrent-label">Concurrent agents</p>
-              <div className="concurrent-row">
-                {['rider_adv','driver_adv','policy','fraud'].map(id=>{
-                  const n=NODES.find(x=>x.id===id);
-                  return <MonitorNode key={id} node={n}
-                    state={visibleState(id)} stateLabel={visibleStateLabel(id)}
-                    onClick={()=>onNodeClick(id)} active={activeNode===id}
-                    compact
-                  />;
+                      {/* Expanded breakdown */}
+                      {isExpanded&&(
+                        <div className="mon-step-breakdown">
+                          {node.id==='gate'?(
+                            <GateBreakdown gate={detail.gate}/>
+                          ):node.id==='outcome'?(
+                            <OutcomeBreakdown detail={detail} stepState={st}/>
+                          ):(
+                            <AgentBreakdown
+                              node={node}
+                              output={detail.agent_outputs?.[node.roleKey]}
+                              trace={(detail.agent_trace||[]).filter(t=>t.agent===node.roleKey)}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
                 })}
               </div>
             </div>
-            <Connector />
 
-            {/* Judge */}
-            <div className="graph-column">
-              <MonitorNode
-                node={NODES[6]}
-                state={visibleState('judge')}
-                stateLabel={visibleStateLabel('judge')}
-                onClick={()=>onNodeClick('judge')}
-                active={activeNode==='judge'}
-              />
-            </div>
-            <Connector />
-
-            {/* Policy gate */}
-            <div className="graph-column">
-              <MonitorNode
-                node={NODES[7]}
-                state={visibleState('gate')}
-                stateLabel={visibleStateLabel('gate')}
-                onClick={()=>onNodeClick('gate')}
-                active={activeNode==='gate'}
-              />
-            </div>
-            <Connector />
-
-            {/* Final routing */}
-            <div className="graph-column">
-              <MonitorNode
-                node={NODES[8]}
-                state={visibleState('outcome')}
-                stateLabel={visibleStateLabel('outcome')}
-                onClick={()=>onNodeClick('outcome')}
-                active={activeNode==='outcome'}
-              />
-            </div>
-          </section>
-
-          {/* Legend */}
-          <section className="monitor-legend">
-            <span className="legend-item"><span className="legend-dot legend-pending"/>Pending</span>
-            <span className="legend-item"><span className="legend-dot legend-running"/>Running</span>
-            <span className="legend-item"><span className="legend-dot legend-completed"/>Completed</span>
-            <span className="legend-item"><span className="legend-dot legend-failed"/>Failed</span>
-            <span className="legend-item"><span className="legend-dot legend-skipped"/>Skipped</span>
-          </section>
-
-          {/* Node detail panel */}
-          {activeNode&&nodeStates[activeNode]&&nodeStates[activeNode].output&&(
-            <NodeDetailPanel
-              node={NODES.find(n=>n.id===activeNode)}
-              data={nodeStates[activeNode].output}
-              trace={traceForRole(detail.agent_trace, NODES.find(n=>n.id===activeNode)?.roleKey)}
-              detail={detail}
-              onClose={()=>setActiveNode(null)}
-            />
-          )}
-
-          {/* Gate details */}
-          {detail.gate&&activeNode==='gate'&&(
-            <section className="monitor-detail-panel">
-              <div className="detail-panel-header">
-                <h3>Independent Policy Gate</h3>
-                <button className="small secondary" onClick={()=>setActiveNode(null)}>Close</button>
+            {/* Facts */}
+            {detail.facts&&Object.keys(detail.facts).length>0&&(
+              <div className="mon-facts-section">
+                <div className="mon-facts-title">Case Facts</div>
+                <div className="mon-facts-grid">
+                  {Object.entries(detail.facts).map(([k,v])=>(
+                    <div key={k} className="mon-fact-item">
+                      <span className="mon-fact-key">{k.replace(/_/g,' ')}</span>
+                      <span className="mon-fact-val">{String(v)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="detail-panel-body">
-                <div className="detail-row">
-                  <span className="detail-label">Decision path</span>
-                  <b>{pathLabel(detail.gate.path)}</b>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Auto-eligible</span>
-                  <b>{detail.gate.can_auto?'Yes':'No — human review required'}</b>
-                </div>
-                {detail.gate.blocking_rules&&detail.gate.blocking_rules.length>0&&(
-                  <div className="detail-row">
-                    <span className="detail-label">Blocking rules</span>
-                    <span className="rule-chips">
-                      {detail.gate.blocking_rules.map(r=><span key={r} className="rule-chip">{r}</span>)}
-                    </span>
+            )}
+
+            {/* Gaps & contradictions */}
+            {(detail.gaps&&detail.gaps.length>0)||(detail.contradictions&&detail.contradictions.length>0)?(
+              <div className="mon-issues-section">
+                {detail.gaps&&detail.gaps.length>0&&(
+                  <div className="mon-issues-block">
+                    <div className="mon-issues-title">Information Gaps</div>
+                    <ul className="mon-issues-list">
+                      {detail.gaps.map((g,i)=><li key={i}>{g}</li>)}
+                    </ul>
                   </div>
                 )}
-                {detail.gate.reasons&&detail.gate.reasons.length>0&&(
-                  <div className="detail-section">
-                    <h4>Escalation reasons</h4>
-                    <ul className="reason-list">
-                      {detail.gate.reasons.map((r,i)=><li key={i}>{r}</li>)}
+                {detail.contradictions&&detail.contradictions.length>0&&(
+                  <div className="mon-issues-block mon-issues-contradictions">
+                    <div className="mon-issues-title">Contradictions</div>
+                    <ul className="mon-issues-list">
+                      {detail.contradictions.map((c,i)=><li key={i}>{c}</li>)}
                     </ul>
                   </div>
                 )}
               </div>
-            </section>
-          )}
-
-          {/* Outcome details */}
-          {activeNode==='outcome'&&nodeStates.outcome&&nodeStates.outcome.output&&(
-            <section className="monitor-detail-panel">
-              <div className="detail-panel-header">
-                <h3>Final Routing Decision</h3>
-                <button className="small secondary" onClick={()=>setActiveNode(null)}>Close</button>
-              </div>
-              <div className="detail-panel-body">
-                <div className="detail-row">
-                  <span className="detail-label">Routing path</span>
-                  <b>{pathLabel(nodeStates.outcome.output.path)}</b>
-                </div>
-                {nodeStates.outcome.output.mock_action?(
-                  <>
-                    <div className="detail-row">
-                      <span className="detail-label">Recorded action</span>
-                      <b>{dispositionLabel(nodeStates.outcome.output.mock_action.disposition)}</b>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Amount</span>
-                      <b>SGD {Number(nodeStates.outcome.output.mock_action.amount||0).toFixed(2)}</b>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Receipt</span>
-                      <code className="receipt-code">{nodeStates.outcome.output.mock_action.receipt}</code>
-                    </div>
-                    <p className="detail-note">Simulated record · No real funds transferred</p>
-                  </>
-                ):nodeStates.outcome.output.path==='IMMEDIATE_HUMAN_REVIEW'?(
-                  <p className="detail-note">Safety incident — mandatory human review. No AI outcome, no financial action.</p>
-                ):(
-                  <p className="detail-note">Case routed to human review. No automated financial action recorded.</p>
-                )}
-              </div>
-            </section>
-          )}
-        </>
+            ):null}
+          </div>
+        </div>
       )}
 
-      <div className="monitor-back-link monitor-back-bottom">
+      <div className="mon-footer">
         <Link href="/">← Back to home</Link>
-        <span className="monitor-disclaimer">
-          Recorded run replay · States derived from actual stored traces · No fabricated timestamps
-        </span>
+        <span>States derived from actual stored agent data · Auto-refreshing every 5s</span>
       </div>
     </main>
-  );
-}
-
-// ── MonitorNode component ──────────────────────────────────────────────────
-function MonitorNode({node,state,stateLabel,onClick,active,compact}){
-  const cls=STATE_CLASS[state]||STATE_CLASS.pending;
-  const clickable=state==='completed'||state==='failed';
-  return(
-    <div
-      className={`monitor-node ${cls} ${compact?'compact':''} ${active?'node-active':''} ${clickable?'clickable':''}`}
-      onClick={clickable?onClick:undefined}
-      role={clickable?'button':'img'}
-      tabIndex={clickable?0:-1}
-      aria-label={`${node.label} — ${stateLabel}`}
-      onKeyDown={e=>{if(clickable&&(e.key==='Enter'||e.key===' ')){e.preventDefault();onClick()}}}
-    >
-      <div className="node-icon"/>
-      <div className="node-label">{node.label}</div>
-      <div className="node-sub">{node.sub}</div>
-      <div className="node-state-tag">{stateLabel}</div>
-    </div>
-  );
-}
-
-// ── Connector between graph columns ─────────────────────────────────────────
-function Connector(){
-  return <div className="graph-connector" aria-hidden="true"><div className="connector-line"/></div>;
-}
-
-// ── NodeDetailPanel — shows actual agent output ────────────────────────────
-function NodeDetailPanel({node,data,trace,detail,onClose}){
-  // For agent nodes, data is the agent output dict
-  const isAgent=!!data.agent_name;
-  const failed=_isFailed(data);
-
-  return(
-    <section className="monitor-detail-panel">
-      <div className="detail-panel-header">
-        <h3>{node.label}</h3>
-        <button className="small secondary" onClick={onClose}>Close</button>
-      </div>
-      <div className="detail-panel-body">
-        {failed&&(
-          <div className="alert alert-error">
-            <b>Agent failure detected</b>
-            {data.failure_kind&&<div>Failure kind: {data.failure_kind}</div>}
-            {data.validation_error&&<div>Validation errors: {data.validation_error}</div>}
-            {data.error_code&&<div>Error code: {data.error_code}</div>}
-            {data.missing_fields&&data.missing_fields.length>0&&<div>Missing fields: {data.missing_fields.join(', ')}</div>}
-            {data.invalid_fields&&data.invalid_fields.length>0&&<div>Invalid fields: {data.invalid_fields.join(', ')}</div>}
-          </div>
-        )}
-
-        {isAgent&&data.summary&&(
-          <div className="detail-section">
-            <h4>Agent summary</h4>
-            <p className="agent-summary">{data.summary}</p>
-          </div>
-        )}
-
-        {isAgent&&data.recommended_disposition&&(
-          <div className="detail-row">
-            <span className="detail-label">Recommended disposition</span>
-            <b>{dispositionLabel(data.recommended_disposition)}</b>
-          </div>
-        )}
-
-        {isAgent&&data.recommended_amount!=null&&(
-          <div className="detail-row">
-            <span className="detail-label">Recommended amount</span>
-            <b>SGD {Number(data.recommended_amount).toFixed(2)}</b>
-          </div>
-        )}
-
-        {isAgent&&data.policy_rule_ids&&data.policy_rule_ids.length>0&&(
-          <div className="detail-section">
-            <h4>Policy references</h4>
-            <div className="rule-chips">
-              {data.policy_rule_ids.map(r=><span key={r} className="rule-chip">{r}</span>)}
-            </div>
-          </div>
-        )}
-
-        {isAgent&&data.supporting_evidence&&data.supporting_evidence.length>0&&(
-          <div className="detail-section">
-            <h4>Supporting evidence (fact keys)</h4>
-            <ul className="evidence-list">
-              {data.supporting_evidence.map((e,i)=><li key={i}>{e}</li>)}
-            </ul>
-          </div>
-        )}
-
-        {isAgent&&data.opposing_evidence&&data.opposing_evidence.length>0&&(
-          <div className="detail-section">
-            <h4>Opposing evidence</h4>
-            <ul className="evidence-list">
-              {data.opposing_evidence.map((e,i)=><li key={i}>{e}</li>)}
-            </ul>
-          </div>
-        )}
-
-        {isAgent&&data.uncertainties&&data.uncertainties.length>0&&(
-          <div className="detail-section">
-            <h4>Uncertainties</h4>
-            <ul className="evidence-list">
-              {data.uncertainties.map((u,i)=><li key={i}>{u}</li>)}
-            </ul>
-          </div>
-        )}
-
-        {isAgent&&data.mode&&(
-          <div className="detail-row">
-            <span className="detail-label">Mode</span>
-            <code className="mode-code">{data.mode}</code>
-          </div>
-        )}
-
-        {/* Trace entries for this agent */}
-        {trace&&trace.length>0&&(
-          <div className="detail-section">
-            <h4>Recorded trace entries</h4>
-            <div className="trace-entries">
-              {trace.map((t,i)=>{
-                const hasError=t.error_code||t.final===false&&t.error_code;
-                return(
-                  <div key={i} className={`trace-entry ${hasError?'trace-error':''}`}>
-                    {t.event_author&&<span className="trace-field">author: {t.event_author}</span>}
-                    {t.final!==undefined&&<span className="trace-field">final: {String(t.final)}</span>}
-                    {t.tool_calls&&t.tool_calls.length>0&&
-                      <span className="trace-field">tools: {t.tool_calls.join(', ')}</span>
-                    }
-                    {t.mode&&<span className="trace-field">mode: {t.mode}</span>}
-                    {t.operation&&<span className="trace-field">op: {t.operation}</span>}
-                    {t.error_code&&<span className="trace-field trace-err">error: {t.error_code}</span>}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="detail-note">
-              Trace entries are recorded during actual execution. Concurrent agents
-              may not preserve exact wall-clock completion order.
-            </p>
-          </div>
-        )}
-      </div>
-    </section>
   );
 }

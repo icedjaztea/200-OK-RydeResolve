@@ -192,6 +192,10 @@ async function forward(request, ctx) {
       'cache-control': 'no-store',
     };
 
+    // Pass through Content-Disposition for file downloads
+    const cd = resp.headers.get('content-disposition');
+    if (cd) responseHeaders['content-disposition'] = cd;
+
     // Explicitly never copy Authorization, Set-Cookie, or other sensitive
     // upstream headers to the browser response.
     return new Response(body, {

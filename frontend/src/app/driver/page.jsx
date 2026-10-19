@@ -2,6 +2,7 @@
 import {useState,useEffect} from 'react';
 import Link from 'next/link';
 import {useApi} from '../../lib/useApi';
+import {validateAttachments,uploadReportAttachments} from '../../lib/reportAttachments';
 import {CaseTimeline} from '../../lib/Timeline';
 import MapView from '../../lib/MapView';
 import {getTrips,addTrip,findTrip,formatTripDateTime,formatFare} from '../../lib/trips';
@@ -37,9 +38,17 @@ export default function DriverPortal(){
   const [selectedTrip,setSelectedTrip]=useState(null);
   const [showTripForm,setShowTripForm]=useState(false);
   const [identity,setIdentity]=useState('driver_a');
+  const [connected,setConnected]=useState(false);
+  const [uploadFile,setUploadFile]=useState(null);
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({category:'property_damage',trip_id:'',description:'',dispute_amount:''});
+  const [formError,setFormError]=useState('');
+  const [reportFiles,setReportFiles]=useState([]);
+  const [pendingUploads,setPendingUploads]=useState(null);
+  const [uploadProgress,setUploadProgress]=useState('');
   const [tripForm,setTripForm]=useState({
     pickup_location:'',dropoff_location:'',date:'',time:'',
-    fare:'',distance_km:'',duration_min:'',rider_name:'',rider_rating:''
+    fare:'',distance_km:'',duration_min:'',rider_name:'',counterparty_id:'',rider_rating:''
   });
 
   useEffect(()=>{
@@ -49,13 +58,14 @@ export default function DriverPortal(){
   // Auto-connect on mount
   useEffect(()=>{
     api.run(connect);
-  },[]);
+  },[api.key]);
 
   async function connect(){
     await api.call('health');
     const list=await api.call('cases');
     setCases(list);
     setTrips(getTrips(identity));
+    setConnected(true);
   }
 
   async function selectCase(id){
@@ -65,6 +75,63 @@ export default function DriverPortal(){
   function selectTrip(trip){
     setSelectedTrip(trip);
     setTab('trips');
+  }
+
+  function reportTrip(tripId=''){
+    setForm({category:'property_damage',trip_id:tripId,description:'',dispute_amount:''});
+    setFormError('');setDetail(null);setShowForm(true);setTab('disputes');
+    setUploadFile(null);setReportFiles([]);api.clear();
+  }
+
+  function chooseReportFiles(e){
+    const selected=Array.from(e.target.files||[]);
+    e.target.value='';
+    const error=validateAttachments(selected);
+    if(error){setFormError(error);return;}
+    setFormError('');
+    setReportFiles(previous=>[...previous,...selected.filter(file=>!previous.some(
+      existing=>existing.name===file.name&&existing.size===file.size&&existing.lastModified===file.lastModified))]);
+  }
+
+  async function uploadFilesForCase(caseId,files){
+    const failed=await uploadReportAttachments(api.call,caseId,files,
+      (index,total)=>setUploadProgress(`Uploading attachment ${index} of ${total}. Image analysis may take a moment…`));
+    setUploadProgress('');
+    setPendingUploads(failed.length?{caseId,failed}:null);
+    api.setNotice(failed.length?`Report saved. ${failed.length} attachment(s) need retry below.`:
+      `Report saved. ${files.length} attachment(s) uploaded.`);
+    setDetail(await api.call('cases/'+caseId));
+  }
+
+  async function submitCase(e){
+    e.preventDefault();
+    if(api.busy)return;
+    const description=form.description.trim();
+    if(!form.trip_id.trim()||description.length<5||description.length>3000){
+      setFormError('Enter a trip reference and a description of 5–3000 characters.');return;
+    }
+    const amount=form.dispute_amount===''?null:Number(form.dispute_amount);
+    if(amount!==null&&(!Number.isFinite(amount)||amount<0||amount>100000)){
+      setFormError('Enter an amount between SGD 0 and 100,000.');return;
+    }
+    const attachmentError=validateAttachments(reportFiles);
+    if(attachmentError){setFormError(attachmentError);return;}
+    setFormError('');
+    await api.run(async()=>{
+      const case_id='DRIVER-'+crypto.randomUUID();
+      const created=await api.call('cases',{method:'POST',body:{
+        case_id,trip_id:form.trip_id.trim(),category:form.category,filed_by:'driver',
+        description,dispute_amount:amount,synthetic:true,
+        counterparty_id:findTrip(identity,form.trip_id.trim())?.counterparty_id||null,
+      }});
+      // Show the saved case immediately, even if refreshing the queue fails.
+      setDetail(created);setShowForm(false);setUploadFile(null);
+      const files=reportFiles;
+      setReportFiles([]);
+      api.setNotice(`Case ${case_id} created.`);
+      if(files.length) await uploadFilesForCase(case_id,files);
+      setCases(await api.call('cases'));
+    });
   }
 
   function createTrip(){
@@ -86,7 +153,8 @@ export default function DriverPortal(){
       duration_min:isNaN(duration)?randInt(10,40):duration,
       fare:isNaN(fare)?Number(randBetween(8,35).toFixed(2)):fare,
       currency:'SGD',
-      rider_name:tripForm.rider_name||'Demo Rider',
+      counterparty_id:tripForm.counterparty_id||null,
+      rider_name:tripForm.counterparty_id?'Rider '+tripForm.counterparty_id.slice(-1).toUpperCase():(tripForm.rider_name||'Custom Rider'),
       rider_rating:isNaN(parseFloat(tripForm.rider_rating))?4.8:parseFloat(tripForm.rider_rating),
       status:'completed',
       payment_method:'Credit card',
@@ -96,7 +164,7 @@ export default function DriverPortal(){
     const updated=addTrip(identity,trip);
     setTrips(updated);
     setShowTripForm(false);
-    setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',rider_name:'',rider_rating:''});
+    setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',rider_name:'',counterparty_id:'',rider_rating:''});
     setSelectedTrip(trip);
     api.setNotice(`Trip ${trip.trip_id} created. Synthetic only.`);
   }
@@ -107,13 +175,14 @@ export default function DriverPortal(){
   const activeCases=cases.filter(c=>c.status!=='RESOLVED'&&c.status!=='REVIEWED_AND_RESOLVED');
   const caseTrip=detail?findTrip(identity,detail.trip_id):null;
 
-  // --- Loading ---
-  if(!cases.length){
+  // --- Loading (only while connecting, not when cases is empty) ---
+  if(!connected){
     return <div className="app-shell">
       <div className="app-connect driver">
         <div className="app-logo-big">D</div>
         <h2>RydeResolve Driver</h2>
-        <p>Loading your disputes and trip history…</p>
+        <p>{api.error?'Unable to load your cases.':'Loading your disputes and trip history…'}</p>
+        {api.error&&<button disabled={api.busy} onClick={()=>api.run(connect)}>Retry</button>}
       </div>
       {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}
       <div style={{textAlign:'center',padding:'16px'}}>
@@ -130,7 +199,7 @@ export default function DriverPortal(){
         <h1>RydeResolve <span>Driver</span></h1>
         <p className="app-sub">{activeCases.length} active case{activeCases.length!==1?'s':''}{actionNeededCases.length>0?` · ${actionNeededCases.length} need response`:''}</p>
       </div>
-      <select aria-label="Switch driver" value={identity} onChange={e=>{setIdentity(e.target.value);api.setKey(e.target.value);api.run(connect)}} style={{padding:'6px 10px',borderRadius:'8px',border:'1px solid var(--border)'}}>
+      <select aria-label="Switch driver" disabled={api.busy} value={identity} onChange={e=>{setIdentity(e.target.value);api.setKey(e.target.value);setCases([]);setDetail(null);setShowForm(false);setSelectedTrip(null);setUploadFile(null);setReportFiles([]);setPendingUploads(null);setConnected(false)}} style={{padding:'6px 10px',borderRadius:'8px',border:'1px solid var(--border)'}}>
         <option value="driver_a">Driver A</option>
         <option value="driver_b">Driver B</option>
       </select>
@@ -140,7 +209,7 @@ export default function DriverPortal(){
     {api.notice&&<div className="alert success" style={{margin:'0 12px'}}>{api.notice}</div>}
 
     <div className="app-body">
-      {tab==='disputes'&&!detail&&<>
+      {tab==='disputes'&&!detail&&!showForm&&<>
         {/* Action Needed section */}
         {actionNeededCases.length>0&&<>
           <div className="app-section-head"><h2 style={{color:'var(--bad-fg)'}}>Action needed</h2></div>
@@ -157,7 +226,7 @@ export default function DriverPortal(){
         </>}
 
         {/* All cases */}
-        <div className="app-section-head"><h2>Your disputes</h2></div>
+        <div className="app-section-head"><h2>Your disputes</h2><button onClick={()=>reportTrip()}>Report an issue</button></div>
         {cases.length===0?
           <div className="card empty" style={{padding:'40px 16px'}}><div className="empty-symbol">📋</div><h2>No disputes</h2><p>No cases involving you at this time.</p></div>
         :cases.map(item=>(
@@ -174,7 +243,7 @@ export default function DriverPortal(){
 
       {tab==='disputes'&&detail&&<>
         <div className="app-section-head">
-          <button className="secondary" onClick={()=>setDetail(null)}>← Back</button>
+          <button className="secondary" disabled={api.busy} onClick={()=>setDetail(null)}>← Back</button>
           <button disabled={api.busy} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+detail.case_id);setDetail(r);api.setNotice('Status refreshed.')})}>Refresh</button>
         </div>
 
@@ -216,6 +285,45 @@ export default function DriverPortal(){
             <span>Rider rating {caseTrip.rider_rating}</span>
           </div>}
         </div>}
+
+        {/* Attachments */}
+        <div className="card">
+          <p className="eyebrow">ATTACHMENTS</p>
+          {uploadProgress&&<p role="status" aria-live="polite">{uploadProgress}</p>}
+          {pendingUploads?.caseId===detail.case_id&&<div className="alert error" role="alert">
+            <p>Your report is saved. These attachments were not confirmed uploaded:</p>
+            <ul>{pendingUploads.failed.map(({file,error},index)=><li key={index}>{file.name}: {error}</li>)}</ul>
+            <button type="button" disabled={api.busy} onClick={()=>api.run(()=>uploadFilesForCase(detail.case_id,pendingUploads.failed.map(item=>item.file)))}>Retry failed attachments</button>
+          </div>}
+          {detail.evidence?.filter(e=>e.type==='image_or_document').length>0?
+            <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+              {detail.evidence.filter(e=>e.type==='image_or_document').map(ev=>{
+                const ref=ev.content?.object_ref||'';
+                const sha=ev.content?.sha256||'';
+                const ct=ev.content?.content_type||'';
+                const isImg=ct.includes('image');
+                return <div key={ev.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',border:'1px solid var(--border)',borderRadius:'8px'}}>
+                  <span style={{fontSize:'20px'}}>{ct.includes('pdf')?'📄':isImg?'🖼':'📎'}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'13px',fontWeight:600}}>{ev.id}</div>
+                    <div style={{fontSize:'11px',color:'var(--ink-secondary)'}}>{ct} · {ev.content?.size_bytes?Math.round(ev.content.size_bytes/1024)+'KB':'—'}</div>
+                  </div>
+                  <button className="small secondary" onClick={()=>window.open('/api/proxy/cases/'+detail.case_id+'/files/'+sha.slice(0,24),'_blank')}>View</button>
+                </div>;
+              })}
+            </div>
+          :<p className="muted" style={{fontSize:'13px'}}>No attachments yet.</p>}
+          {detail.status!=='RESOLVED'&&detail.status!=='REVIEWED_AND_RESOLVED'&&<div style={{marginTop:'8px'}}>
+            <input aria-label="Upload attachment" type="file" accept="image/png,image/jpeg,application/pdf" onChange={e=>setUploadFile(e.target.files?.[0]||null)} style={{fontSize:'12px'}}/>
+            <button className="small" disabled={api.busy||!uploadFile} style={{marginTop:'6px'}} onClick={()=>api.run(async()=>{
+              const form=new FormData();form.append('file',uploadFile);
+              await api.call('cases/'+detail.case_id+'/files',{method:'POST',body:form});
+              setDetail(await api.call('cases/'+detail.case_id));
+              setUploadFile(null);
+              api.setNotice('Attachment uploaded. Authenticity unverified.');
+            })}>{api.busy?'Uploading…':'Upload'}</button>
+          </div>}
+        </div>
 
         {/* Safety */}
         {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="app-action-card" style={{background:'var(--bad-bg)',borderColor:'var(--bad-border)'}}>
@@ -268,6 +376,41 @@ export default function DriverPortal(){
         </div>}
       </>}
 
+      {tab==='disputes'&&showForm&&<>
+        <div className="app-section-head">
+          <button className="secondary" disabled={api.busy} onClick={()=>setShowForm(false)}>← Cancel</button>
+        </div>
+        <form className="app-form" onSubmit={submitCase}>
+          <h2>Report an issue</h2>
+          <p className="muted">Use synthetic test information only. Attach photos or documents below; they will upload when you submit your report.</p>
+          <label htmlFor="driver-category">Dispute category</label>
+          <select id="driver-category" disabled={api.busy} value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+            {['property_damage','fare_dispute','route_deviation','no_show_charge','driver_no_show','safety_incident','other'].map(category=><option key={category} value={category}>{categoryLabel(category)}</option>)}
+          </select>
+          <label htmlFor="driver-past-trip">Choose a past trip</label>
+          <select id="driver-past-trip" disabled={api.busy} value={trips.some(t=>t.trip_id===form.trip_id)?form.trip_id:''} onChange={e=>setForm({...form,trip_id:e.target.value})}>
+            <option value="">Select a trip or enter its reference below…</option>
+            {trips.map(t=><option key={t.trip_id} value={t.trip_id}>{t.trip_id} · {t.pickup_location} → {t.dropoff_location}</option>)}
+          </select>
+          <label htmlFor="driver-trip-reference">Trip reference</label>
+          <input id="driver-trip-reference" required disabled={api.busy} value={form.trip_id} onChange={e=>setForm({...form,trip_id:e.target.value})}/>
+          <p className="muted">{findTrip(identity,form.trip_id.trim())?.counterparty_id?'Linked Rider: '+findTrip(identity,form.trip_id.trim()).counterparty_id.slice(-1).toUpperCase()+' — this dispute will appear in their portal.':'Custom / unlinked trip — no rider will receive this dispute.'}</p>
+          <label htmlFor="driver-description">Description ({form.description.length}/3000)</label>
+          <textarea id="driver-description" required minLength={5} maxLength={3000} disabled={api.busy} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Describe the seat stain or other issue, when you noticed it, and the remedy you are requesting."/>
+          <label htmlFor="driver-amount">Disputed amount (SGD, optional)</label>
+          <input id="driver-amount" type="number" min="0" max="100000" step="0.01" disabled={api.busy} value={form.dispute_amount} onChange={e=>setForm({...form,dispute_amount:e.target.value})}/>
+          <label htmlFor="driver-report-attachments">Photos and documents (optional)</label>
+          <input id="driver-report-attachments" type="file" multiple accept="image/png,image/jpeg,application/pdf" disabled={api.busy} onChange={chooseReportFiles}/>
+          <p className="muted">PNG, JPEG, or PDF · Up to 5 MB per file. Images are submitted for analysis after the report is saved.</p>
+          {reportFiles.length>0&&<ul>{reportFiles.map((file,index)=><li key={index}>
+            {file.name} ({Math.ceil(file.size/1024)} KB) <button type="button" className="small secondary" disabled={api.busy} aria-label={'Remove '+file.name} onClick={()=>setReportFiles(files=>files.filter((_,i)=>i!==index))}>Remove</button>
+          </li>)}</ul>}
+          {form.category==='safety_incident' &&<p className="alert error">Safety allegations require human review. AI will not determine fault.</p>}
+          {formError&&<div className="alert error" role="alert">{formError}</div>}
+          <button type="submit" disabled={api.busy}>{api.busy?'Saving report…':reportFiles.length?'Submit report & upload':'Submit report'}</button>
+        </form>
+      </>}
+
       {/* Tab: Trips */}
       {tab==='trips'&&!selectedTrip&&!showTripForm&&<>
         <div className="app-section-head">
@@ -301,6 +444,7 @@ export default function DriverPortal(){
             <span className="trip-time">{formatTripDateTime(selectedTrip)}</span>
             <span className="trip-fare">{formatFare(selectedTrip)}</span>
           </div>
+          <p className="muted">{selectedTrip.counterparty_id?'Linked Rider: '+selectedTrip.counterparty_id.slice(-1).toUpperCase():'Custom — no linked rider'}</p>
           <MapView trip={selectedTrip} height={180} />
           <div className="trip-locations">
             <div className="trip-location pickup">
@@ -323,6 +467,7 @@ export default function DriverPortal(){
             <span>{selectedTrip.duration_min} min</span>
             <span>{selectedTrip.payment_method}</span>
           </div>
+          <button style={{marginTop:'12px'}} onClick={()=>reportTrip(selectedTrip.trip_id)}>Report an issue with this trip</button>
           {selectedTrip.perspective==='driver'&&selectedTrip.rider_name&&<div className="trip-driver">
             <strong>{selectedTrip.rider_name}</strong>
             <span>Rider rating {selectedTrip.rider_rating}</span>
@@ -358,8 +503,15 @@ export default function DriverPortal(){
           <input type="number" min="0" step="0.1" value={tripForm.distance_km} onChange={e=>setTripForm({...tripForm,distance_km:e.target.value})} placeholder="e.g. 8.5"/>
           <label>Duration (min)</label>
           <input type="number" min="1" value={tripForm.duration_min} onChange={e=>setTripForm({...tripForm,duration_min:e.target.value})} placeholder="e.g. 25"/>
-          <label>Rider name</label>
-          <input value={tripForm.rider_name} onChange={e=>setTripForm({...tripForm,rider_name:e.target.value})} placeholder="e.g. Jane Doe"/>
+          <label htmlFor="driver-trip-counterparty">Link to rider</label>
+          <select id="driver-trip-counterparty" value={tripForm.counterparty_id} onChange={e=>setTripForm({...tripForm,counterparty_id:e.target.value})}>
+            <option value="">Custom (no linked rider)</option>
+            <option value="rider_a">Rider A</option>
+            <option value="rider_b">Rider B</option>
+          </select>
+          <p className="muted">A linked rider can see disputes filed for this trip and respond to reviewer requests. Custom trips have no linked rider.</p>
+          <label>Rider name (Custom only)</label>
+          <input disabled={!!tripForm.counterparty_id} value={tripForm.rider_name} onChange={e=>setTripForm({...tripForm,rider_name:e.target.value})} placeholder="e.g. Jane Doe"/>
           <label>Rider rating</label>
           <input type="number" min="1" max="5" step="0.1" value={tripForm.rider_rating} onChange={e=>setTripForm({...tripForm,rider_rating:e.target.value})} placeholder="e.g. 4.8"/>
           <button onClick={()=>createTrip()}>Create trip</button>
@@ -383,7 +535,7 @@ export default function DriverPortal(){
     </div>
 
     <nav className="app-nav" role="navigation" aria-label="Main navigation">
-      {NAV_TABS.map(t=><button key={t.id} className={tab===t.id?'active':''} onClick={()=>{setTab(t.id);setDetail(null);setSelectedTrip(null);setShowTripForm(false)}} aria-label={t.label}>
+      {NAV_TABS.map(t=><button key={t.id} disabled={api.busy} className={tab===t.id?'active':''} onClick={()=>{setTab(t.id);setDetail(null);setSelectedTrip(null);setShowTripForm(false);setShowForm(false)}} aria-label={t.label}>
         <span className="nav-icon">{t.icon}</span>
         {t.label}
       </button>)}

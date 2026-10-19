@@ -1,6 +1,7 @@
 """FastAPI demo service. Only synthetic cases; role-specific demo keys, no production auth."""
 from __future__ import annotations
 import hmac, os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Header, Depends, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from .config import setting
@@ -13,11 +14,18 @@ from .services import (create_case,seed_cases,get_case,process_case,reply_to_cla
                        evaluate_learning,approve_learning,rollback_learning,verify_event_chain,add_file_evidence,
                        build_review_packet,reclassify_case)
 from .policy import contract_report, signoff_valid, load_policy, full_rules
-from .storage import store_blob
+from .storage import store_blob, get_blob
 from .image_analysis import describe_damage_image
 from .evidence import now
 
-app=FastAPI(title='RydeResolve - SYNTHETIC demo',version='0.3.0')
+@asynccontextmanager
+async def lifespan(app:FastAPI):
+    # Complete durable, create-only seeding before accepting portal requests.
+    seed_cases()
+    yield
+
+
+app=FastAPI(title='RydeResolve - SYNTHETIC demo',version='0.3.0',lifespan=lifespan)
 origins=[s.strip() for s in setting('ALLOWED_ORIGINS','http://localhost:3000').split(',') if s.strip()]
 app.add_middleware(CORSMiddleware,allow_origins=origins,allow_credentials=False,
     allow_methods=['GET','POST'],allow_headers=['Content-Type','X-Demo-Key'])
@@ -134,11 +142,18 @@ def new_case(item:CaseCreate, identity:DemoIdentity=Depends(any_actor)):
     if not item.synthetic:raise HTTPException(400,'Only synthetic cases are permitted')
     new=item.model_dump()
     new['source_trust']='UNVERIFIED_USER_REPORT'
-    # Server-assigned ownership. Never trust caller-supplied ownership IDs.
-    if identity.role=='rider':
-        new.setdefault('rider_id',identity.identity_id)
-    elif identity.role=='driver':
-        new.setdefault('driver_id',identity.identity_id)
+    counterparty=new.pop('counterparty_id')
+    # The caller owns their side; only an explicit opposite-role demo identity
+    # can be linked. Custom/legacy trips remain unassigned on the other side.
+    if is_party(identity):
+        other_role='driver' if identity.role=='rider' else 'rider'
+        if counterparty is not None and counterparty not in (f'{other_role}_a',f'{other_role}_b'):
+            raise HTTPException(400,'Counterparty must be an opposite-role demo identity')
+        new['filed_by']=identity.role
+        new[f'{identity.role}_id']=identity.identity_id
+        new[f'{other_role}_id']=counterparty
+    elif counterparty is not None:
+        raise HTTPException(400,'Create linked reports from the rider or driver portal')
     try:return _safe_case_response(create_case(new),identity)
     except Exception as e:fail(e)
 
@@ -193,14 +208,32 @@ def evidence(case_id:str,item:EvidenceUpload,_=Depends(reviewer_only)):
     except Exception as e:fail(e)
 
 @app.post('/cases/{case_id}/files')
-async def upload(case_id:str,file:UploadFile=File(...),identity:DemoIdentity=Depends(reviewer_only)):
+async def upload(case_id:str,file:UploadFile=File(...),identity:DemoIdentity=Depends(any_actor)):
     try:
-        get_case(case_id)
+        case=_get_authorized_case(case_id,identity)
         data=await file.read(5*1024*1024+1)
         stored=store_blob(case_id,file.filename or 'document',file.content_type or '',data)
         analysis=await describe_damage_image(data,file.content_type or '',case_id)
         add_file_evidence(case_id,stored,analysis)
         return {'file':stored,'image_analysis':analysis}
+    except Exception as e:fail(e)
+
+@app.get('/cases/{case_id}/files/{ref}')
+def download(case_id:str,ref:str,identity:DemoIdentity=Depends(any_actor)):
+    """Download/view a file attachment by its object_ref path segment."""
+    from fastapi import Response
+    try:
+        case=_get_authorized_case(case_id,identity)
+        # Find the evidence item with matching object_ref
+        for ev in case.get('evidence',[]):
+            content=ev.get('content',{}) or {}
+            obj_ref=content.get('object_ref','')
+            if ref in obj_ref:
+                data,ct=get_blob(obj_ref)
+                return Response(content=data,media_type=ct,
+                    headers={'Content-Disposition':f'inline; filename="{ev.get("id","file")}"',
+                             'Cache-Control':'no-store'})
+        raise KeyError(ref)
     except Exception as e:fail(e)
 
 @app.post('/cases/{case_id}/review')
@@ -248,3 +281,66 @@ def evaluate(_=Depends(reviewer_only)):
 def rollback(proposal_id:str,body:LearningApproval,_=Depends(reviewer_only)):
     try:return rollback_learning(proposal_id,body.rationale)
     except Exception as e:fail(e)
+
+
+# ---------------------------------------------------------------------------
+# /monitor — aggregated workflow progress for all cases
+# ---------------------------------------------------------------------------
+
+def _workflow_steps(case:dict)->dict:
+    """Derive per-step completion state from a case document."""
+    outputs=case.get('agent_outputs') or {}
+    gate=case.get('gate') or {}
+    candidate=case.get('candidate') or {}
+    status=case.get('status','NEW')
+    path=case.get('path')
+    is_safety=path=='IMMEDIATE_HUMAN_REVIEW'
+    is_resolved=status in ('RESOLVED','REVIEWED_AND_RESOLVED')
+    has_outputs=len(outputs)>0
+    has_trace=bool(case.get('agent_trace'))
+
+    def _agent_state(out):
+        if not out: return 'pending'
+        if out.get('parse_failed') or out.get('agent_error') or out.get('failure_kind'): return 'failed'
+        return 'completed'
+
+    steps={
+        'intake':     'completed' if (has_outputs or path) else 'pending',
+        'orch':       'completed' if 'DisputeOrchestrator' in outputs else ('skipped' if has_outputs else 'pending'),
+        'rider_adv':  _agent_state(outputs.get('RiderAdvocate')) if 'RiderAdvocate' in outputs else ('skipped' if has_outputs and not is_safety else 'pending'),
+        'driver_adv': _agent_state(outputs.get('DriverAdvocate')) if 'DriverAdvocate' in outputs else ('skipped' if has_outputs and not is_safety else 'pending'),
+        'policy':     _agent_state(outputs.get('PolicyPrecedent')) if 'PolicyPrecedent' in outputs else ('skipped' if has_outputs and not is_safety else 'pending'),
+        'fraud':      _agent_state(outputs.get('FraudBadFaith')) if 'FraudBadFaith' in outputs else ('skipped' if has_outputs and not is_safety else 'pending'),
+        'judge':      'skipped' if is_safety else (_agent_state(outputs.get('Judge')) if 'Judge' in outputs else ('pending' if has_outputs else 'pending')),
+        'gate':       'completed' if gate and gate.get('path') else 'pending',
+        'outcome':    'completed' if (is_resolved or status=='REVIEW_REQUIRED' or is_safety or status=='AWAITING_CLARIFICATION') else 'pending',
+    }
+    # Count completed steps
+    done=sum(1 for v in steps.values() if v=='completed')
+    total=len(steps)
+    return {'steps':steps,'done':done,'total':total,
+            'is_done':is_resolved or status=='REVIEW_REQUIRED',
+            'has_outputs':has_outputs,'has_trace':has_trace}
+
+
+@app.get('/monitor')
+def monitor(_=Depends(reviewer_only)):
+    """Return all cases with their workflow progress for the monitor dashboard."""
+    all_cases=repo().list_cases()
+    rows=[]
+    for c in all_cases:
+        wf=_workflow_steps(c)
+        rows.append({
+            'case_id':c.get('case_id'),
+            'category':c.get('category'),
+            'status':c.get('status','NEW'),
+            'path':c.get('path'),
+            'filed_by':c.get('filed_by'),
+            'dispute_amount':c.get('dispute_amount'),
+            'candidate':c.get('candidate'),
+            'gate':c.get('gate'),
+            'mock_action':c.get('mock_action'),
+            'processing_ms':c.get('processing_ms'),
+            'workflow':wf,
+        })
+    return {'cases':rows,'ai_mode':setting('AI_MODE','mock'),'policy_version':'2.1'}

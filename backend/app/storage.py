@@ -29,3 +29,27 @@ def store_blob(case_id:str,filename:str,content_type:str,data:bytes)->dict:
     return {'object_ref':uri,'sha256':sha,'size_bytes':len(data),'content_type':content_type,
             'origin_verified':False,'authenticity_verified':False,
             'note':'Image pixels/EXIF alone cannot validate trusted in-app camera provenance'}
+
+
+def get_blob(object_ref:str):
+    """Retrieve blob data by its object_ref URI. Returns (data, content_type)."""
+    if not object_ref:
+        raise ValueError('Empty object reference')
+    if object_ref.startswith('local://'):
+        obj=object_ref[len('local://'):]
+        p=ROOT/'uploads'/obj
+        if not p.exists():raise FileNotFoundError(f'Blob not found: {obj}')
+        ext=p.suffix.lower()
+        ct={'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.pdf':'application/pdf'}.get(ext,'application/octet-stream')
+        return p.read_bytes(),ct
+    if object_ref.startswith('gs://'):
+        from google.cloud import storage
+        rest=object_ref[len('gs://'):]
+        bucket_name,_,obj=rest.partition('/')
+        blob=storage.Client().bucket(bucket_name).blob(obj)
+        data=blob.download_as_bytes()
+        # Infer content type from extension
+        ext='.'+obj.rsplit('.',1)[-1] if '.' in obj else ''
+        ct={'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.pdf':'application/pdf'}.get(ext,'application/octet-stream')
+        return data,ct
+    raise ValueError(f'Unknown blob URI scheme: {object_ref}')

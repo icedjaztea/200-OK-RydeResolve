@@ -82,7 +82,7 @@ The driver's mobile-app-style interface. Drivers can:
 
 The reviewer's full investigation dashboard. This is the core of the system. Reviewers can:
 
-- **Load demo cases** — click "Load demos" to seed synthetic fixture cases (fare disputes, route deviations, no-shows, damage, safety, fraud)
+- **Demo cases load automatically** — backend startup seeds missing synthetic fixture cases (fare disputes, route deviations, no-shows, damage, safety, fraud)
 - **View the case queue** — all cases sorted by status, with urgent cases highlighted
 - **Process a case** — runs the full six-stage pipeline with a live progress display showing each step (safety screening → routing index → evidence check → agent evaluation → policy gate → outcome)
 - **Investigate** — five tabs per case:
@@ -147,7 +147,7 @@ FastAPI Backend (Cloud Run)
 ## Try it
 
 1. Open **[https://ryderesolve-web-oydodesgeq-as.a.run.app](https://ryderesolve-web-oydodesgeq-as.a.run.app)**
-2. Click **Reviewer Workbench** → click **Load demos** → select a case → click **Process**
+2. Click **Reviewer Workbench** → select an automatically loaded case → click **Process**
 3. Watch the pipeline run. Then explore the Evidence, Agent Findings, and Review Decision tabs.
 4. Go to **Rider Portal** or **Driver Portal** — cases and trips load automatically. Switch between Rider A and Rider B to see case isolation.
 5. Open **ADK Monitor** to see the agent execution graph for any processed case.
@@ -163,3 +163,7 @@ No setup, no keys, no login. Just explore.
 - Safety cases cannot reach the AI ruling step — they go straight to human review.
 - Model self-assessed confidence is not calibrated.
 - The demo passcode system has been removed — anyone can access all roles.
+
+Demo startup seeding is create-only: existing cases and processed results are preserved, including concurrent Cloud Run startups. The optional **Load demos** button retries the same seeding. Cloud Run uses `APP_MODE=firestore` for persistence; local `memory` mode remains ephemeral. Riders and drivers see only their assigned cases.
+
+New driver/rider trips offer an opposite-role demo identity (A/B) or Custom (unlinked). Reports inherit that selection; the server assigns the filing identity and validates the counterpart role. Existing trips remain unlinked. Linked parties can see the case, upload supporting evidence, and answer reviewer-created clarification requests. Trip history remains browser-local; case ownership and responses persist in Firestore.

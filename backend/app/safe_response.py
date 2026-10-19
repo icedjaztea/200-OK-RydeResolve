@@ -20,6 +20,7 @@ _RIDER_SAFE_KEYS: set[str] = {
     'policy_version', 'candidate', 'gate', 'mock_action',
     'clarifications',  # filtered per-recipient below
     'notifications',  # filtered per-recipient below
+    'evidence',  # file attachments — parties can see and upload their own
     'synthetic',
     # Reclassification info — parties see what the reviewer classified it as.
     'original_category',
@@ -73,6 +74,25 @@ def _filter_notifications(notifications: list[dict], role: str) -> list[dict]:
     return result
 
 
+def _filter_evidence(evidence: list[dict]) -> list[dict]:
+    """Return evidence items safe for rider/driver to see.
+
+    Exposes file attachment metadata but strips AI analysis details.
+    """
+    result = []
+    for ev in evidence or []:
+        if ev.get('type') == 'image_or_document':
+            result.append({
+                'id': ev.get('id'),
+                'type': ev.get('type'),
+                'content': ev.get('content'),
+                'source': ev.get('source'),
+                'verification': ev.get('verification'),
+                'captured_at': ev.get('captured_at'),
+            })
+    return result
+
+
 def _strip_case(case: dict, safe_keys: set[str], role: str) -> dict:
     """Return a copy of the case with only safe keys and filtered sub-collections."""
     result: dict[str, Any] = {}
@@ -83,13 +103,14 @@ def _strip_case(case: dict, safe_keys: set[str], role: str) -> dict:
     # Filter sub-collections per-recipient.
     result['clarifications'] = _filter_clarifications(case.get('clarifications', []), role)
     result['notifications'] = _filter_notifications(case.get('notifications', []), role)
+    result['evidence'] = _filter_evidence(case.get('evidence', []))
 
     # Never expose internal-only top-level fields even if they exist.
     for forbidden in ('agent_outputs', 'agent_trace', 'routing', 'sla_routing',
                       'gaps', 'contradictions', 'events', 'review',
                       'learning_proposal_id', 'original_escalation',
                       'evidence_snapshot_hash', 'revision', 'source_trust',
-                      'fraud_flags', 'rulebook_version', 'evidence'):
+                      'fraud_flags', 'rulebook_version'):
         result.pop(forbidden, None)
 
     return result

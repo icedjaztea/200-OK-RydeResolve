@@ -97,8 +97,12 @@ def _add_notification(case,kind,recipient,message,receipt=None,request_id=None):
 
 
 def create_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
+    if repo().get_case(source['case_id']):raise ValueError('Case ID already exists')
+    return repo().save_case(_prepare_case(source,rider_id,driver_id))
+
+
+def _prepare_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
     item=copy.deepcopy(source)
-    if repo().get_case(item['case_id']):raise ValueError('Case ID already exists')
     item.setdefault('status','NEW');item.setdefault('facts',{});item.setdefault('evidence',[])
     item.setdefault('events',[]);item.setdefault('clarifications',[]);item.setdefault('revision',0)
     item.setdefault('source_trust','UNVERIFIED_USER_REPORT')
@@ -116,7 +120,7 @@ def create_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
     item['policy_version']='2.1';item['rulebook_version']='1.0.0-draft'
     item['evidence_snapshot_hash']=hash_snapshot(item)
     event(item,'case_created',{'synthetic':True,'category':item['category']})
-    return repo().save_case(item)
+    return item
 
 
 def seed_cases(reset:bool=False):
@@ -127,8 +131,8 @@ def seed_cases(reset:bool=False):
         if not repo().get_case(record['case_id']):
             # Assign deterministic demo identities to seeded cases.
             rider_id,driver_id=seed_case_owners(record['case_id'],record.get('filed_by','rider'))
-            create_case(record,rider_id=rider_id,driver_id=driver_id)
-            count+=1
+            item=_prepare_case(record,rider_id=rider_id,driver_id=driver_id)
+            count+=int(repo().create_case_if_absent(item))
     return count
 
 

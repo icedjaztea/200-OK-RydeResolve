@@ -55,17 +55,19 @@ export default function RiderPortal(){
   const [selectedTrip,setSelectedTrip]=useState(null);
   const [showTripForm,setShowTripForm]=useState(false);
   const [identity,setIdentity]=useState('rider_a');
+  const [connected,setConnected]=useState(false);
 
   // Trip creation form
   const [tripForm,setTripForm]=useState({
     pickup_location:'',dropoff_location:'',date:'',time:'',
-    fare:'',distance_km:'',duration_min:'',driver_name:'',vehicle_info:''
+    fare:'',distance_km:'',duration_min:'',driver_name:'',counterparty_id:'',vehicle_info:''
   });
 
   // Report form
   const [form,setForm]=useState({category:'',trip_id:'',description:'',dispute_amount:''});
   const [formError,setFormError]=useState('');
   const [formBusy,setFormBusy]=useState(false);
+  const [uploadFile,setUploadFile]=useState(null);
 
   useEffect(()=>{
     setTrips(getTrips(identity));
@@ -74,13 +76,14 @@ export default function RiderPortal(){
   // Auto-connect on mount
   useEffect(()=>{
     api.run(connect);
-  },[]);
+  },[api.key]);
 
   async function connect(){
     await api.call('health');
     const list=await api.call('cases');
     setCases(list);
     setTrips(getTrips(identity));
+    setConnected(true);
   }
 
   async function selectCase(id){
@@ -118,7 +121,8 @@ export default function RiderPortal(){
       duration_min:isNaN(duration)?randInt(10,40):duration,
       fare:isNaN(fare)?Number(randBetween(8,35).toFixed(2)):fare,
       currency:'SGD',
-      driver_name:tripForm.driver_name||'Demo Driver',
+      counterparty_id:tripForm.counterparty_id||null,
+      driver_name:tripForm.counterparty_id?'Driver '+tripForm.counterparty_id.slice(-1).toUpperCase():(tripForm.driver_name||'Custom Driver'),
       vehicle_info:tripForm.vehicle_info||'Toyota Corolla · SGY0000X',
       driver_rating:4.8,
       status:'completed',
@@ -128,7 +132,7 @@ export default function RiderPortal(){
     const updated=addTrip(identity,trip);
     setTrips(updated);
     setShowTripForm(false);
-    setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',driver_name:'',vehicle_info:''});
+    setTripForm({pickup_location:'',dropoff_location:'',date:'',time:'',fare:'',distance_km:'',duration_min:'',driver_name:'',counterparty_id:'',vehicle_info:''});
     setSelectedTrip(trip);
     api.setNotice(`Trip ${trip.trip_id} created. Synthetic only.`);
   }
@@ -152,7 +156,7 @@ export default function RiderPortal(){
     if(err){setFormError(err);return}
     setFormError('');setFormBusy(true);
     const case_id=genCaseId();
-    const payload={case_id,trip_id:form.trip_id.trim(),category:form.category,filed_by:'rider',description:form.description.trim(),synthetic:true};
+    const payload={case_id,trip_id:form.trip_id.trim(),category:form.category,filed_by:'rider',description:form.description.trim(),synthetic:true,counterparty_id:findTrip(identity,form.trip_id.trim())?.counterparty_id||null};
     const amt=parseFloat(form.dispute_amount);
     if(!isNaN(amt)&&amt>0) payload.dispute_amount=amt;
     try{
@@ -173,13 +177,14 @@ export default function RiderPortal(){
 
   const caseTrip=detail?findTrip(identity,detail.trip_id):null;
 
-  // --- Loading screen ---
-  if(!cases.length){
+  // --- Loading screen (only while connecting, not when cases is empty) ---
+  if(!connected){
     return <div className="app-shell">
       <div className="app-connect">
         <div className="app-logo-big">R</div>
         <h2>RydeResolve Rider</h2>
-        <p>Loading your disputes and trip history…</p>
+        <p>{api.error?'Unable to load your cases.':'Loading your disputes and trip history…'}</p>
+        {api.error&&<button disabled={api.busy} onClick={()=>api.run(connect)}>Retry</button>}
       </div>
       {api.error&&<div className="alert error" role="alert" style={{margin:'0 16px'}}>{api.error}</div>}
       <div style={{textAlign:'center',padding:'16px'}}>
@@ -197,7 +202,7 @@ export default function RiderPortal(){
         <h1>RydeResolve <span>Rider</span></h1>
         <p className="app-sub">{activeCases.length} active case{activeCases.length!==1?'s':''}{pendingClarifications.length>0?` · ${pendingClarifications.length} awaiting your response`:''}</p>
       </div>
-      <select aria-label="Switch rider" value={identity} onChange={e=>{setIdentity(e.target.value);api.setKey(e.target.value);api.run(connect)}} style={{padding:'6px 10px',borderRadius:'8px',border:'1px solid var(--border)'}}>
+      <select aria-label="Switch rider" disabled={api.busy||formBusy} value={identity} onChange={e=>{setIdentity(e.target.value);api.setKey(e.target.value);setCases([]);setDetail(null);setSelectedTrip(null);setShowForm(false);setUploadFile(null);setConnected(false)}} style={{padding:'6px 10px',borderRadius:'8px',border:'1px solid var(--border)'}}>
         <option value="rider_a">Rider A</option>
         <option value="rider_b">Rider B</option>
       </select>
@@ -273,6 +278,39 @@ export default function RiderPortal(){
             <span>Rating {caseTrip.driver_rating}</span>
           </div>
         </div>}
+
+        {/* Attachments */}
+        <div className="card">
+          <p className="eyebrow">ATTACHMENTS</p>
+          {detail.evidence?.filter(e=>e.type==='image_or_document').length>0?
+            <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+              {detail.evidence.filter(e=>e.type==='image_or_document').map(ev=>{
+                const ref=ev.content?.object_ref||'';
+                const sha=ev.content?.sha256||'';
+                const ct=ev.content?.content_type||'';
+                const isImg=ct.includes('image');
+                return <div key={ev.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px',border:'1px solid var(--border)',borderRadius:'8px'}}>
+                  <span style={{fontSize:'20px'}}>{ct.includes('pdf')?'📄':isImg?'🖼':'📎'}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:'13px',fontWeight:600}}>{ev.id}</div>
+                    <div style={{fontSize:'11px',color:'var(--ink-secondary)'}}>{ct} · {ev.content?.size_bytes?Math.round(ev.content.size_bytes/1024)+'KB':'—'}</div>
+                  </div>
+                  <button className="small secondary" onClick={()=>window.open('/api/proxy/cases/'+detail.case_id+'/files/'+sha.slice(0,24),'_blank')}>View</button>
+                </div>;
+              })}
+            </div>
+          :<p className="muted" style={{fontSize:'13px'}}>No attachments yet.</p>}
+          {detail.status!=='RESOLVED'&&detail.status!=='REVIEWED_AND_RESOLVED'&&<div style={{marginTop:'8px'}}>
+            <input aria-label="Upload attachment" type="file" accept="image/png,image/jpeg,application/pdf" onChange={e=>setUploadFile(e.target.files?.[0]||null)} style={{fontSize:'12px'}}/>
+            <button className="small" disabled={api.busy||!uploadFile} style={{marginTop:'6px'}} onClick={()=>api.run(async()=>{
+              const form=new FormData();form.append('file',uploadFile);
+              await api.call('cases/'+detail.case_id+'/files',{method:'POST',body:form});
+              setDetail(await api.call('cases/'+detail.case_id));
+              setUploadFile(null);
+              api.setNotice('Attachment uploaded. Authenticity unverified.');
+            })}>{api.busy?'Uploading…':'Upload'}</button>
+          </div>}
+        </div>
 
         {/* Safety escalation */}
         {detail.path==='IMMEDIATE_HUMAN_REVIEW'&&<div className="app-action-card" style={{background:'var(--bad-bg)',borderColor:'var(--bad-border)'}}>
@@ -359,6 +397,7 @@ export default function RiderPortal(){
             <span className="trip-time">{formatTripDateTime(selectedTrip)}</span>
             <span className="trip-fare">{formatFare(selectedTrip)}</span>
           </div>
+          <p className="muted">{selectedTrip.counterparty_id?'Linked Driver: '+selectedTrip.counterparty_id.slice(-1).toUpperCase():'Custom — no linked driver'}</p>
           <MapView trip={selectedTrip} height={180} />
           <div className="trip-locations">
             <div className="trip-location pickup">
@@ -417,8 +456,15 @@ export default function RiderPortal(){
           <input type="number" min="0" step="0.1" value={tripForm.distance_km} onChange={e=>setTripForm({...tripForm,distance_km:e.target.value})} placeholder="e.g. 8.5"/>
           <label>Duration (min)</label>
           <input type="number" min="1" value={tripForm.duration_min} onChange={e=>setTripForm({...tripForm,duration_min:e.target.value})} placeholder="e.g. 25"/>
-          <label>Driver name</label>
-          <input value={tripForm.driver_name} onChange={e=>setTripForm({...tripForm,driver_name:e.target.value})} placeholder="e.g. Ahmad K."/>
+          <label htmlFor="rider-trip-counterparty">Link to driver</label>
+          <select id="rider-trip-counterparty" value={tripForm.counterparty_id} onChange={e=>setTripForm({...tripForm,counterparty_id:e.target.value})}>
+            <option value="">Custom (no linked driver)</option>
+            <option value="driver_a">Driver A</option>
+            <option value="driver_b">Driver B</option>
+          </select>
+          <p className="muted">A linked driver can see disputes filed for this trip and respond to reviewer requests. Custom trips have no linked driver.</p>
+          <label>Driver name (Custom only)</label>
+          <input disabled={!!tripForm.counterparty_id} value={tripForm.driver_name} onChange={e=>setTripForm({...tripForm,driver_name:e.target.value})} placeholder="e.g. Ahmad K."/>
           <label>Vehicle</label>
           <input value={tripForm.vehicle_info} onChange={e=>setTripForm({...tripForm,vehicle_info:e.target.value})} placeholder="e.g. Toyota Corolla · SGY1234A"/>
           <button onClick={()=>createTrip()}>Create trip</button>
@@ -439,7 +485,7 @@ export default function RiderPortal(){
             {CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
           <label>Trip reference</label>
-          <select value={form.trip_id.startsWith('TRIP-')?form.trip_id:''} onChange={e=>{
+          <select value={trips.some(t=>t.trip_id===form.trip_id)?form.trip_id:''} onChange={e=>{
             const val=e.target.value;
             if(val==='manual') setForm({...form,trip_id:''});
             else setForm({...form,trip_id:val});
@@ -448,7 +494,8 @@ export default function RiderPortal(){
             {trips.map(t=><option key={t.trip_id} value={t.trip_id}>{t.trip_id} · {t.pickup_location} → {t.dropoff_location}</option>)}
             <option value="manual">Enter manually</option>
           </select>
-          {(form.trip_id===''||form.trip_id==='manual')&&<input style={{marginTop:'8px'}} value={form.trip_id==='manual'?'':form.trip_id} onChange={e=>setForm({...form,trip_id:e.target.value})} placeholder="e.g. TRIP-2024-00123"/>}
+          {<input style={{marginTop:'8px'}} value={form.trip_id==='manual'?'':form.trip_id} onChange={e=>setForm({...form,trip_id:e.target.value})} placeholder="e.g. TRIP-2024-00123"/>}
+          <p className="muted">{findTrip(identity,form.trip_id.trim())?.counterparty_id?'Linked Driver: '+findTrip(identity,form.trip_id.trim()).counterparty_id.slice(-1).toUpperCase()+' — this dispute will appear in their portal.':'Custom / unlinked trip — no driver will receive this dispute.'}</p>
           <label>Description ({form.description.length}/3000)</label>
           <textarea style={{minHeight:'100px'}} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Describe what happened during the trip…"/>
           <label>Disputed amount (SGD, optional)</label>
