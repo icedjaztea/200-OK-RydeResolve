@@ -146,7 +146,7 @@ def test_rider_cannot_see_internal_fields():
                       'gaps', 'contradictions', 'events', 'review',
                       'learning_proposal_id', 'original_escalation',
                       'evidence_snapshot_hash', 'revision', 'source_trust',
-                      'fraud_flags', 'rulebook_version', 'evidence'):
+                      'fraud_flags', 'rulebook_version'):
         assert forbidden not in case, \
             f'Rider response must not expose {forbidden}'
 
@@ -162,7 +162,7 @@ def test_driver_cannot_see_internal_fields():
                       'gaps', 'contradictions', 'events', 'review',
                       'learning_proposal_id', 'original_escalation',
                       'evidence_snapshot_hash', 'revision', 'source_trust',
-                      'fraud_flags', 'rulebook_version', 'evidence'):
+                      'fraud_flags', 'rulebook_version'):
         assert forbidden not in case, \
             f'Driver response must not expose {forbidden}'
 
@@ -237,11 +237,11 @@ def test_rider_cannot_review():
     assert r.status_code == 403
 
 
-def test_rider_cannot_upload_files():
+def test_rider_upload_rejects_invalid_image():
     _setup()
     r = api('POST', '/cases/DISP-003/files', headers=RIDER_A,
             files={'file': ('test.png', b'fake', 'image/png')})
-    assert r.status_code == 403
+    assert r.status_code == 400
 
 
 def test_rider_cannot_access_review_packet():

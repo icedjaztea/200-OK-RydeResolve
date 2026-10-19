@@ -354,7 +354,9 @@ def test_notification_created_and_labelled():
     notifs = [n for n in case.get('notifications', []) if n.get('recipient') == 'rider'
               and n.get('kind') == 'CLARIFICATION_REQUEST']
     assert len(notifs) >= 1
-    assert notifs[0]['status'] in ('NOT_DELIVERED', 'SIMULATED_OUTBOX_NOT_DELIVERED')
+    assert notifs[0]['status']=='DELIVERED'
+    assert notifs[0]['channel']=='in_app'
+    assert notifs[0]['delivered_at']
 
 
 # ---------------------------------------------------------------------------

@@ -1,22 +1,24 @@
 """FastAPI demo service. Only synthetic cases; role-specific demo keys, no production auth."""
 from __future__ import annotations
-import hmac, os
+import asyncio, hashlib, hmac, os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Header, Depends, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from .config import setting
-from .models import CaseCreate, ClarificationReply, ClarificationRequest, EvidenceUpload, ReviewerDecision, LearningApproval, ReclassifyRequest
+from .models import CaseCreate, AppealCreate, ClarificationReply, ClarificationRequest, EvidenceUpload, ReviewerDecision, LearningApproval, ReclassifyRequest
 from .repository import repo
 from .identity import DemoIdentity, authenticate, is_reviewer, is_party, seed_case_owners
 from .safe_response import safe_case_for_rider, safe_case_for_driver, safe_case_list_item
 from .services import (create_case,seed_cases,get_case,process_case,reply_to_clarification,request_more_info,
                        add_verified_demo_evidence,human_review,evaluate_suite,
                        evaluate_learning,approve_learning,rollback_learning,verify_event_chain,add_file_evidence,
-                       build_review_packet,reclassify_case)
+                       build_review_packet,reclassify_case,create_appeal)
 from .policy import contract_report, signoff_valid, load_policy, full_rules
 from .storage import store_blob, get_blob
 from .image_analysis import describe_damage_image
 from .evidence import now
+
+IMAGE_ANALYSIS_TIMEOUT_SECONDS = 235
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -96,7 +98,11 @@ def _get_authorized_case(case_id:str, identity:DemoIdentity):
 
 def _safe_case_response(case:dict, identity:DemoIdentity):
     """Return a response filtered through the safe schema for parties."""
+    case={**case,'appeals':[{'case_id':c['case_id'],'status':c['status'],'filed_by':c['filed_by']}
+        for c in repo().list_cases() if c.get('appeal_of')==case['case_id']]}
     if is_reviewer(identity):
+        if case.get('appeals') and case.get('learning',{}).get('status')=='PUBLISHED':
+            case['learning']={'status':'EXCLUDED_AFTER_APPEAL','message':'This decision has a linked appeal. Its example is excluded from future guidance; review the latest appeal instead.'}
         return case
     if identity.role=='rider':
         return safe_case_for_rider(case)
@@ -164,6 +170,14 @@ def case_detail(case_id:str, identity:DemoIdentity=Depends(any_actor)):
         return _safe_case_response(case,identity)
     except Exception as e:fail(e)
 
+@app.post('/cases/{case_id}/appeals')
+def appeal(case_id:str, body:AppealCreate, identity:DemoIdentity=Depends(any_actor)):
+    try:
+        _get_authorized_case(case_id,identity)
+        return _safe_case_response(create_appeal(case_id,identity.role,identity.identity_id,body.reason),identity)
+    except Exception as e:fail(e)
+
+
 @app.get('/cases/{case_id}/review-packet')
 def review_packet(case_id:str,_=Depends(reviewer_only)):
     try:return build_review_packet(case_id)
@@ -211,9 +225,25 @@ def evidence(case_id:str,item:EvidenceUpload,_=Depends(reviewer_only)):
 async def upload(case_id:str,file:UploadFile=File(...),identity:DemoIdentity=Depends(any_actor)):
     try:
         case=_get_authorized_case(case_id,identity)
+        if case['status'] in ('RESOLVED','REVIEWED_AND_RESOLVED'):
+            raise ValueError('This case is resolved. Submit an appeal to add new evidence.')
         data=await file.read(5*1024*1024+1)
+        # A completed upload retry must not invoke Gemini or duplicate evidence.
+        digest=hashlib.sha256(data).hexdigest()
+        existing=next((e for e in case.get('evidence',[]) if e.get('content',{}).get('sha256')==digest),None)
+        if existing:
+            return {'file':existing['content'],'image_analysis':existing.get('analysis',{})}
         stored=store_blob(case_id,file.filename or 'document',file.content_type or '',data)
-        analysis=await describe_damage_image(data,file.content_type or '',case_id)
+        try:
+            analysis=await asyncio.wait_for(
+                describe_damage_image(data,file.content_type or '',case_id),
+                timeout=IMAGE_ANALYSIS_TIMEOUT_SECONDS)
+        except Exception as exc:
+            # Do not claim the attachment was analysed or add incomplete evidence.
+            # A retry is safe: file evidence is deduplicated by its content hash.
+            raise HTTPException(status_code=503,detail=(
+                'Image analysis is temporarily unavailable. Your case is saved, '
+                'but this attachment has not been added. Please retry the attachment.')) from exc
         add_file_evidence(case_id,stored,analysis)
         return {'file':stored,'image_analysis':analysis}
     except Exception as e:fail(e)
@@ -341,6 +371,7 @@ def monitor(_=Depends(reviewer_only)):
             'gate':c.get('gate'),
             'mock_action':c.get('mock_action'),
             'processing_ms':c.get('processing_ms'),
+            'appeal_of':c.get('appeal_of'),
             'workflow':wf,
         })
     return {'cases':rows,'ai_mode':setting('AI_MODE','mock'),'policy_version':'2.1'}

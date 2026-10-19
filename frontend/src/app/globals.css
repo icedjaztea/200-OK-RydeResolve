@@ -1739,3 +1739,15 @@ footer{
   .agent-step-meta{margin-left:0;text-align:left;flex-direction:row;gap:8px}
   .rule-popover{min-width:240px;max-width:300px;position:static;margin-top:6px}
 }
+
+/* Linked appeals */
+.appeal-panel{overflow-wrap:anywhere}
+.appeal-panel p{line-height:1.6}
+.appeal-actions{display:flex;flex-wrap:wrap;gap:8px}
+.appeal-badge{display:block;color:var(--ink-secondary);font-size:11px;margin-bottom:4px}
+
+.checked-record-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.checked-record-fields label{display:flex;flex-direction:column;gap:6px;min-width:0;font-weight:500}
+.checked-record-fields label:last-child{grid-column:1 / -1}
+.checked-record-fields input,.checked-record-fields select{width:100%;min-width:0}
+@media(max-width:640px){.checked-record-fields{grid-template-columns:1fr}}

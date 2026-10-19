@@ -1523,7 +1523,7 @@ npm install --no-audit --no-fund
 npm run build
 gcloud run deploy ryderesolve-web --source . --project="$PROJECT_ID" \
   --region="$RUN_REGION" --allow-unauthenticated \
-  --memory=1Gi --timeout=120 --max-instances=2 \
+  --memory=1Gi --timeout=300 --max-instances=2 \
   --set-env-vars="BACKEND_URL=${API_URL}"
 export WEB_URL="$(gcloud run services describe ryderesolve-web --region="$RUN_REGION" --project="$PROJECT_ID" --format='value(status.url)')"
 echo "Frontend: ${WEB_URL}"
@@ -1947,3 +1947,13 @@ Copy this into `docs/BUILD_STATUS.md` or a shared task tracker. Use **PASS / FAI
 # FINAL OPERATOR CHECK
 
 **A successful hackathon *prototype* is not a production Ryde deployment.** The minimum honest claim after doing every gate is: "We built and tested a synthetic, policy-grounded multi-agent dispute-resolution demonstration using Google ADK, Firebase/Firestore, GCS and Cloud Run, with safe mock remedies, required human review, decision-changing clarification and reviewer-governed precedent releases." Claim genuine ADK/Firestore/GCS/Cloud Run functionality **only after those live checks passed in your own Google project**. Report **actual** case counts, latencies, reviewer observations and citations. Never guarantee a prize or claim that model confidence is calibrated without evidence.
+
+### Gemini request reliability and image previews
+
+The live runtime keeps the configured Gemini model and uses schema-constrained ADK calls. Policy routing, authoritative rules and approved precedents are fetched once by the application and supplied to the six agents; the Judge still receives both advocates' independent findings. This removes repeated model/tool round trips without changing the deterministic policy gate.
+
+`app/gemini_runtime.py` limits each instance to two simultaneous model calls, retries transient capacity/deadline/server failures with jitter, and allows a 115-second request budget across two attempts per model (25 seconds per attempt). The primary remains Gemini 3.8 Flash; when GEMINI_FALLBACK_MODEL=gemini-3.6-flash is configured, transient failures or invalid output after primary retries trigger that fallback. Every successful result records its actual model, primary model and fallback flag; reviewers see these labels on image descriptions and agent findings. Invalid structured responses get validation feedback on retry. Authentication and invalid-request failures are not retried. The evaluation has a 240-second overall deadline, below both Cloud Run services' 300-second request limit. Exhausted retries still require human review; these controls cannot guarantee provider availability.
+
+Reviewer attachments show a short AI description and an expandable full visual analysis. Existing image descriptions are also displayed. Image observations never establish authenticity, trip attribution or fault. Retrying a completed upload reuses its stored analysis instead of calling the model again. Live test reports must check **all six agent outputs**, not merely a successful HTTP status or human-review fallback.
+
+Deployment verification (19 October 2026): backend `ryderesolve-api-00015-fhn`, frontend `ryderesolve-web-00022-h69`. 392 backend tests and 27 frontend tests passed. Public-site synthetic testing completed three distinct image analyses, duplicate-upload reuse, a linked driver appeal with rider evidence/reply, reviewer resolution, in-app notifications, role isolation and monitor completion. Four evaluations returned 24/24 valid agent results (70.08s, 56.83s, 158.31s, 15.28s), including actual Gemini 3.6 Flash fallback recoveries. All 18 pre-existing cases matched their pre-deployment snapshots. QA cases are retained with the `QA-GEMINI-20261019-104406` prefix and linked appeal `APPEAL-E343D497430D3C0C10EA0FA8`; test-generated learning guidance was rolled back. This verifies the observed run, not a guarantee of provider availability.

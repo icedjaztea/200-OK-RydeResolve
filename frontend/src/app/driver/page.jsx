@@ -1,13 +1,14 @@
 'use client';
 import {useState,useEffect} from 'react';
 import Link from 'next/link';
+import AppealPanel from '../../lib/AppealPanel';
 import {useApi} from '../../lib/useApi';
 import {validateAttachments,uploadReportAttachments} from '../../lib/reportAttachments';
 import {CaseTimeline} from '../../lib/Timeline';
 import MapView from '../../lib/MapView';
 import {getTrips,addTrip,findTrip,formatTripDateTime,formatFare} from '../../lib/trips';
 import {
-  TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel,
+  TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel, notificationStatus,
   outcomeExplanation, driverNextAction,
 } from '../../lib/labels';
 
@@ -59,6 +60,15 @@ export default function DriverPortal(){
   useEffect(()=>{
     api.run(connect);
   },[api.key]);
+
+  useEffect(()=>{
+    if(!connected||api.busy)return;
+    const timer=setInterval(()=>{
+      api.call('cases').then(setCases).catch(()=>{});
+      if(detail?.case_id)api.call('cases/'+detail.case_id).then(next=>setDetail(current=>current?.case_id===next.case_id?next:current)).catch(()=>{});
+    },10000);
+    return ()=>clearInterval(timer);
+  },[connected,api.busy,api.call,detail?.case_id]);
 
   async function connect(){
     await api.call('health');
@@ -171,7 +181,7 @@ export default function DriverPortal(){
 
   const outcome=outcomeExplanation(detail);
   const pendingClarifications=detail?.clarifications?.filter(c=>c.status==='PENDING'&&c.recipient==='driver')||[];
-  const actionNeededCases=cases.filter(c=>c.status==='AWAITING_CLARIFICATION');
+  const actionNeededCases=cases.filter(c=>c.needs_response);
   const activeCases=cases.filter(c=>c.status!=='RESOLVED'&&c.status!=='REVIEWED_AND_RESOLVED');
   const caseTrip=detail?findTrip(identity,detail.trip_id):null;
 
@@ -220,7 +230,7 @@ export default function DriverPortal(){
                 <strong>{item.case_id}</strong>
                 <em className="status bad">Response needed</em>
               </div>
-              <div className="acc-cat">{categoryLabel(item.category)}</div>
+              <div className="acc-cat">{item.appeal_of?'Appeal · ':''}{categoryLabel(item.category)}</div>
             </div>
           ))}
         </>}
@@ -235,7 +245,7 @@ export default function DriverPortal(){
               <strong>{item.case_id}</strong>
               <em className={'status '+(TONES[item.status]||'neutral')}>{statusLabel(item.status)}</em>
             </div>
-            <div className="acc-cat">{categoryLabel(item.category)}</div>
+            <div className="acc-cat">{item.appeal_of?'Appeal · ':''}{categoryLabel(item.category)}</div>
             {item.dispute_amount!=null&&<div className="acc-cat">SGD {Number(item.dispute_amount).toFixed(2)}</div>}
           </div>
         ))}
@@ -250,10 +260,12 @@ export default function DriverPortal(){
         {/* Status hero */}
         <div className="app-status-hero">
           <div className="ash-icon">{detail.path==='IMMEDIATE_HUMAN_REVIEW'?'🛡':detail.status==='RESOLVED'||detail.status==='REVIEWED_AND_RESOLVED'?'✅':detail.status==='AWAITING_CLARIFICATION'?'❓':'⏳'}</div>
-          <h2>{detail.path?pathLabel(detail.path):statusLabel(detail.status)}</h2>
-          <p>{detail.candidate?.reason||driverNextAction(detail)}</p>
+          <h2>{['RESOLVED','REVIEWED_AND_RESOLVED','NEW'].includes(detail.status)?statusLabel(detail.status):detail.path?pathLabel(detail.path):statusLabel(detail.status)}</h2>
+          <p>{driverNextAction(detail)}</p>
           <em className={'status '+(TONES[detail.status]||'neutral')}>{statusLabel(detail.status)}</em>
         </div>
+
+        <AppealPanel key={detail.case_id+api.key} detail={detail} api={api} role="driver" onOpen={async id=>{await selectCase(id);setCases(await api.call('cases'));}}/>
 
         {/* Case info */}
         <div className="card">
@@ -366,11 +378,12 @@ export default function DriverPortal(){
         {/* Notifications */}
         {detail.notifications&&detail.notifications.length>0&&<div className="card">
           <p className="eyebrow">UPDATES</p>
-          <p className="muted">Simulated — not delivered.</p>
+          <p className="muted">Updates are delivered inside the linked recipient’s portal. Delivery does not mean the update has been read.</p>
           <div className="notif-list">{detail.notifications.filter(n=>n.recipient==='driver'||n.recipient==='all').map((n,i)=>(
             <div key={i} className="notif-item">
-              <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className="status bad">Not delivered</em></div>
+              <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><em className={'status '+(n.status==='DELIVERED'?'good':'neutral')}>{notificationStatus(n)}</em></div>
               <p className="notif-msg">{n.message}</p>
+                    {n.delivered_at&&<small className="muted">Available since {new Date(n.delivered_at).toLocaleString()}</small>}
             </div>
           ))}</div>
         </div>}

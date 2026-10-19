@@ -243,7 +243,7 @@ class TestPipelineSafetyEscalation:
         assert 'SAFETY_REVIEW_ALERT' in kinds
         alert = next(n for n in notifications if n['kind'] == 'SAFETY_REVIEW_ALERT')
         assert alert['recipient'] == 'reviewer'
-        assert alert['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED'
+        assert alert['status'] == 'DELIVERED'
 
     def test_safety_candidate_is_undetermined(self):
         set_repo(MemoryRepository())

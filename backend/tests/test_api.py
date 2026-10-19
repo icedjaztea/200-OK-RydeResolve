@@ -79,14 +79,12 @@ def test_innovation_b_requires_regression_and_approval():
     reviewed=api('POST','/cases/DISP-001/review',json={'disposition':'refund','amount':3.44,'reason':'Human approved excess distance refund after review','proposed_precedent':'If reroute 4.3 km with verified traffic and no notice, escalate for reviewer signoff.'})
     assert reviewed.status_code==200,reviewed.text
     pid=reviewed.json()['learning_proposal_id']
-    pre=api('POST',f'/learning/{pid}/approve',json={'rationale':'Reviewed policy and regression suite passed'})
-    assert pre.status_code==400
-    evaluated=api('POST',f'/learning/{pid}/evaluate')
-    assert evaluated.status_code==200,evaluated.text
-    assert evaluated.json()['evaluation']['regression']['all_passed']
-    published=api('POST',f'/learning/{pid}/approve',json={'rationale':'Reviewer verified provenance and regression passed'})
-    assert published.status_code==200,published.text
-    assert published.json()['precedent']['release_status']=='ACTIVE_APPROVED_PRECEDENT'
+    proposal=repo().get_proposal(pid)
+    assert reviewed.json()['learning']['status']=='PUBLISHED'
+    assert proposal['evaluation']['regression']['all_passed']
+    assert proposal['evaluation']['source_decision_verified']
+    assert repo().get_precedent(pid)['release_status']=='ACTIVE_APPROVED_PRECEDENT'
+
 
 def test_audit_event_mutation_detected():
     seed_cases();case=repo().get_case('DISP-003')
@@ -152,9 +150,57 @@ def test_rollback_removes_active_precedent_from_agent_retrieval():
         'proposed_precedent':'Traffic justified and unannounced route above two kilometers requires reviewer authorization.'})
     pid=case['learning_proposal_id']
     from app.services import evaluate_learning, approve_learning
-    evaluate_learning(pid)
-    approve_learning(pid, 'Approved after checking rule references and evidence.')
+    assert case['learning']['status']=='PUBLISHED'
     assert any(x.get('precedent_id')==pid for x in get_relevant_precedents('route_deviation')['reviewed_approved_new_precedents'])
     rollback_learning(pid, 'Incorrect learning statement, rollback required.')
     assert all(x.get('precedent_id')!=pid for x in get_relevant_precedents('route_deviation')['reviewed_approved_new_precedents'])
     assert repo().get_precedent(pid)['release_status']=='ROLLED_BACK'
+
+
+def test_unavailable_image_analysis_returns_retryable_error_without_evidence(monkeypatch):
+    import app.main as main
+    seed_cases()
+    before=len(repo().get_case('DEMO-DAMAGE-DISPUTED')['evidence'])
+    async def unavailable(*args):
+        raise RuntimeError('provider quota details must not reach the browser')
+    monkeypatch.setattr(main,'describe_damage_image',unavailable)
+    res=api('POST','/cases/DEMO-DAMAGE-DISPUTED/files',
+            files={'file':('demo.png',b'\x89PNG\r\n\x1a\nsynthetic','image/png')})
+    assert res.status_code==503
+    assert 'retry the attachment' in res.json()['detail']
+    assert 'provider quota' not in res.text
+    assert len(repo().get_case('DEMO-DAMAGE-DISPUTED')['evidence'])==before
+
+
+def test_image_analysis_deadline_cancels_request(monkeypatch):
+    import asyncio
+    import app.main as main
+    seed_cases()
+    cancelled=[]
+    async def hanging(*args):
+        try:
+            await asyncio.sleep(10)
+        finally:
+            cancelled.append(True)
+    monkeypatch.setattr(main,'describe_damage_image',hanging)
+    monkeypatch.setattr(main,'IMAGE_ANALYSIS_TIMEOUT_SECONDS',0.01)
+    res=api('POST','/cases/DEMO-DAMAGE-DISPUTED/files',
+            files={'file':('demo.png',b'\x89PNG\r\n\x1a\nsynthetic','image/png')})
+    assert res.status_code==503
+    assert cancelled==[True]
+
+
+def test_completed_attachment_retry_reuses_saved_analysis(monkeypatch):
+    import app.main as main
+    seed_cases();calls=[]
+    async def analyse(*args):
+        calls.append(1)
+        return {'mode':'ADK_GEMINI_PIXELS_ONLY','caption':'A brown mark on a seat.','authenticity_verdict':'UNKNOWN'}
+    monkeypatch.setattr(main,'describe_damage_image',analyse)
+    file={'file':('seat.png',b'\x89PNG\r\n\x1a\nretry-test','image/png')}
+    first=api('POST','/cases/DEMO-DAMAGE-DISPUTED/files',files=file)
+    again=api('POST','/cases/DEMO-DAMAGE-DISPUTED/files',files=file)
+    assert first.status_code==again.status_code==200
+    assert first.json()==again.json()
+    assert calls==[1]
+    assert len(repo().get_case('DEMO-DAMAGE-DISPUTED')['evidence'])==1

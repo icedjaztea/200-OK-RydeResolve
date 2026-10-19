@@ -44,7 +44,7 @@ def test_clarification_no_duplicate_on_retry():
     assert len(notes) == 1, f'Expected 1 clarification notification, got {len(notes)}'
     assert 'message' in notes[0]
     assert notes[0]['message']  # non-empty readable message
-    assert notes[0]['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED'
+    assert notes[0]['status'] == 'DELIVERED'
 
     # Retry process — should not create a duplicate notification
     again = _process('DEMO-FARE-CLARIFY')
@@ -65,7 +65,7 @@ def test_safety_alert_no_judge_no_mock_payment():
     safety_notes = [n for n in p['notifications'] if n['kind'] == 'SAFETY_REVIEW_ALERT']
     assert len(safety_notes) >= 1  # at least reviewer alert
     for n in safety_notes:
-        assert n['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED'
+        assert n['status'] == 'DELIVERED'
         assert 'message' in n and n['message']  # readable message present
     # Reviewer alert should mention safety/human review
     reviewer_note = next(n for n in safety_notes if n['recipient'] == 'reviewer')
@@ -83,12 +83,12 @@ def test_disp003_simulated_refund_notification():
     assert p['mock_action']['disposition'] == 'refund'
 
     receipts = [n for n in p['notifications'] if n['kind'] == 'RESOLUTION_RECEIPT']
-    assert len(receipts) == 1
+    assert len(receipts) == 2
     msg = receipts[0]['message']
     assert 'SGD 4.50' in msg or '4.5' in msg
     assert 'refund' in msg.lower()
     assert 'no real' in msg.lower() or 'not' in msg.lower()  # payment destination unknown / not executed
-    assert receipts[0]['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED'
+    assert receipts[0]['status'] == 'DELIVERED'
     assert receipts[0]['recipient'] == 'rider'
 
 
@@ -105,11 +105,11 @@ def test_human_reviewed_disp001_gets_notification():
     assert reviewed.status_code == 200, reviewed.text
     case = reviewed.json()
     receipts = [n for n in case['notifications'] if n['kind'] == 'RESOLUTION_RECEIPT']
-    assert len(receipts) == 1, 'Human review should produce a RESOLUTION_RECEIPT notification'
+    assert len(receipts) == 2, 'Human review should produce a RESOLUTION_RECEIPT notification'
     msg = receipts[0]['message']
     assert 'refund' in msg.lower()
     assert 'SGD' in msg
-    assert receipts[0]['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED'
+    assert receipts[0]['status'] == 'DELIVERED'
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +132,7 @@ def test_no_duplicate_review_processing_notifications():
     assert reviewed.status_code == 200
     case = reviewed.json()
     receipts = [n for n in case['notifications'] if n['kind'] == 'RESOLUTION_RECEIPT']
-    assert len(receipts) == 1, 'Human review produced duplicate notification'
+    assert len(receipts) == 2, 'Human review produced duplicate notification'
 
     # Retry review — should be blocked (already reviewed)
     again = api('POST', '/cases/DISP-001/review',
@@ -153,7 +153,7 @@ def test_no_action_no_money():
     assert reviewed.status_code == 200, reviewed.text
     case = reviewed.json()
     receipts = [n for n in case['notifications'] if n['kind'] == 'RESOLUTION_RECEIPT']
-    assert len(receipts) == 1
+    assert len(receipts) == 2
     msg = receipts[0]['message']
     assert 'no action' in msg.lower() or 'no transfer' in msg.lower()
     assert 'not' in msg.lower() or 'no payment' in msg.lower()
@@ -171,7 +171,7 @@ def test_credit_not_card_refund():
     assert reviewed.status_code == 200, reviewed.text
     case = reviewed.json()
     receipts = [n for n in case['notifications'] if n['kind'] == 'RESOLUTION_RECEIPT']
-    assert len(receipts) == 1
+    assert len(receipts) == 2
     msg = receipts[0]['message']
     assert 'credit' in msg.lower()
     assert 'not a card refund' in msg.lower()
@@ -200,8 +200,8 @@ def test_safe_distinct_rider_driver_wording():
     # Both must mention the case ID and synthetic demo
     assert 'DEMO-SAFETY-IN-FARE' in rider_note['message']
     assert 'DEMO-SAFETY-IN-FARE' in driver_note['message']
-    assert 'synthetic' in rider_note['message'].lower()
-    assert 'synthetic' in driver_note['message'].lower()
+    assert rider_note['channel']=='in_app'
+    assert driver_note['channel']=='in_app'
 
     # Both must NOT contain historical fraud flag references
     assert 'fraud' not in rider_note['message'].lower()
@@ -215,7 +215,7 @@ def test_safe_distinct_rider_driver_wording():
 # ---------------------------------------------------------------------------
 # 9. All outbox entries explicitly simulated/not delivered.
 # ---------------------------------------------------------------------------
-def test_all_outbox_entries_simulated_not_delivered():
+def test_all_updates_delivered_in_app():
     _setup()
     # Process multiple case types
     _process('DEMO-FARE-CLARIFY')        # CLARIFICATION_REQUEST
@@ -225,7 +225,7 @@ def test_all_outbox_entries_simulated_not_delivered():
     for cid in ['DEMO-FARE-CLARIFY', 'DEMO-SAFETY-IN-FARE', 'DISP-003']:
         case = api('GET', f'/cases/{cid}').json()
         for n in case.get('notifications', []):
-            assert n['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED', \
+            assert n['status'] == 'DELIVERED', \
                 f'{cid}: notification {n["kind"]} has status {n["status"]}'
             assert 'message' in n and n['message'], \
                 f'{cid}: notification {n["kind"]} missing readable message'
@@ -242,7 +242,7 @@ def test_all_outbox_entries_simulated_not_delivered():
     assert reviewed.status_code == 200
     case = reviewed.json()
     for n in case.get('notifications', []):
-        assert n['status'] == 'SIMULATED_OUTBOX_NOT_DELIVERED'
+        assert n['status'] == 'DELIVERED'
         assert 'message' in n and n['message']
         assert 'created_at' in n
         assert 'recipient' in n

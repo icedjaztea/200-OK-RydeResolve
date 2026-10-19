@@ -1,10 +1,13 @@
 'use client';
 import {useState,useEffect,useRef} from 'react';
 import Link from 'next/link';
+import AppealPanel from '../../lib/AppealPanel';
+import ImageAnalysisSummary, {ModelLabel} from '../../lib/ImageAnalysisSummary';
+import {processCaseRequest} from '../../lib/processCase';
 import {useApi} from '../../lib/useApi';
 import {CaseTimeline} from '../../lib/Timeline';
 import {
-  TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel,
+  TONES, statusLabel, pathLabel, categoryLabel, dispositionLabel, notifKindLabel, notificationStatus,
 } from '../../lib/labels';
 
 const REVIEW_DISPOSITIONS=[
@@ -34,28 +37,28 @@ const AGENT_ORDER=['RiderAdvocate','DriverAdvocate','PolicyPrecedent','FraudBadF
 
 // Human-readable labels for common fact field names
 const FACT_LABELS={
-  upfront_quote:'Upfront quote',actual_fare:'Actual fare',surge_before:'Surge before',
-  surge_after:'Surge after',rider_notified:'Rider notified',notification_log_complete:'Notification log complete',
-  difference_solely_surge:'Difference solely surge',rider_proceeded:'Rider proceeded',
+  upfront_quote:'Upfront quote',actual_fare:'Actual fare',surge_before:'Surge multiplier at booking',
+  surge_after:'Surge multiplier charged',rider_notified:'Was the rider notified?',notification_log_complete:'Is the notification history complete?',
+  difference_solely_surge:'Was surge pricing the only reason for the difference?',rider_proceeded:'Did the rider continue after being informed?',
   actual_distance_km:'Actual distance (km)',recommended_distance_km:'Recommended distance (km)',
   traffic_justified:'Traffic justified',excess_distance_fare:'Excess distance fare',
   rider_agreed:'Rider agreed',scheduled_pickup_at:'Scheduled pickup',cancellation_at:'Cancellation time',
   driver_arrived:'Driver arrived',rider_absent:'Rider absent',driver_message_count:'Driver messages',
-  driver_call_count:'Driver calls',rider_disputes_claim:'Rider disputes claim',damage_kind:'Damage kind',
-  photo_verifiable:'Photo verifiable',trip_link_verified:'Trip link verified',
-  photo_submitted_within_24h:'Photo submitted within 24h',dispute_amount:'Dispute amount',
+  driver_call_count:'Driver calls',rider_disputes_claim:'Does the rider dispute the damage claim?',damage_kind:'Cleaning or repair?',
+  photo_verifiable:'Is the photo’s origin verified?',trip_link_verified:'Is the photo linked to this trip by a checked record?',
+  photo_submitted_within_24h:'Was the photo submitted within 24 hours?',dispute_amount:'Dispute amount',
   dispute_value_basis:'Dispute value basis',
 };
 
-// Processing pipeline steps for the live progress display
-const PROCESS_STEPS=[
-  {id:'safety',label:'Safety screening',desc:'Checking for safety allegations'},
-  {id:'routing',label:'Routing index',desc:'Identifying candidate policy rules'},
-  {id:'gaps',label:'Evidence check',desc:'Checking for missing or conflicting evidence'},
-  {id:'agents',label:'Agent evaluation',desc:'Running advocate and judge agents'},
-  {id:'gate',label:'Policy gate',desc:'Applying deterministic policy validation'},
-  {id:'outcome',label:'Outcome',desc:'Recording resolution or routing to review'},
-];
+const CATEGORY_FACTS={
+  fare_dispute:['upfront_quote','actual_fare','surge_before','surge_after','rider_notified','notification_log_complete','difference_solely_surge','rider_proceeded'],
+  property_damage:['rider_disputes_claim','damage_kind','photo_verifiable','trip_link_verified','photo_submitted_within_24h'],
+  route_deviation:['actual_distance_km','recommended_distance_km','traffic_justified','excess_distance_fare','rider_notified','rider_agreed'],
+  no_show_charge:['scheduled_pickup_at','cancellation_at','driver_arrived','rider_absent','driver_message_count','driver_call_count'],
+  driver_no_show:['scheduled_pickup_at','cancellation_at','driver_arrived','rider_absent','driver_message_count','driver_call_count'],
+};
+const BOOLEAN_FACTS=new Set(['rider_notified','notification_log_complete','difference_solely_surge','rider_proceeded','traffic_justified','rider_agreed','driver_arrived','rider_absent','rider_disputes_claim','photo_verifiable','trip_link_verified','photo_submitted_within_24h']);
+const NUMBER_FACTS=new Set(['upfront_quote','actual_fare','surge_before','surge_after','actual_distance_km','recommended_distance_km','excess_distance_fare','driver_message_count','driver_call_count','dispute_amount']);
 
 function factLabel(field){return FACT_LABELS[field]||field.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 function formatFactValue(v){
@@ -154,27 +157,22 @@ export default function ReviewerWorkbench(){
   const [reviewDisposition,setReviewDisposition]=useState('refund');
   const [reviewAmount,setReviewAmount]=useState('0');
   const [reviewReason,setReviewReason]=useState('');
-  const [precedent,setPrecedent]=useState('');
   const [packet,setPacket]=useState(null);
-  const [report,setReport]=useState(null);
-  const [learning,setLearning]=useState([]);
-  const [learningId,setLearningId]=useState('');
-  const [rollbackReason,setRollbackReason]=useState('');
   const [uploadFile,setUploadFile]=useState(null);
   const [uploadReport,setUploadReport]=useState(null);
-  const [field,setField]=useState('rider_notified');
-  const [factValue,setFactValue]=useState('false');
-  const [provenance,setProvenance]=useState('Synthetic verified notification event export');
+  const [field,setField]=useState('');
+  const [factValue,setFactValue]=useState('');
+  const [provenance,setProvenance]=useState('');
   const [auditResult,setAuditResult]=useState(null);
   const [showConfirm,setShowConfirm]=useState(false);
   const [processing,setProcessing]=useState(false);
-  const [processStep,setProcessStep]=useState(-1);
+  const [processSlow,setProcessSlow]=useState(false);
+  const processingRef=useRef(false);
   const [ruleSnippets,setRuleSnippets]=useState({});
   const [expandedRules,setExpandedRules]=useState({});
   const [showClarPanel,setShowClarPanel]=useState(false);
   const [clarRecipient,setClarRecipient]=useState('rider');
   const [clarQuestion,setClarQuestion]=useState('');
-  const processTimerRef=useRef(null);
 
   async function connect(){
     setPolicy(await api.call('health'));
@@ -188,11 +186,10 @@ export default function ReviewerWorkbench(){
   },[]);
 
   async function selectCase(id){
-    if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
+    if(processingRef.current)return;
     setProcessing(false);
-    setProcessStep(-1);
     setShowClarPanel(false);
-    setClarQuestion('');
+    setClarQuestion('');setField('');setFactValue('');setProvenance('');
     setDetail(await api.call('cases/'+id));
     setRuleSnippets({});
     setExpandedRules({});
@@ -216,7 +213,6 @@ export default function ReviewerWorkbench(){
     if(!rule&&ruleId) loadRuleSnippets([ruleId]);
   }
 
-  async function loadLearning(){const data=await api.call('learning');setLearning(data.proposals||[])}
 
   const selected=detail?.case_id;
   const isSafety=detail?.path==='IMMEDIATE_HUMAN_REVIEW';
@@ -238,33 +234,16 @@ export default function ReviewerWorkbench(){
 
   const banner=nextActionBanner();
 
-  useEffect(()=>()=>{if(processTimerRef.current) clearInterval(processTimerRef.current)},[]);
 
   async function doProcess(){
-    if(processing) return; // prevent duplicate clicks
-    setProcessing(true);
-    setProcessStep(0);
-    // Walk through pipeline steps for visual feedback.
-    // The actual API call blocks until processing completes server-side.
-    let stepIdx=0;
-    processTimerRef.current=setInterval(()=>{
-      stepIdx++;
-      if(stepIdx<PROCESS_STEPS.length) setProcessStep(stepIdx);
-      else if(processTimerRef.current) clearInterval(processTimerRef.current);
-    },400);
-    // Safety timeout: if the server call hangs, reset the UI so the user can retry.
-    const timeoutRef=setTimeout(()=>{
-      if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
-      setProcessing(false);
-      setProcessStep(-1);
-      api.setError('Processing timed out. Please try again.');
-    },25000);
+    if(processingRef.current) return;
+    processingRef.current=true;
+    setProcessing(true);setProcessSlow(false);
+    // A slow request is not a failed request. Keep the action disabled until it settles.
     try{
-      const r=await api.call('cases/'+selected+'/process',{method:'POST'});
-      clearTimeout(timeoutRef);
-      if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
-      setProcessStep(PROCESS_STEPS.length-1);
+      const r=await processCaseRequest(api.call,selected,()=>setProcessSlow(true));
       setDetail(r);
+      setCases(await api.call('cases'));
       // Preload rule snippets for the routing + agent + gate rules
       const allRules=new Set();
       (r.routing?.candidate_rule_ids||[]).forEach(id=>allRules.add(id));
@@ -273,21 +252,16 @@ export default function ReviewerWorkbench(){
       Object.values(r.agent_outputs||{}).forEach(a=>(a.policy_rule_ids||[]).forEach(id=>allRules.add(id)));
       loadRuleSnippets([...allRules]);
       api.setNotice('Case processing complete.');
-      // Clear processing highlight after 2s
-      setTimeout(()=>{setProcessStep(-1)},2000);
     }catch(e){
-      clearTimeout(timeoutRef);
-      if(processTimerRef.current){clearInterval(processTimerRef.current);processTimerRef.current=null}
-      setProcessStep(-1);
       api.setError(e.message);
-    }finally{setProcessing(false)}
+    }finally{processingRef.current=false;setProcessing(false);setProcessSlow(false)}
   }
 
   async function doFinalize(){
     setShowConfirm(false);
-    const p=await api.call('cases/'+selected+'/review',{method:'POST',body:{disposition:reviewDisposition,amount:Number(reviewAmount),reason:reviewReason,proposed_precedent:precedent||null}});
+    const p=await api.call('cases/'+selected+'/review',{method:'POST',body:{disposition:reviewDisposition,amount:Number(reviewAmount),reason:reviewReason,proposed_precedent:null}});
     setDetail(p);
-    if(p.learning_proposal_id) setLearningId(p.learning_proposal_id);
+    setCases(await api.call('cases'));
     api.setNotice('Reviewer decision recorded. Simulated record generated — no real funds transferred.');
   }
 
@@ -332,9 +306,9 @@ export default function ReviewerWorkbench(){
           </div>
           {cases.length===0?<p className="muted">No cases loaded.</p>:cases.map(item=>{
             const urgent=item.status==='REVIEW_REQUIRED'||item.path==='IMMEDIATE_HUMAN_REVIEW';
-            return <button key={item.case_id} className={'case-item '+(selected===item.case_id?'selected':'')+(urgent?' urgent':'')} onClick={()=>api.run(()=>selectCase(item.case_id))}>
+            return <button key={item.case_id} disabled={processing} className={'case-item '+(selected===item.case_id?'selected':'')+(urgent?' urgent':'')} onClick={()=>api.run(()=>selectCase(item.case_id))}>
               <strong>{item.case_id}</strong>
-              <span>{categoryLabel(item.category)}</span>
+              <span>{item.appeal_of?'Appeal · ':''}{categoryLabel(item.category)}</span>
               <em className={'status '+(TONES[item.status]||'neutral')}>{statusLabel(item.status)}</em>
             </button>;
           })}
@@ -363,24 +337,16 @@ export default function ReviewerWorkbench(){
                 <span>Policy: {detail.policy_version||'2.1'}</span>
                 <span>Source: SYNTHETIC</span>
               </div>
-              {!isResolved&&<button disabled={processing} onClick={()=>{setTab('overview');api.run(doProcess)}}>{processing?'Processing…':'Process / Re-evaluate'}</button>}
-              {processing&&processStep>=0&&<div className="process-timeline">
-                {PROCESS_STEPS.map((step,i)=>{
-                  const state=i<processStep?'done':i===processStep?'active':'pending';
-                  return <div key={step.id} className={'process-step '+state}>
-                    <div className="process-dot"/>
-                    <div className="process-step-body">
-                      <div className="process-step-label">{step.label}</div>
-                      <div className="process-step-desc">{step.desc}</div>
-                    </div>
-                  </div>;
-                })}
-              </div>}
+              <button className="secondary" disabled={api.busy||processing} onClick={()=>api.run(async()=>{setDetail(await api.call('cases/'+selected));setCases(await api.call('cases'));})}>Refresh case</button>
+              {!isResolved&&<button disabled={api.busy||processing} onClick={()=>{setTab('overview');api.run(doProcess)}}>{processing?'Processing…':'Process / Re-evaluate'}</button>}
+              {processing&&<p role="status" className="alert">{processSlow?'Still working. AI checks can take a few minutes. Please keep this case open; no retry is needed.':'Reviewing the evidence and running policy and AI checks…'}</p>}
               {detail.mock_action&&<div className="receipt">
                 <b>{dispositionLabel(detail.mock_action.disposition)}</b> · SGD {Number(detail.mock_action.amount||0).toFixed(2)}
                 <br/><small>Simulated · No real funds transferred · Receipt: {detail.mock_action.receipt}</small>
               </div>}
             </div>
+
+        <AppealPanel key={detail.case_id+api.key} detail={detail} api={api} role="reviewer" onOpen={async id=>{await selectCase(id);setCases(await api.call('cases'));}}/>
 
             {/* Tab bar */}
             <div className="tab-bar" role="tablist">
@@ -438,6 +404,8 @@ export default function ReviewerWorkbench(){
                 <CaseTimeline detail={detail}/>
               </div>}
 
+              {isResolved&&<div className="card"><h3>Learning from this review</h3><p>{detail.learning?.message||'This earlier decision has no automatic learning record.'}</p>{detail.learning?.status==='PUBLISHED'&&<em className="status good">Available for future reviews</em>}</div>}
+
               {/* Request More Information — prominent button + panel */}
               {!isResolved&&<>
                 <div className="card" style={{borderTop:'3px solid var(--pink)'}}>
@@ -450,12 +418,12 @@ export default function ReviewerWorkbench(){
                   {showClarPanel&&<div className="clar-panel" style={{marginTop:'12px'}}>
                     <label style={{fontSize:'13px',fontWeight:600,color:'var(--ink-secondary)'}}>Ask:</label>
                     <select value={clarRecipient} onChange={e=>setClarRecipient(e.target.value)} style={{marginBottom:'8px'}}>
-                      <option value="rider">Rider</option>
-                      <option value="driver">Driver</option>
+                      <option value="rider" disabled={!detail.rider_id}>Rider{!detail.rider_id?' (not linked)':''}</option>
+                      <option value="driver" disabled={!detail.driver_id}>Driver{!detail.driver_id?' (not linked)':''}</option>
                     </select>
                     <label style={{fontSize:'13px',fontWeight:600,color:'var(--ink-secondary)'}}>Question:</label>
                     <textarea value={clarQuestion} onChange={e=>setClarQuestion(e.target.value)} placeholder="Type your question here…" style={{minHeight:'80px',marginBottom:'8px'}}/>
-                    <button disabled={api.busy||clarQuestion.trim().length<5} onClick={()=>api.run(async()=>{
+                    <button disabled={api.busy||clarQuestion.trim().length<5||!detail[clarRecipient+'_id']} onClick={()=>api.run(async()=>{
                       const r=await api.call('cases/'+detail.case_id+'/clarifications',{method:'POST',body:{recipient:clarRecipient,question:clarQuestion.trim()}});
                       setDetail(r);setShowClarPanel(false);setClarQuestion('');
                       api.setNotice('Question sent to '+clarRecipient+'.');
@@ -485,20 +453,18 @@ export default function ReviewerWorkbench(){
                       <em className="status bad">Unverified party account</em>
                     </div>
                   ))}
-                  <button className="small" style={{marginTop:'8px'}} disabled={api.busy} onClick={()=>api.run(async()=>{
-                    const r=await api.call('cases/'+detail.case_id+'/process',{method:'POST'});
-                    setDetail(r);api.setNotice('Investigation continued. Case re-processed with latest information.');
-                  })}>Continue Investigation</button>
+                  <button className="small" style={{marginTop:'8px'}} disabled={api.busy||processing} onClick={()=>api.run(doProcess)}>Continue Investigation</button>
                 </div>}
               </>}
 
               {detail.notifications&&detail.notifications.length>0&&<div className="card outbox">
-                <p className="eyebrow">NOTIFICATION OUTBOX</p>
-                <p className="muted">Simulated — not delivered.</p>
+                <p className="eyebrow">CASE UPDATES</p>
+                <p className="muted">Updates are delivered inside the linked recipient’s portal. Delivery does not mean the update has been read.</p>
                 <div className="notif-list">{detail.notifications.map((n,i)=>(
                   <div key={i} className="notif-item">
-                    <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><span className="notif-recipient">To: {n.recipient}</span><em className="status bad">Not delivered</em></div>
+                    <div className="notif-head"><span className="notif-kind">{notifKindLabel(n.kind)}</span><span className="notif-recipient">To: {n.recipient}</span><em className={'status '+(n.status==='DELIVERED'?'good':'neutral')}>{notificationStatus(n)}</em></div>
                     <p className="notif-msg">{n.message}</p>
+                    {n.delivered_at&&<small className="muted">Available since {new Date(n.delivered_at).toLocaleString()}</small>}
                   </div>
                 ))}</div>
               </div>}
@@ -581,7 +547,7 @@ export default function ReviewerWorkbench(){
                       <div style={{flex:1}}>
                         <div style={{fontSize:'13px',fontWeight:600}}>{ev.id}</div>
                         <div style={{fontSize:'11px',color:'var(--ink-secondary)'}}>{ct} · {ev.content?.size_bytes?Math.round(ev.content.size_bytes/1024)+'KB':'—'}</div>
-                        {ev.analysis&&ev.analysis.caption&&<div style={{fontSize:'11px',color:'var(--ink-secondary)',fontStyle:'italic',marginTop:'2px'}}>{ev.analysis.caption}</div>}
+                        {isImg&&<ImageAnalysisSummary analysis={ev.analysis}/>}
                       </div>
                       <button className="small secondary" onClick={()=>window.open('/api/proxy/cases/'+detail.case_id+'/files/'+sha.slice(0,24),'_blank')}>View</button>
                     </div>;
@@ -589,14 +555,14 @@ export default function ReviewerWorkbench(){
                 </div>
               </div>}
               {!isResolved&&<div className="card">
-                <h3>Add synthetic verified-source fact</h3>
-                <p className="muted">Import a synthetic system fact with provenance. Party statements are never promoted to system facts.</p>
-                <div className="fieldgrid">
-                  <input value={field} onChange={e=>setField(e.target.value)} placeholder="Field name"/>
-                  <input value={factValue} onChange={e=>setFactValue(e.target.value)} placeholder="JSON value"/>
-                  <input value={provenance} onChange={e=>setProvenance(e.target.value)} placeholder="Source description"/>
+                <h3>Add a checked trip record</h3>
+                <p className="muted">Use a trip, fare or contact record you have checked. Choose the detail, enter its value, and name the record you checked. For this demo, use synthetic records only. A rider’s or driver’s statement is not a checked record.</p>
+                <div className="fieldgrid checked-record-fields">
+                  <label>What did you check?<select value={field} onChange={e=>{setField(e.target.value);setFactValue('')}}><option value="">Choose a trip detail…</option>{Object.entries(FACT_LABELS).filter(([key])=>(CATEGORY_FACTS[detail.category]||Object.keys(FACT_LABELS)).includes(key)).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+                  <label>Recorded value{field==='damage_kind'?<select value={factValue} onChange={e=>setFactValue(e.target.value)}><option value="">Choose…</option><option value="cleaning">Stain or mess requiring cleaning</option><option value="repair">Damage requiring repair</option></select>:BOOLEAN_FACTS.has(field)?<select value={factValue} onChange={e=>setFactValue(e.target.value)}><option value="">Choose…</option><option value="true">Yes</option><option value="false">No</option></select>:<input type={NUMBER_FACTS.has(field)?'number':'text'} min={NUMBER_FACTS.has(field)?0:undefined} step={field==='driver_call_count'||field==='driver_message_count'?1:'any'} value={factValue} onChange={e=>setFactValue(e.target.value)} placeholder={NUMBER_FACTS.has(field)?'Enter the amount or number':'Enter the recorded detail'}/>}</label>
+                  <label>Which record confirms this?<input value={provenance} onChange={e=>setProvenance(e.target.value)} placeholder="For example: trip fare receipt, 19 Oct"/></label>
                 </div>
-                <button disabled={api.busy||!field} onClick={()=>api.run(async()=>{let value;try{value=JSON.parse(factValue)}catch{value=factValue}const p=await api.call('cases/'+selected+'/evidence',{method:'POST',body:{field,value,provenance}});setDetail(p);api.setNotice('Evidence added. Re-evaluate to see updated assessment.')})}>Attach fact</button>
+                <button disabled={api.busy||!field||!factValue.trim()||provenance.trim().length<3} onClick={()=>api.run(async()=>{const value=BOOLEAN_FACTS.has(field)?factValue==='true':NUMBER_FACTS.has(field)?Number(factValue):factValue.trim();const p=await api.call('cases/'+selected+'/evidence',{method:'POST',body:{field,value,provenance}});setDetail(p);api.setNotice('Evidence added. Re-evaluate to see updated assessment.')})}>Save checked record</button>
               </div>}
             </>}
 
@@ -635,6 +601,7 @@ export default function ReviewerWorkbench(){
                           </div>
                         </div>
                         <p className="agent-step-summary">{v.summary}</p>
+                        <ModelLabel trace={v}/>
                         {v.recommended_amount!=null&&v.recommended_amount>0&&
                           <div className="agent-step-amount">Recommended: SGD {Number(v.recommended_amount).toFixed(2)}</div>}
                         {v.policy_rule_ids?.length>0&&<div className="agent-rules">
@@ -691,11 +658,11 @@ export default function ReviewerWorkbench(){
                   <p className="eyebrow">HUMAN REVIEW REQUIRED</p>
                   <h3>Authorized simulated reviewer decision</h3>
                   <div className="fieldgrid">
-                    <select value={reviewDisposition} onChange={e=>setReviewDisposition(e.target.value)}>{REVIEW_DISPOSITIONS.map(d=><option key={d.value} value={d.value}>{d.label}</option>)}</select>
-                    <input type="number" min="0" step="0.01" value={reviewAmount} onChange={e=>setReviewAmount(e.target.value)} placeholder="SGD amount"/>
+                    <select aria-label="Decision" value={reviewDisposition} onChange={e=>setReviewDisposition(e.target.value)}>{REVIEW_DISPOSITIONS.map(d=><option key={d.value} value={d.value}>{d.label}</option>)}</select>
+                    <input aria-label="Decision amount (SGD)" type="number" min="0" step="0.01" value={reviewAmount} onChange={e=>setReviewAmount(e.target.value)} placeholder="SGD amount"/>
                   </div>
-                  <textarea value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="Write justification based on evidence and policy (10+ characters)"/>
-                  <textarea value={precedent} onChange={e=>setPrecedent(e.target.value)} placeholder="Optional staged precedent for Innovation B"/>
+                  <textarea aria-label="Reason for your decision" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} placeholder="Write justification based on evidence and policy (10+ characters)"/>
+                  <p className="muted">After you finalize, eligible decisions are automatically checked and saved as examples for future reviews. No separate learning step is needed.</p>
                   <button disabled={api.busy||reviewReason.length<10} onClick={()=>setShowConfirm(true)}>Review decision before finalizing</button>
                 </div>
                 <div className="card packet">
@@ -731,22 +698,6 @@ export default function ReviewerWorkbench(){
 
             {tab==='audit'&&<>
               <div className="card">
-                <p className="eyebrow">GOVERNED LEARNING</p>
-                <h3>Test before release</h3>
-                <div className="fieldgrid">
-                  <input value={learningId} onChange={e=>setLearningId(e.target.value)} placeholder="Learning proposal ID"/>
-                  <button disabled={api.busy||!learningId} onClick={()=>api.run(async()=>{const p=await api.call('learning/'+learningId+'/evaluate',{method:'POST'});api.setNotice(`${p.evaluation.regression.passed}/${p.evaluation.regression.total} checks passed.`);await loadLearning()})}>Run regression</button>
-                  <button disabled={api.busy||!learningId} onClick={()=>api.run(async()=>{await api.call('learning/'+learningId+'/approve',{method:'POST',body:{rationale:'Approved after review'}});api.setNotice('Precedent published.');await loadLearning()})}>Approve</button>
-                </div>
-                <div className="fieldgrid" style={{marginTop:'8px'}}>
-                  <input aria-label="Rollback reason" value={rollbackReason} onChange={e=>setRollbackReason(e.target.value)} placeholder="Rollback reason (10+ chars)"/>
-                  <button disabled={api.busy||!learningId||rollbackReason.trim().length<10} onClick={()=>api.run(async()=>{await api.call('learning/'+learningId+'/rollback',{method:'POST',body:{rationale:rollbackReason}});api.setNotice('Rolled back.');await loadLearning()})}>Rollback</button>
-                </div>
-                <button className="small" disabled={api.busy} style={{marginTop:'8px'}} onClick={()=>api.run(async()=>{setReport(await api.call('evaluation/reference'));await loadLearning()})}>Show evaluation report</button>
-                {report&&<p><b>{report.passed}/{report.total}</b> regression cases passed.</p>}
-                {learning.length>0&&<details><summary>Learning proposals</summary><pre className="json">{JSON.stringify(learning,null,2)}</pre></details>}
-              </div>
-              <div className="card">
                 <h3>Audit verification</h3>
                 <p className="muted">Case events are hash-linked for tamper detection.</p>
                 <button className="small" disabled={api.busy} onClick={()=>api.run(async()=>{const r=await api.call('cases/'+selected+'/verify-audit');setAuditResult(r);api.setNotice(r.valid?'Audit verified.':'Audit broken.')})}>Verify audit integrity</button>
@@ -769,7 +720,6 @@ export default function ReviewerWorkbench(){
           <div className="confirm-row"><span className="muted">Disposition</span><b>{dispositionLabel(reviewDisposition)}</b></div>
           <div className="confirm-row"><span className="muted">Amount</span><b>SGD {Number(reviewAmount||0).toFixed(2)}</b></div>
           <div className="confirm-row"><span className="muted">Reason</span><b>{reviewReason}</b></div>
-          {precedent&&<div className="confirm-row"><span className="muted">Precedent</span><b>{precedent}</b></div>}
         </div>
         <p className="muted" style={{fontSize:'11px'}}>Backend validation will enforce minimum reason length and policy compliance.</p>
         <div className="confirm-actions">

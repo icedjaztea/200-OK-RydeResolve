@@ -11,7 +11,7 @@
 
 export const STATUS_LABELS = {
   NEW: 'New case — pending processing',
-  AWAITING_CLARIFICATION: 'Awaiting your clarification',
+  AWAITING_CLARIFICATION: 'Awaiting response',
   REVIEW_REQUIRED: 'Human review required',
   RESOLVED: 'Resolved',
   REVIEWED_AND_RESOLVED: 'Resolved by reviewer',
@@ -73,7 +73,7 @@ export function outcomeExplanation(detail) {
       return 'Your case is awaiting review. No automated outcome has been determined — a reviewer will assess the evidence and decide.';
     }
     if (detail.status === 'AWAITING_CLARIFICATION') {
-      return 'We need additional information from you before the case can proceed. Please review the clarification request below.';
+      return 'The case is waiting for requested information before the reviewer can continue.';
     }
     return null;
   }
@@ -104,7 +104,7 @@ export function riderNextAction(detail) {
     case 'NEW':
       return 'Your case has been received and is awaiting initial processing by the review team.';
     case 'AWAITING_CLARIFICATION':
-      return 'Please respond to the clarification request below so the reviewer can continue the investigation.';
+      return detail.clarifications?.some(q=>q.recipient==='rider'&&q.status==='PENDING')?'Please respond to the request below so the reviewer can continue.':'Waiting for the driver’s response. You do not need to respond right now.';
     case 'REVIEW_REQUIRED':
       return 'Your case is being reviewed by a human reviewer. No further action is needed from you at this time.';
     case 'RESOLVED':
@@ -126,7 +126,7 @@ export function driverNextAction(detail) {
     case 'NEW':
       return 'This case has been filed and is awaiting processing.';
     case 'AWAITING_CLARIFICATION':
-      return 'A clarification has been requested from you. Please pull over safely before responding.';
+      return detail.clarifications?.some(q=>q.recipient==='driver'&&q.status==='PENDING')?'Please respond to the request below when it is safe to do so.':'Waiting for the rider’s response. You do not need to respond right now.';
     case 'REVIEW_REQUIRED':
       return 'This case is under human review. No further action is needed from you at this time.';
     case 'RESOLVED':
@@ -170,5 +170,14 @@ export function dispositionLabel(disposition) {
  * Human-readable label for a notification kind.
  */
 export function notifKindLabel(kind) {
+  if(kind==='APPEAL_SUBMITTED')return 'Appeal submitted';
+  if(kind==='CASE_SUBMITTED')return 'New report';
+  if(kind==='RESPONSE_RECEIVED')return 'Response received';
   return NOTIF_KIND_LABELS[kind] || (kind || '').replaceAll('_', ' ');
+}
+
+export function notificationStatus(note){
+  if(note.status==='DELIVERED')return 'Delivered in app';
+  if(note.status==='NO_LINKED_RECIPIENT')return 'No linked recipient';
+  return 'Historical update · not delivered';
 }

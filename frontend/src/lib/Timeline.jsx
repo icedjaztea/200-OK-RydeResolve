@@ -80,6 +80,9 @@ function PartyTimeline({detail, role}){
       dotClass:'active',
     });
   }
+  if(detail.status==='AWAITING_CLARIFICATION'&&!hasPending){
+    items.push({label:'Waiting for the other party',desc:'The other party has been asked to respond',dotClass:'active'});
+  }
   if(hasAnswered){
     items.push({
       label:'Information provided',
@@ -164,6 +167,9 @@ function friendlyCategory(cat){
 function eventLabel(kind){
   const labels={
     case_created:'Case filed',
+    appeal_created:'Appeal submitted',
+    automatic_learning_checked:'Future review guidance checked',
+    automatic_learning_failed:'Guidance publication failed',
     routing_index_read:'Routing analysis',
     policy_gate_applied:'Policy evaluation',
     mandatory_safety_escalation:'Safety escalation',

@@ -47,3 +47,7 @@ class ReclassifyRequest(BaseModel):
     """Reviewer reclassification of an 'other' case to a specific category."""
     category: ReclassifyCategory
     reason: str = Field(min_length=10, max_length=500)
+
+
+class AppealCreate(BaseModel):
+    reason: str = Field(min_length=10, max_length=3000)

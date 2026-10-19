@@ -23,7 +23,7 @@ _RIDER_SAFE_KEYS: set[str] = {
     'evidence',  # file attachments — parties can see and upload their own
     'synthetic',
     # Reclassification info — parties see what the reviewer classified it as.
-    'original_category',
+    'original_category','appeal_of','root_case_id','appeal_reason','original_decision','appeals',
 }
 
 # Fields that a Driver is allowed to see on a case detail.
@@ -67,6 +67,8 @@ def _filter_notifications(notifications: list[dict], role: str) -> list[dict]:
                 'message': n.get('message'),
                 'status': n.get('status'),
                 'created_at': n.get('created_at'),
+                'delivered_at': n.get('delivered_at'),
+                'channel': n.get('channel'),
             }
             if n.get('receipt'):
                 safe['receipt'] = n['receipt']
@@ -139,4 +141,6 @@ def safe_case_list_item(case: dict, role: str) -> dict:
         'path': case.get('path'),
         'dispute_amount': case.get('dispute_amount'),
         'filed_by': case.get('filed_by'),
+        'appeal_of': case.get('appeal_of'),
+        'needs_response': any(q.get('status')=='PENDING' and q.get('recipient')==role for q in case.get('clarifications',[])),
     }

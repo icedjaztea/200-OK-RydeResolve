@@ -1,6 +1,7 @@
 'use client';
 import {useState,useEffect,useRef} from 'react';
 import Link from 'next/link';
+import AppealPanel from '../../lib/AppealPanel';
 import {useApi} from '../../lib/useApi';
 import {
   STATUS_LABELS,PATH_LABELS,CATEGORY_LABELS,
@@ -523,7 +524,7 @@ export default function MonitorPage(){
                             role="button" tabIndex={0}
                             onKeyDown={e=>{if(e.key==='Enter'||e.key===' ')api.run(()=>loadCase(c.case_id))}}
                           >
-                            <div className="mon-case-id">{c.case_id}</div>
+                            <div className="mon-case-id">{c.appeal_of&&<small className="appeal-badge">Appeal</small>}{c.case_id}</div>
                             <div className="mon-case-info">
                               <span className="mon-case-cat">{categoryLabel(c.category)}</span>
                               <span className="mon-case-status">{statusLabel(c.status)}</span>
@@ -604,6 +605,7 @@ export default function MonitorPage(){
             </div>
 
             {/* Description */}
+            <AppealPanel key={detail.case_id} detail={detail} api={api} role="reviewer" onOpen={loadCase}/>
             {detail.description&&
               <div className="mon-detail-desc">{detail.description}</div>
             }

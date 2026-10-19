@@ -30,16 +30,8 @@ def verify_event_chain(case):
     return True
 
 
-# ---------------------------------------------------------------------------
-# Step 41: Deterministic outcome explanation & notification helpers.
-#
-# These helpers produce human-readable text for the simulated outbox.
-# They do NOT send real messages, invent sources/confidence/SLAs, or
-# claim that role-filtered UI ensures real privacy — the demo API is
-# not user-isolated.
-# ---------------------------------------------------------------------------
-
-_OUTCOME_NOT_DELIVERED='SIMULATED_OUTBOX_NOT_DELIVERED'
+# In-app notifications become available when the containing case is saved.
+# Delivered means available in the recipient portal, not read and not emailed.
 
 def outcome_explanation(disposition,amount,receipt=None):
     """Minimal deterministic explanation per disposition type.
@@ -68,37 +60,46 @@ def outcome_explanation(disposition,amount,receipt=None):
 def _rider_safety_message(case_id):
     """Safe explanation for the rider: no counterpart details, no allegation specifics."""
     return (f'Case {case_id}: Your report has been escalated for mandatory human review. '
-            'A reviewer will assess the situation and contact you through official channels. '
-            'No automated decision has been made. This is a synthetic demo; no real message was sent.')
+            'A reviewer will assess the situation and send updates here. '
+            'No automated decision has been made. Updates will appear here.')
 
 
 def _driver_safety_message(case_id):
     """Safe explanation for the driver: no rider allegation details, no safety specifics."""
     return (f'Case {case_id}: This trip has been escalated for mandatory human review. '
-            'A reviewer will investigate and contact you through official channels if needed. '
-            'No automated decision has been made. This is a synthetic demo; no real message was sent.')
-
-
-def _has_notification(case,kind,recipient):
-    """Check whether a notification of this kind+recipient already exists (dedup)."""
-    return any(n.get('kind')==kind and n.get('recipient')==recipient
-               for n in case.get('notifications',[]))
+            'A reviewer will investigate and request more information here if needed. '
+            'No automated decision has been made. Updates will appear here.')
 
 
 def _add_notification(case,kind,recipient,message,receipt=None,request_id=None):
-    """Append a simulated notification if not already present (idempotent)."""
-    if _has_notification(case,kind,recipient):
-        return
-    n={'kind':kind,'recipient':recipient,'message':message,
-       'status':_OUTCOME_NOT_DELIVERED,'created_at':now()}
+    # Separate questions and resolutions must not suppress each other's notifications.
+    key=f'{kind}:{recipient}:{request_id or receipt or ""}'
+    if any(n.get('delivery_key')==key for n in case.get('notifications',[])):return
+    recipient_id=case.get(f'{recipient}_id') if recipient!='reviewer' else 'reviewer'
+    stamp=now()
+    n={'kind':kind,'recipient':recipient,'recipient_id':recipient_id,'message':message,
+       'channel':'in_app','delivery_key':key,
+       'status':'DELIVERED' if recipient_id else 'NO_LINKED_RECIPIENT','created_at':stamp}
+    if recipient_id:n['delivered_at']=stamp
     if receipt:n['receipt']=receipt
     if request_id:n['request_id']=request_id
     case.setdefault('notifications',[]).append(n)
 
 
+def _notify_resolution(case,disposition,amount,receipt):
+    for role in ('rider','driver'):
+        if case.get(f'{role}_id'):
+            _add_notification(case,'RESOLUTION_RECEIPT',role,
+                outcome_explanation(disposition,amount,receipt),receipt=receipt)
+
+
 def create_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
     if repo().get_case(source['case_id']):raise ValueError('Case ID already exists')
-    return repo().save_case(_prepare_case(source,rider_id,driver_id))
+    case=_prepare_case(source,rider_id,driver_id)
+    for role in ('rider','driver','reviewer'):
+        if role=='reviewer' or case.get(f'{role}_id'):
+            _add_notification(case,'CASE_SUBMITTED',role,f'Case {case["case_id"]} has been submitted. Open it to review the report and attachments.')
+    return repo().save_case(case)
 
 
 def _prepare_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
@@ -122,6 +123,53 @@ def _prepare_case(source:dict, rider_id:str|None=None, driver_id:str|None=None):
     event(item,'case_created',{'synthetic':True,'category':item['category']})
     return item
 
+
+
+def create_appeal(cid, role, identity_id, reason):
+    original=get_case(cid)
+    if role not in ('driver','rider') or original.get(f'{role}_id')!=identity_id:
+        raise PermissionError('Only a party linked to this case can appeal')
+    if original['status'] not in ('RESOLVED','REVIEWED_AND_RESOLVED'):
+        raise ValueError('You can appeal after a decision has been made')
+    reason=reason.strip()
+    if len(reason)<10:raise ValueError('Explain why you are appealing in at least 10 characters')
+    # One appeal per decision and party; create-only storage makes retries safe.
+    aid='APPEAL-'+hashlib.sha256(f'{cid}:{identity_id}'.encode()).hexdigest()[:24].upper()
+    existing=repo().get_case(aid)
+    if existing:return existing
+    case=_prepare_case({
+        'case_id':aid,'trip_id':original.get('trip_id'),'category':original['category'],
+        'filed_by':role,'description':reason,'appeal_reason':reason,'appeal_of':cid,
+        'root_case_id':original.get('root_case_id',cid),'fraud_flags':original.get('fraud_flags',0),
+        'inherited_safety_escalation':safety_screen(original) or original.get('inherited_safety_escalation',False),
+        'rider_id':original.get('rider_id'),'driver_id':original.get('driver_id'),
+        'dispute_amount':original.get('dispute_amount'),'dispute_value_basis':original.get('dispute_value_basis','disputed_remedy_amount'),'synthetic':True,
+        'facts':copy.deepcopy(original.get('facts',{})),
+        'evidence':copy.deepcopy(original.get('evidence',[])),
+        'original_decision':{'disposition':original.get('mock_action',{}).get('disposition'),
+                             'amount':original.get('mock_action',{}).get('amount'),
+                             'case_id':cid},
+        'original_case_context':{'description':original.get('description'),
+                                'review':copy.deepcopy(original.get('review')),
+                                'clarifications':copy.deepcopy(original.get('clarifications',[]))},
+    })
+    for ev in case['evidence']:ev.setdefault('inherited_from',cid)
+    other='rider' if role=='driver' else 'driver'
+    if case.get(f'{other}_id'):
+        request_id=str(uuid.uuid4())
+        question=f'The {role} has appealed the decision for {cid}. Please review the appeal reason and evidence, then share your response and any supporting files.'
+        case['clarifications']=[{'request_id':request_id,'recipient':other,'question':question,
+                                'status':'PENDING','created_at':now(),'required_verified_fields':[],
+                                'source':'appeal'}]
+        case['status']='AWAITING_CLARIFICATION';case['path']='CLARIFICATION'
+        _add_notification(case,'CLARIFICATION_REQUEST',other,question,request_id=request_id)
+    else:
+        case['status']='REVIEW_REQUIRED';case['path']='HUMAN_REVIEW'
+    _add_notification(case,'APPEAL_SUBMITTED','reviewer',f'Appeal {aid} requests a review of {cid}.')
+    case['evidence_snapshot_hash']=hash_snapshot(case)
+    event(case,'appeal_created',{'original_case_id':cid,'filed_by':role})
+    repo().create_case_if_absent(case)
+    return get_case(aid)
 
 def seed_cases(reset:bool=False):
     if reset and hasattr(repo(),'reset'):repo().reset()
@@ -176,7 +224,8 @@ def reply_to_clarification(cid,request_id,answer,role,identity_id=None):
     else:
         raise PermissionError('Only the intended party or reviewer can reply')
     request.update(status='ANSWERED',answer=answer,answered_at=now(),answer_verification='UNVERIFIED_PARTY_ACCOUNT')
-    case['status']='NEW'
+    case['status']='AWAITING_CLARIFICATION' if any(q['status']=='PENDING' for q in requests) else 'NEW'
+    _add_notification(case,'RESPONSE_RECEIVED','reviewer',f'The {role} responded. Review the reply and continue the investigation.',request_id=request_id)
     event(case,'clarification_answered',{'request_id':request_id,'verification':'unverified_claim'})
     repo().save_case(case)
     return case
@@ -201,6 +250,8 @@ def request_more_info(cid, recipient, question):
         raise ValueError('Case is already resolved; use the appeal process instead')
     if recipient not in ('rider','driver'):
         raise ValueError('Recipient must be rider or driver')
+    if not case.get(f'{recipient}_id'):
+        raise ValueError(f'No {recipient} is linked to this case. Ask the linked party or continue human review.')
     if not question or len(question.strip())<5:
         raise ValueError('Question must be at least 5 characters')
     if len(question)>1000:
@@ -231,7 +282,7 @@ async def process_case(cid):
         return case  # retried request cannot execute a duplicate action
     contract=contract_report()
     if not contract['valid']:raise ValueError('Policy contract broken: '+str(contract['problems']))
-    is_safety=safety_screen(case)
+    is_safety=safety_screen(case) or case.get('inherited_safety_escalation',False)
     context=select_candidates(case['category'],case.get('description',''),case.get('fraud_flags',0),is_safety)
     case['routing']=context
     case['sla_routing']=route_priority(case)
@@ -254,7 +305,7 @@ async def process_case(cid):
         event(case,'mandatory_safety_escalation',{'rules':['SF-5.1','SF-5.2']})
         _add_notification(case,'SAFETY_REVIEW_ALERT','reviewer',
             f'Case {case["case_id"]}: Safety allegation detected. Immediate human review required. '
-            'No AI fault determination or remedy proposed. This is a synthetic demo; no real alert was sent.')
+            'No AI fault determination or remedy proposed.')
         # Safe rider/driver messages: no counterpart details, no allegation specifics
         _add_notification(case,'SAFETY_REVIEW_ALERT','rider',_rider_safety_message(case['case_id']))
         _add_notification(case,'SAFETY_REVIEW_ALERT','driver',_driver_safety_message(case['case_id']))
@@ -279,6 +330,9 @@ async def process_case(cid):
             f'Case {case["case_id"]}: "Other" category submitted. Manual classification required '
             'before policy adjudication can proceed. No automated financial action.')
         case['processing_ms']=round((time.perf_counter()-start)*1000,2)
+        return repo().save_case(case)
+    if case.get('appeal_of') and any(q['status']=='PENDING' for q in case.get('clarifications',[])):
+        case['status']='AWAITING_CLARIFICATION';case['path']='CLARIFICATION'
         return repo().save_case(case)
     missing=gaps(case);inconsistent=conflicts(case)
     if missing or inconsistent:
@@ -309,6 +363,9 @@ async def process_case(cid):
     candidate=recommend(case)
     outputs,trace=await evaluate_agents(case,candidate,context,safety=False)
     validation=gate(case,candidate)
+    if case.get('appeal_of'):
+        validation['can_auto']=False;validation['path']='HUMAN_REVIEW'
+        validation['reasons'].append('Appeal: a reviewer must reconsider the original decision and new evidence')
     if not judge_consistency(outputs,candidate):
         validation['can_auto']=False;validation['path']='HUMAN_REVIEW'
         validation['reasons'].append('ADK Judge proposal inconsistent with deterministic policy')
@@ -325,9 +382,7 @@ async def process_case(cid):
         case['mock_action']=action
         case['status']='RESOLVED'
         event(case,'mock_action_completed',{'receipt':action['receipt'],'new':created,'simulated':True})
-        _add_notification(case,'RESOLUTION_RECEIPT',case['filed_by'],
-            outcome_explanation(candidate['disposition'],candidate['amount'],action['receipt']),
-            receipt=action['receipt'])
+        _notify_resolution(case,candidate['disposition'],candidate['amount'],action['receipt'])
     else:
         case['status']='REVIEW_REQUIRED'
     case['processing_ms']=round((time.perf_counter()-start)*1000,2)
@@ -338,6 +393,8 @@ def human_review(cid,reviewer_decision:dict):
     case=get_case(cid)
     if case['status']!='REVIEW_REQUIRED':raise ValueError('Case must be in REVIEW_REQUIRED')
     if case.get('review'):raise ValueError('Already reviewed')
+    if case.get('appeal_of') and any(q['status']=='PENDING' for q in case.get('clarifications',[])):
+        raise ValueError('Wait for the requested appeal response before finalizing')
     # Prevent financial decisions on unclassified "other" cases.
     # The reviewer must reclassify first (POST /cases/{id}/reclassify).
     if case.get('category')=='other' and reviewer_decision.get('disposition') in ('refund','credit'):
@@ -349,19 +406,14 @@ def human_review(cid,reviewer_decision:dict):
     case['mock_action']=action;case['status']='REVIEWED_AND_RESOLVED';case['path']='HUMAN_REVIEW'
     case.setdefault('original_escalation',case.get('path'))  # preserve pre-review classification
     event(case,'reviewer_mock_remedy',{'receipt':action['receipt'],'simulated':True,'new':created})
-    # Human-reviewed outcomes must also produce a simulated notification to filed_by
-    _add_notification(case,'RESOLUTION_RECEIPT',case.get('filed_by','rider'),
-        outcome_explanation(reviewer_decision['disposition'],reviewer_decision['amount'],action['receipt']),
-        receipt=action['receipt'])
-    if reviewer_decision.get('proposed_precedent'):
-        pid='LP-'+uuid.uuid4().hex[:12].upper()
-        proposal={'proposal_id':pid,'case_id':cid,'category':case['category'],
-          'candidate_before':case.get('candidate',{}),'human_after':reviewer_decision,
-          'proposed_precedent':reviewer_decision['proposed_precedent'],
-          'status':'STAGED','created_at':now(),'policy_version':'2.1','evaluation':None}
-        repo().save_proposal(proposal)
-        case['learning_proposal_id']=pid
-        event(case,'learning_proposal_staged',{'proposal_id':pid})
+    _notify_resolution(case,reviewer_decision['disposition'],reviewer_decision['amount'],action['receipt'])
+    # Save the decision first. Learning failure must never lose a completed review.
+    repo().save_case(case)
+    try:
+        automatic_learning(case)
+    except Exception:
+        case['learning']={'status':'CHECKS_FAILED','message':'Decision saved. Guidance could not be published; it will not be used for other cases.'}
+        event(case,'automatic_learning_failed')
     repo().save_case(case)
     return case
 
@@ -424,6 +476,35 @@ def evaluate_suite(approved=True):
             'all_passed':all(x['passed'] for x in results),'results':results}
 
 
+
+def automatic_learning(case):
+    if safety_screen(case) or case.get('inherited_safety_escalation') or case.get('category')=='other':
+        case['learning']={'status':'NOT_ELIGIBLE','message':'This case is kept for audit only; safety and unclassified cases are not published as guidance.'}
+        return
+    pid='LP-'+hashlib.sha256(case['case_id'].encode()).hexdigest()[:20].upper()
+    decision=case['review']
+    # Publish a factual, case-specific example, never an invented general rule.
+    text=(f'Reviewed example {case["case_id"]}, category {case["category"]}: '
+          f'the reviewer chose {decision["disposition"]} for SGD {float(decision["amount"]):.2f}. '
+          f'Reviewer rationale (case-specific account): {decision["reason"]}. '
+          f'Recorded trip facts (verify their provenance before comparison): {json.dumps(case.get("facts",{}),sort_keys=True,default=str)}. '
+          f'Evidence snapshot: {case.get("evidence_snapshot_hash", "unknown")}. '
+          'This is a case-specific outcome, not proof of party fault or a new policy rule. '
+          'Compare the evidence independently; authoritative policy always takes precedence.')
+    proposal={'proposal_id':pid,'case_id':case['case_id'],'category':case['category'],
+              'candidate_before':case.get('candidate',{}),'human_after':decision,
+              'proposed_precedent':text,'status':'STAGED','created_at':now(),
+              'policy_version':'2.1','evaluation':None,'automatic':True}
+    repo().save_proposal(proposal)
+    case['learning_proposal_id']=pid
+    evaluated=evaluate_learning(pid)
+    if evaluated['status']=='EVALUATED':
+        approve_learning(pid,'Automatically published: case-specific decision record and policy regression checks passed.')
+        case['learning']={'status':'PUBLISHED','message':'A case-specific example was saved for future reviews after automatic checks passed. Policy rules and the AI model are unchanged.'}
+    else:
+        case['learning']={'status':'CHECKS_FAILED','message':'The decision is saved, but the guidance did not pass checks and was not published.'}
+    event(case,'automatic_learning_checked',{'proposal_id':pid,'status':case['learning']['status']})
+
 def evaluate_learning(pid):
     p=repo().get_proposal(pid)
     if p is None:raise KeyError(pid)
@@ -433,7 +514,14 @@ def evaluate_learning(pid):
                                     'human_after':p['human_after'],'policy_version':p['policy_version']},sort_keys=True).encode()).hexdigest()
     p['evaluation']={'regression':result,'content_sha256':digest,'at':now(),
                      'evaluation_scope':'synthetic deterministic suite; not model training validation'}
-    p['status']='EVALUATED' if result['all_passed'] else 'FAILED_EVALUATION'
+    if p.get('automatic'):
+        source=repo().get_case(p['case_id'])
+        valid=bool(source and source.get('status')=='REVIEWED_AND_RESOLVED' and source.get('review')==p['human_after']
+                   and source.get('category')==p['category'] and p['policy_version']=='2.1'
+                   and not safety_screen(source) and not source.get('inherited_safety_escalation'))
+        p['evaluation']['source_decision_verified']=valid
+    else:valid=True
+    p['status']='EVALUATED' if result['all_passed'] and valid else 'FAILED_EVALUATION'
     repo().save_proposal(p)
     return p
 
@@ -484,11 +572,14 @@ def add_file_evidence(cid,metadata,analysis):
     case=get_case(cid)
     if case['status'] in ('RESOLVED','REVIEWED_AND_RESOLVED'):
         raise ValueError('Resolved case is immutable')
+    if any(e.get('content',{}).get('sha256')==metadata.get('sha256') for e in case.get('evidence',[]) if metadata.get('sha256')):
+        return case
     case.setdefault('evidence',[]).append({'id':f"IMG-{len(case.get('evidence',[]))+1:03d}",
         'type':'image_or_document','content':metadata,'analysis':analysis,
         'source':'synthetic_demo_upload','verification':'camera_origin_unverified',
         'captured_at':now()})
-    case['status']='NEW';case['revision']=case.get('revision',0)+1
+    case['status']='AWAITING_CLARIFICATION' if any(q['status']=='PENDING' for q in case.get('clarifications',[])) else 'NEW'
+    case['revision']=case.get('revision',0)+1
     case['evidence_snapshot_hash']=hash_snapshot(case)
     event(case,'image_evidence_recorded',{'object_ref':metadata['object_ref'],
          'image_mode':analysis.get('mode'),'authenticity_verified':False})
@@ -502,7 +593,7 @@ def build_review_packet(cid):
     metrics, or rules. All sections are human-readable and clearly labeled.
     """
     case=get_case(cid)
-    is_safety=safety_screen(case)
+    is_safety=safety_screen(case) or case.get('inherited_safety_escalation',False)
     missing=gaps(case);inconsistent=conflicts(case)
     candidate=case.get('candidate') or recommend(case)
     validation=gate(case,candidate) if not is_safety else {
@@ -510,6 +601,9 @@ def build_review_packet(cid):
         'reasons':['Safety incident: mandatory reviewer only; no AI outcome (SF-5.1)',
                    'Safety: reviewer must determine fault and remedy (SF-5.2)'],
         'blocking_rules':['SF-5.1','SF-5.2']}
+    if case.get('appeal_of') and not is_safety:
+        validation['can_auto']=False;validation['path']='HUMAN_REVIEW'
+        validation['reasons'].append('Appeal: reviewer decision required')
     context=case.get('routing') or select_candidates(
         case['category'],case.get('description',''),case.get('fraud_flags',0),is_safety)
     # Structured facts with provenance
