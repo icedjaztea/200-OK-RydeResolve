@@ -1,4 +1,6 @@
-# RydeResolve - COMPLETE BUILD-FROM-ZERO IMPLEMENTATION GUIDE
+# Historical build-from-zero implementation guide
+
+> **Historical reference — 14 October 2026.** This document preserves the original implementation plan and its status at that time. For the current `feat/three-role-frontend` application, use the [development guide](DEVELOPMENT.md), [architecture and operations](OPERATIONAL_LIMITS.md), and [API reference](API_REFERENCE.md). Judges can start with the [product overview](../readme.md) or [guided walkthrough](JUDGE_WALKTHROUGH.md).
 
 **Google ADK + Gemini + Firestore + Google Cloud Storage + Cloud Run + FastAPI + Next.js**  
 **Covers:** all 3 mandatory agents, 7 Ryde stretch capabilities, Innovation A (active investigation), Innovation B (governed learning), evaluation, cloud deployment and submission.  
