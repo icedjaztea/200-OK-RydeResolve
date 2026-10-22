@@ -66,29 +66,9 @@ The shared demo preserves existing cases and results. The [full walkthrough](htt
 
 ## Architecture and operational controls
 
-```mermaid
-flowchart TD
-    UI["Rider · Driver · Reviewer<br/>Next.js on Cloud Run"]
-    Proxy["Server-side API proxy<br/>Cloud Run OIDC support"]
-    API["FastAPI case workflow<br/>Cloud Run"]
-    Evidence["Safety, policy routing<br/>and evidence readiness"]
-    Orch["Dispute Orchestrator"]
-    Specialists["Concurrent specialists<br/>Rider · Driver · Policy · Fraud"]
-    Judge["Judge recommendation"]
-    Gate["Deterministic policy gate<br/>Output validation and consistency"]
-    Human["Human review and appeals"]
-    Action["Simulated action receipt"]
-    DB[("Firestore<br/>Cases · Actions · Precedents")]
-    Files[("Cloud Storage<br/>Evidence attachments")]
-    UI --> Proxy --> API --> Evidence
-    Evidence -->|"Ready for adjudication"| Orch --> Specialists --> Judge --> Gate
-    Evidence -->|"Safety, clarification or classification"| Human
-    Gate -->|"Eligible"| Action
-    Gate -->|"Review required"| Human
-    Human -->|"Decision"| Action
-    API --- DB
-    API --- Files
-```
+![RydeResolve cloud architecture and decision workflow](docs/assets/architecture.svg)
+
+[Mermaid workflow source](https://github.com/icedjaztea/200-OK-RydeResolve/blob/feat/three-role-frontend/docs/assets/architecture.mmd)
 
 *The diagram shows the main adjudication path. Safety cases retain constrained advisory summaries; clarification responses return to evidence review.*
 
